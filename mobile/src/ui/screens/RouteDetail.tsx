@@ -194,7 +194,7 @@ class RouteDetailModel extends Model {
       ? `Leave at ${Fmt.time(leaveAt)} · ${modeName(first.mode)} ${lineLabel(first)} from ${first.from.name} at ${Fmt.time(first.start)}`
       : `Leave at ${Fmt.time(leaveAt)}`;
     const ok = await scheduleReminder(at, `Time to go to ${this.to.name}`, text).catch(() => false);
-    showToast(ok ? `Reminder set for ${Fmt.time(at)} (${minutes} min before leaving)` : 'That departure is too soon for a reminder');
+    showToast(ok ? `Reminder set for ${Fmt.when(at, nowSec())} (${minutes} min before leaving)` : 'That departure is too soon for a reminder');
   }
 
   share() {

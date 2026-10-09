@@ -115,7 +115,11 @@ export class TripGuide {
       const liveTag = isLive ? ' (live)' : '';
       const text =
         `${modeName(next.mode)} ${lineLabel(next)} ` +
-        (mins != null ? (mins <= 0 ? `is arriving${liveTag}` : `in ${mins} min${liveTag}`) : `at ${Fmt.time(next.start)}`);
+        (mins == null || mins > 60
+          ? `at ${Fmt.when(eta ?? next.start, now)}${liveTag}` // "in 1208 min" reads as a bug; after the last bus it's tomorrow's
+          : mins <= 0
+            ? `is arriving${liveTag}`
+            : `in ${mins} min${liveTag}`);
       const soon = mins != null && mins >= 0 && mins <= 3;
       return {
         legIndex,

@@ -123,7 +123,7 @@ export function ItineraryCard({
             </View>
           )}
           <Txt v="titleLarge" num>
-            {`${Fmt.time(leaveAt)} – ${Fmt.time(endAt)}`}
+            {`${Fmt.when(leaveAt, now)} – ${Fmt.time(endAt)}`}
           </Txt>
           <Txt v="bodySmall" color={t.x.subtle}>
             {[Fmt.duration(endAt - leaveAt), transfersText(itin.transfers), walkSec(itin) >= 60 ? `${Fmt.duration(walkSec(itin))} walk` : null]
