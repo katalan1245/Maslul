@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Image, Linking, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Animated, Easing, I18nManager, Image, Linking, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Line as SvgLine, Path, Rect } from 'react-native-svg';
 import { THEME_MODES, type ThemeMode, favoriteKey } from '../../data/userStore';
@@ -225,7 +225,19 @@ function DrivingBus({ bottom }: { bottom: number }) {
     </Animated.View>
   );
   return (
-    <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 0, bottom, width: w, height: h, transform: [{ translateX: x }, { translateY: bob }] }}>
+    // Right to left in Hebrew, facing that way; its parts stay laid out as drawn.
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: 0,
+        bottom,
+        width: w,
+        height: h,
+        direction: 'ltr',
+        transform: I18nManager.isRTL ? [{ translateX: Animated.multiply(x, -1) }, { translateY: bob }, { scaleX: -1 }] : [{ translateX: x }, { translateY: bob }],
+      }}
+    >
       <Svg width={w} height={h}>
         {/* Body, with a slanted windscreen at the front (right). */}
         <Rect x={0} y={0} width={24 * u} height={10 * u} rx={2.5 * u} fill={BRAND} />

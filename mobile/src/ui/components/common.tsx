@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
   Animated,
+  I18nManager,
   Pressable,
   type StyleProp,
   StyleSheet,
@@ -473,7 +474,8 @@ export function ProgressBar({ active, testID }: { active: boolean; testID?: stri
           width: '40%',
           height: 2,
           backgroundColor: t.c.primary,
-          transform: [{ translateX: x.interpolate({ inputRange: [0, 1], outputRange: [-200, 500] }) }],
+          // Runs the way the text does: right to left in Hebrew.
+          transform: [{ translateX: x.interpolate({ inputRange: [0, 1], outputRange: I18nManager.isRTL ? [200, -500] : [-200, 500] }) }],
         }}
       />
     </View>

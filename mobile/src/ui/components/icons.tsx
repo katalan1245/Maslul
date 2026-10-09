@@ -1,9 +1,13 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import type { ComponentProps } from 'react';
+import { I18nManager } from 'react-native';
 import type { PlaceKind, TransitMode } from '../../data/models';
 import type { FavoriteIcon } from '../../data/userStore';
 
 export type IconName = ComponentProps<typeof MaterialIcons>['name'];
+
+/** Icons that point the way the text runs: mirrored right-to-left, as Material asks. */
+const DIRECTIONAL = new Set<IconName>(['arrow-back', 'arrow-forward', 'chevron-left', 'chevron-right', 'directions-walk', 'directions-car', 'directions-run', 'directions-bike']);
 
 export function Icon({ name, size = 24, color, accessibilityLabel }: { name: IconName; size?: number; color: string; accessibilityLabel?: string }) {
   return (
@@ -11,6 +15,7 @@ export function Icon({ name, size = 24, color, accessibilityLabel }: { name: Ico
       name={name}
       size={size}
       color={color}
+      style={I18nManager.isRTL && DIRECTIONAL.has(name) ? { transform: [{ scaleX: -1 }] } : undefined}
       accessibilityLabel={accessibilityLabel}
       accessibilityElementsHidden={accessibilityLabel == null}
       importantForAccessibility={accessibilityLabel == null ? 'no-hide-descendants' : 'yes'}
