@@ -106,3 +106,22 @@ test('stays arrived after walking away from the destination', () => {
   expect(s.finished).toBe(true);
   expect(s.title).toBe("You've arrived");
 });
+
+test('counts stops from where the bus really is on a finely drawn route', () => {
+  // Real routes have a vertex every few metres; the position must not lag behind on them.
+  const dense = (from: number, to: number) => Array.from({ length: Math.round((to - from) / 0.02) + 1 }, (_, i) => pt(from + i * 0.02));
+  // Stops stand on the pavement, 15 m beside the drawn line, and that's where the phone reports.
+  const side = (s: StopCall): StopCall => ({ ...s, lon: east((s.lat - 32.0) / kmLat, 0.015).lon });
+  const kerbBus = { ...bus, from: side(bus.from), to: side(bus.to), intermediateStops: bus.intermediateStops.map(side), geometry: dense(0, 4) };
+  const fine: Itinerary = { ...withWalk, legs: [{ ...walk, geometry: dense(-0.3, 0) }, kerbBus, walkOn] };
+  const g = new TripGuide(fine, 'Office');
+  // Waiting at A for the bus: the step counts down to it.
+  expect(g.update(side(bus.from), t0 + 200, none).title).toBe('Walk to A');
+  g.update(pt(1.5), t0 + 480, none);
+  expect(g.update(east(3, 0.015), t0 + 660, none).title).toBe('Get off at the next stop');
+  expect(g.update(east(4, 0.015), t0 + 780, none).title).toBe('Get off now');
+  // Still at the stop a minute later: on to the walk (a transfer may mean waiting right there).
+  expect(g.update(east(4, 0.015), t0 + 840, none).title).toBe('Walk to Office');
+  // 150 m off to the side of the last stop, away from the walking path: walking on.
+  expect(g.update(east(3.9, -0.1), t0 + 900, none).title).toBe('Walk to Office');
+});
