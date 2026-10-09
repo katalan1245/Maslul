@@ -45,7 +45,7 @@ Use `adb` from a shell if you have one. If a command isn't available to you, mar
 2. Location in Tel Aviv: `adb emu geo fix 34.7818 32.0853`.
 3. **Buses don't run on Shabbat** (Friday evening to Saturday evening, about 19:00 Israel time) or at night. Mark the checks that need running buses **couldn't test (Shabbat)** if that's the case; don't count them as failures.
 
-## Already reported: don't re-test these
+## Already reported: don't re-test these on the new app (R0 compares them on the old one)
 
 These are being fixed. Don't spend time on them. If you happen to see one behave differently (worse, or with a crash), add a note.
 
@@ -75,6 +75,18 @@ These are being fixed. Don't spend time on them. If you happen to see one behave
 ## What to test now, in this order
 
 Number your findings and checks R1, R2… as below.
+
+**R0. Same scenarios on the old app.** So far only the new app has been tested. The old Kotlin app is the reference: the new one should behave the same unless it fixes something. For each scenario below, record **same as the new app** or **different** (say how), with a screenshot of each app.
+1. `adb uninstall com.maslul.app`, then `adb install maslul-kotlin-v4.apk`. Open it, grant location and notifications.
+2. Using the old app, repeat what you did last round on the new one:
+   - **Planning:** "Dizengoff Center", leave now. Do routes that already left show up as Best/Fastest? (known bug 5)
+   - **Line 480:** what date does the timetable show? (known bug 4)
+   - **Trip:** start one and move the location along it. Do the steps advance from "Walk to…" through the bus step? (known bug 3) When it arrives, end it and start another trip at once. Does it say "You've arrived" straight away? (known bug 2)
+   - **Notification permission:** when is it asked, at first launch or on the first trip Start? (known bug 7)
+   - **Map:** switch to another tab and back to Navigate. Is the map blank for a while? (known bug 6)
+   - **Time zone:** set the emulator to **UTC** for a moment. Plan a trip and compare the times shown with the Israel time. Do the arrival times, the time picker or "Bus in N min" look wrong? (known bug 1) Then set the time zone back to Israel.
+   - **Anything else** that looked odd in the new app last round: is the old app the same?
+3. Then go on to R1, which starts from a clean install of the old app.
 
 **R1. Upgrade migration (most important).** This checks that people updating from the old app keep their data. If `maslul-kotlin-v4.apk` isn't in the folder, stop and report that; it should be there now.
 1. `adb uninstall com.maslul.app`, then `adb install maslul-kotlin-v4.apk`. Open it and grant location and notifications.
