@@ -13,9 +13,16 @@ name: A ride within minutes says where to get out
     id: field_to
 - inputText: haifa center
 - extendedWaitUntil:
-    visible: "Haifa Center HaShemona.*"
+    visible:
+      text: "Haifa Center HaShemona.*"
+      childOf:
+        id: search_results
     timeout: 20000
-- tapOn: "Haifa Center HaShemona.*"
+# Scoped to the results: the typed text in the field matches too (Maestro ignores case).
+- tapOn:
+    text: "Haifa Center HaShemona.*"
+    childOf:
+      id: search_results
 - extendedWaitUntil:
     visible:
       id: ride_chip

@@ -12,29 +12,43 @@ name: A complete shuttle is saved, edited and deleted
     id: field_to
 - inputText: dizengoff center
 - extendedWaitUntil:
-    visible: "Dizengoff Center.*"
+    visible:
+      text: "Dizengoff Center.*"
+      childOf:
+        id: search_results
     timeout: 20000
-- tapOn: "Dizengoff Center.*"
+# Scoped to the results: the typed text in the field matches too (Maestro ignores case).
+- tapOn:
+    text: "Dizengoff Center.*"
+    childOf:
+      id: search_results
 - tapOn: To
 - tapOn:
     id: field_to
 - inputText: azrieli center
 - extendedWaitUntil:
-    visible: "Azrieli Center.*"
+    visible:
+      text: "Azrieli Center.*"
+      childOf:
+        id: search_results
     timeout: 20000
-- tapOn: "Azrieli Center.*"
+# Scoped to the results: the typed text in the field matches too (Maestro ignores case).
+- tapOn:
+    text: "Azrieli Center.*"
+    childOf:
+      id: search_results
 - tapOn:
     id: shuttle_times
 - inputText: "8:15 07:30"
 - hideKeyboard
-# Drag the ride-time slider to the right end (120 min).
+# Drag the ride-time slider right: it lands near the end (100–120 min; the swipe stops short of the edge).
 - swipe:
     from:
       id: shuttle_ride_slider
     direction: RIGHT
 - assertVisible:
     id: shuttle_ride
-    text: 120 min
+    text: "1[0-2][05] min"
 - assertNotVisible:
     id: shuttle_missing
 - scrollUntilVisible:
@@ -50,7 +64,7 @@ name: A complete shuttle is saved, edited and deleted
 - assertVisible: Edit shuttle
 - assertVisible:
     id: shuttle_ride
-    text: 120 min
+    text: "1[0-2][05] min"
 - scrollUntilVisible:
     element: Delete
 - tapOn:
