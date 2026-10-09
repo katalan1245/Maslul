@@ -6,16 +6,16 @@ name: Advanced tools stay out of the way until switched on
     clearState: true
 - assertNotVisible:
     id: on_board
-- runFlow: _plan_to_dizengoff.yaml
+- runFlow: subflows/_plan_to_dizengoff.yaml
 - assertNotVisible:
     id: ride_chip
 - back
 - runFlow:
-    file: _settings_advanced.yaml
+    file: subflows/_settings_advanced.yaml
     env:
       RIDES: "on"
       ON_BOARD: "off"
-- runFlow: _plan_to_dizengoff.yaml
+- runFlow: subflows/_plan_to_dizengoff.yaml
 - tapOn:
     id: ride_chip
 - assertVisible: "Getting a ride (טרמפ)?"

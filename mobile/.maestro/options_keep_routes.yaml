@@ -2,7 +2,7 @@ appId: com.maslul.app
 name: Closing Options untouched keeps the routes
 ---
 - launchApp
-- runFlow: _plan_to_dizengoff.yaml
+- runFlow: subflows/_plan_to_dizengoff.yaml
 - extendedWaitUntil:
     visible: ".*min walk.*"
     timeout: 60000

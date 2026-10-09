@@ -1,8 +1,6 @@
 # Maestro flows mirroring the Kotlin app's AppFlowTest (app/src/androidTest), run against the
 # real services on an emulator or device: `maestro test .maestro/` with the app installed.
 # Not yet run anywhere: written before a device was available.
+# Top-level files only: the shared steps in subflows/ are run from the flows, not on their own.
 flows:
-  - "*.yaml"
-excludeFiles:
-  - config.yaml
-  - _*.yaml
+  - "*"

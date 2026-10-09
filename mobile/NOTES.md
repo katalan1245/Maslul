@@ -4,7 +4,7 @@ Decisions behind the React Native port, for whoever picks it up next. What has a
 
 ## Replacing the Kotlin app
 
-- **Same identity.** The package is `com.maslul.app` with versionCode 5 and up (from `version.json`), so the store and sideloads treat this app as an update. An update only installs over the old app when both are signed with the same key. Releases therefore use the Kotlin app's `keystore.properties`, through `plugins/withReleaseSigning.js`.
+- **Same identity.** The package is `com.maslul.app` with versionCode 5 and up (from `version.json`), so the store and sideloads treat this app as an update. An update only installs over the old app when both are signed with the same key. Releases therefore use the Kotlin app's `keystore.properties`, through `plugins/withReleaseSigning.js`. The same plugin points debug builds at `~/.android/debug.keystore`, the key the Kotlin app's debug builds use, instead of the Expo template's bundled one, so the upgrade can be tested with two debug builds.
 - **Data migration** (`src/state/persist.ts`). On first launch the native module reads the old store once: SharedPreferences `maslul`, key `store_v1`. It's kotlinx JSON with defaults left out, nulls left out, enums by name and Sets as arrays. `readUserData` applies every Kotlin default and drops broken entries one by one instead of failing the whole store, then `migrated()` runs as it did in Kotlin. Details:
   - The result is saved under the same key in AsyncStorage, and `legacy_migrated_v1` marks the migration as done.
   - The old SharedPreferences are never written or deleted, so a bad migration loses nothing.
@@ -59,4 +59,4 @@ The JS fallbacks (`jsSnapshotFetcher`, Node zlib) are used only by tests, which 
   - the migration and parsers on real recorded responses (`fixtures/`, each with its URL);
   - whole-app screen flows with `@testing-library/react-native`, driven through the same test ids as the Kotlin AppFlowTest, with native libraries mocked in `jest.setup.js` and a fake repository in `__tests__/support/fakeRepo.ts`.
 - `npm run test:live` checks the real services. Tests that depend on what's running right now (Stride's day, Shabbat, night) warn and skip rather than fail.
-- `.maestro/` holds the AppFlowTest scenarios as device flows. The home-sheet gestures can only be checked there.
+- `.maestro/` holds the AppFlowTest scenarios as device flows; shared steps live in `.maestro/subflows/` so Maestro doesn't run them as tests of their own. The home-sheet gestures can only be checked there.

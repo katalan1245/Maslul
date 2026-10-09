@@ -4,7 +4,7 @@ name: A ride within minutes says where to get out
 - launchApp:
     clearState: true
 - runFlow:
-    file: _settings_advanced.yaml
+    file: subflows/_settings_advanced.yaml
     env:
       RIDES: "on"
       ON_BOARD: "off"

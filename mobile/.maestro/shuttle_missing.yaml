@@ -2,7 +2,7 @@ appId: com.maslul.app
 name: A shuttle says what's missing, the ride time included
 ---
 - launchApp
-- runFlow: _new_shuttle.yaml
+- runFlow: subflows/_new_shuttle.yaml
 - assertVisible:
     id: shuttle_ride
     text: Not set

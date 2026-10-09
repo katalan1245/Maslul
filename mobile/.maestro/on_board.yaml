@@ -4,7 +4,7 @@ name: On a bus lists the rides around
 - launchApp:
     clearState: true
 - runFlow:
-    file: _settings_advanced.yaml
+    file: subflows/_settings_advanced.yaml
     env:
       RIDES: "off"
       ON_BOARD: "on"
