@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import App from '../src/App';
 import { store } from '../src/state/store';
-import { ABOUT } from '../src/ui/screens/Settings';
+import { S } from '../src/i18n';
 import { makeFakeRepo } from './support/fakeRepo';
 
 jest.mock('../src/state/services', () => ({ repo: require('./support/fakeRepo').makeFakeRepo() }));
@@ -152,9 +152,9 @@ it('credits the data sources in Settings → About', async () => {
   await start();
   await fireEvent.press(screen.getByTestId('settings_button'));
   const about = await screen.findByTestId('about_credits');
-  expect(about).toHaveTextContent(ABOUT);
+  expect(about).toHaveTextContent(S.settings.credits);
   for (const credit of ['GNU AGPL v3', 'Transitous', 'Open Bus', 'Hasadna', 'Stride', 'Photon', 'Nominatim', 'OpenFreeMap', '© OpenStreetMap contributors'])
-    expect(ABOUT).toContain(credit);
+    expect(S.settings.credits).toContain(credit);
 });
 
 // The home sheet's hide/drag/bring-back scenario needs real sheet positions: a device (Maestro) check.

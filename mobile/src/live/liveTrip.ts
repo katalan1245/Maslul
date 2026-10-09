@@ -5,6 +5,7 @@ import { useSyncExternalStore } from 'react';
 import type { LiveCall } from '../data/eta';
 import { type GeoPoint, type Itinerary, isTransit } from '../data/models';
 import { nowSec } from '../data/time';
+import { type Lang, lang, languageSet, setLanguage } from '../i18n';
 import MaslulNative from '../../modules/maslul-native/src/MaslulNativeModule';
 import { location } from '../state/location';
 import { repo } from '../state/services';
@@ -71,7 +72,7 @@ class ActiveTrip {
     // A position left from an earlier trip would put the guide where that trip ended.
     this.pos = null;
     this.begin(itinerary, destination, null);
-    await AsyncStorage.setItem(SESSION_KEY, JSON.stringify({ itinerary, destination }));
+    await AsyncStorage.setItem(SESSION_KEY, JSON.stringify({ itinerary, destination, lang: lang() }));
     try {
       await Location.startLocationUpdatesAsync(TRIP_TASK, {
         accuracy: Location.Accuracy.High,
@@ -115,7 +116,9 @@ class ActiveTrip {
       if (running) await Location.stopLocationUpdatesAsync(TRIP_TASK).catch(() => {});
       return;
     }
-    const s = JSON.parse(json) as { itinerary: Itinerary; destination: string };
+    const s = JSON.parse(json) as { itinerary: Itinerary; destination: string; lang?: Lang };
+    // Started headless for a location update, the app hasn't read the settings: the trip's language holds.
+    if (s.lang && !languageSet()) setLanguage(s.lang);
     this.begin(s.itinerary, s.destination, null);
   }
 

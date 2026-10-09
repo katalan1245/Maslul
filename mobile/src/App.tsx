@@ -13,6 +13,9 @@ import type { Place } from './data/models';
 import { END_TRIP_URL, activeTrip, useActiveTrip } from './live/liveTrip';
 import { setUpNotifications } from './live/notifications';
 import { readLegacyStore } from './native';
+import { lang } from './i18n';
+import { applyLanguage } from './i18n/device';
+import { repo } from './state/services';
 import { store, useUserData } from './state/store';
 import { Txt } from './ui/components/common';
 import { Icon, type IconName } from './ui/components/icons';
@@ -143,6 +146,9 @@ export default function App() {
     (async () => {
       // The first launch after the Kotlin app moves its saved places and settings over.
       await store.load(AsyncStorage, readLegacyStore).catch(() => {});
+      // Before anything is drawn; when the layout direction has to change, the app reloads (splash stays up).
+      if (await applyLanguage(store.value.settings.language)) return;
+      repo.language = lang();
       setUpNotifications();
       await activeTrip.restore().catch(() => {});
       setReady(true);
