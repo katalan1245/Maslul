@@ -38,6 +38,7 @@ The JS fallbacks (`jsSnapshotFetcher`, Node zlib) are used only by tests, which 
 - **Background location.** `expo-location` runs a foreground service of type `location`, as `LiveTripService` did, and `expo-task-manager` delivers updates to `TaskManager.defineTask`. `index.ts` imports the task module first, so a headless start finds it. The app needs no background-location permission; `ACCESS_BACKGROUND_LOCATION` is stripped from the manifest.
 - **Surviving restarts.** The session is saved in AsyncStorage (`live_trip_v1`). After a restart, `restore()` picks it up if the location service is still running, and drops it otherwise.
 - **Alerts.** Each alert key fires once per session. If the JS runtime restarts mid-trip, the set of fired alerts is lost, so an alert may repeat once; Kotlin's in-process service had the same limit.
+- **Permissions** match the Kotlin app's, plus `RECEIVE_BOOT_COMPLETED` and `WAKE_LOCK` (expo-notifications keeps scheduled reminders across a reboot) and `ACCESS_WIFI_STATE` (MapLibre). The push (Firebase `c2dm`), install-referrer and launcher-badge permissions that expo-notifications' libraries bring in are removed through `blockedPermissions` in `app.config.ts`, since the app only posts local notifications. `SYSTEM_ALERT_WINDOW` is in debug builds only, for the dev menu.
 - **Reminders** use expo-notifications DATE triggers. Like the Kotlin AlarmManager code, they're exact only when the system allows exact alarms; neither app asks for `SCHEDULE_EXACT_ALARM`.
 
 ## Map

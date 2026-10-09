@@ -1,6 +1,6 @@
 # Maslul React Native rewrite: status
 
-Branch `rewrite/react-native`, local commits only (never pushed). Development is complete. What's left needs a real device (Phase B/C below).
+Branch `rewrite/react-native`, local commits only (never pushed). Development is complete and the Android app compiles. What's left needs a device: the emulator checklist (Phase C below) and iOS on a Mac.
 
 ## Verified here (in the container, without a device)
 
@@ -17,24 +17,31 @@ Branch `rewrite/react-native`, local commits only (never pushed). Development is
 | SDK versions; native modules linked | `expo install --check` clean; `expo-doctor` clean apart from 2 checks that need the blocked Expo API; autolinking lists every native library and `maslul-native` |
 | Android config: `com.maslul.app`, versionCode 5, permissions, background location removed, release-signing patch | `expo prebuild` output inspected |
 | JS compiles for both platforms | `expo export` to Hermes bytecode, Android and iOS |
+| **Android native compile**: our Kotlin module, every library, the C++/NDK parts | `./gradlew assembleDebug assembleRelease` succeed. No compiler warnings from `maslul-native` |
+| Built APKs: `com.maslul.app`, versionCode 5, arm64-v8a + x86_64; release has no debug-only permissions | `aapt2 dump badging`/`permissions`, `apksigner verify` on both APKs |
+| Kotlin app builds with the same toolchain (versionCode 4), for the upgrade test | `./gradlew assembleDebug` at the repo root |
 
 ## Not verified yet (needs the device environment)
 
-- **Native compile.** Gradle, the Kotlin and Swift code in `modules/maslul-native`, and CocoaPods have never been built.
+- **iOS native compile.** The Swift module and CocoaPods have never been built (needs a Mac).
 - **Anything on screen.** Map look and gestures, the bottom sheets, the dark theme, icons, splash, keyboard behaviour.
 - **Native module at runtime.** SIRI brotli decoding and parsing, the old-store read on a real upgrade, the live-trip notification with progress and "End trip".
 - **Live directions in the background,** with the screen off, through the foreground service.
 - **Reminders** firing on time.
 - **iOS as a whole.**
 
-## Phase B: build (first thing in the device environment)
+## Phase B: build (done for Android)
 
-Gradle needs network access to `dl.google.com`, `maven.google.com`, `repo.maven.apache.org`/`repo1.maven.org`, `plugins.gradle.org` and `services.gradle.org`, plus JDK 17 and the Android SDK.
+Building Android needs JDK 17 and the Android SDK (platform 36, build-tools 36, NDK 27.1, CMake 3.22; Gradle downloads what's missing), and network access to `dl.google.com`, `maven.google.com`, `repo.maven.apache.org`/`repo1.maven.org`, `repo.reactnative.dev` (Maven Central redirects the React Native binaries there), `plugins.gradle.org`, `services.gradle.org` and `jitpack.io`.
 
 ```bash
-cd mobile && npm ci && npm run prebuild && npm run android     # debug build onto the emulator
-cd mobile/ios && pod install && cd .. && npm run ios           # on the Mac
+cd mobile && npm ci && npm run prebuild
+cd android && ./gradlew assembleDebug                         # app/build/outputs/apk/debug/app-debug.apk
+./gradlew assembleRelease                                     # debug-signed without keystore.properties
+cd mobile/ios && pod install && cd .. && npm run ios          # on the Mac
 ```
+
+On the emulator: `adb install -r android/app/build/outputs/apk/debug/app-debug.apk`, then `npm start` for Metro (the debug build loads its JS from Metro). The release APK runs on its own.
 
 ## Phase C: device checklist
 
@@ -55,9 +62,9 @@ cd mobile/ios && pod install && cd .. && npm run ios           # on the Mac
 
 Both builds must be signed with the same key. Two debug builds work, since both use the default debug keystore.
 
-1. Install the Kotlin app: `./gradlew installDebug` from the repo root (versionCode 4).
+1. Install the Kotlin app (versionCode 4): `adb install app/build/outputs/apk/debug/app-debug.apk` from the repo root, after `sh gradlew assembleDebug` there (`gradlew` is committed without its execute bit).
 2. In it, set Home and Work, add two favourite places, a favourite line, a favourite stop, a saved trip and a shuttle. Change the theme, walk speed and rail preference, and switch on both Advanced switches.
-3. Install this app over it, without uninstalling: `npm run android` (versionCode 5).
+3. Install this app over it, without uninstalling (versionCode 5): `adb install -r mobile/android/app/build/outputs/apk/debug/app-debug.apk`, or `npm run android`.
 4. Everything from step 2 is there. Kill and reopen: still there, and the old data is not read again.
 5. Change something, reopen: the change stays.
 
@@ -81,4 +88,5 @@ Fix what the devices find. Then the owner signs a release build with `keystore.p
    - version alignment, which found `expo-asset` and `expo-font` missing as direct dependencies;
    - Maestro flows;
    - docs.
-2. Bugs the tests caught and that are fixed: an endless re-render in the map's vehicle gliding (it would have frozen the Line and Trip screens), and the two missing native dependencies above.
+2. Phase B (Android build) is done: debug and release APKs build in the container. Changes it led to: the iOS SIRI parser reuses its date formatters, and the push and launcher-badge permissions that expo-notifications' libraries add are blocked (see NOTES.md).
+3. Bugs the tests caught and that are fixed: an endless re-render in the map's vehicle gliding (it would have frozen the Line and Trip screens), and the two missing native dependencies above.

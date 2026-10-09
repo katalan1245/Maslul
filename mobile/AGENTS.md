@@ -16,6 +16,7 @@ npm test                     # offline Jest: unit + screen flows
 npm run test:live            # real services; skips what isn't running now
 npx expo install --check     # versions match the SDK
 npm run prebuild             # regenerate android/ and ios/ (both git-ignored)
+cd android && ./gradlew assembleDebug   # native Android build (JDK 17 + Android SDK; see STATUS.md Phase B)
 ```
 
 Run the typecheck and `npm test` before calling a task done.

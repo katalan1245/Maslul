@@ -21,7 +21,7 @@ npm ci
 ```
 
 Building and running on a device also needs the platform tools:
-- **Android:** JDK 17 and the Android SDK (Android Studio).
+- **Android:** JDK 17 and the Android SDK (Android Studio), or just the command-line tools. STATUS.md (Phase B) lists the SDK packages and the hosts Gradle downloads from.
 - **iOS:** a Mac with Xcode and CocoaPods.
 
 The app has its own native module (`modules/maslul-native`), so it can't run in Expo Go. It runs as a development build.
