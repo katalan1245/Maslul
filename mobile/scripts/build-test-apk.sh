@@ -12,7 +12,7 @@ out=../test-artifacts
 mkdir -p "$out"
 cp "$apk" "$out/maslul-latest.apk"
 dirty=$(git status --porcelain -- . | grep -q . && echo " (with uncommitted changes)" || true)
-signer=$("$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "$apk" | grep -m1 SHA-256 | sed 's/.*: //')
+signer=$("$(ls -d "$ANDROID_HOME"/build-tools/* | tail -1)/apksigner" verify --print-certs "$apk" | grep -m1 SHA-256 | sed 's/.*: //')
 cat > "$out/build-info.txt" <<EOF
 commit: $(git rev-parse HEAD)$dirty
 application id: com.maslul.app
