@@ -138,7 +138,12 @@ it('saves, edits and deletes a complete shuttle', async () => {
   await fireEvent.press(screen.getByText('Test shuttle'));
   await screen.findByText('Edit shuttle');
   expect(screen.getByTestId('shuttle_ride')).toHaveTextContent('120 min');
-  await fireEvent.press(screen.getByText('Delete'));
+  // Delete asks first: Cancel keeps it.
+  await fireEvent.press(screen.getByTestId('shuttle_delete'));
+  await fireEvent.press(await screen.findByText('Cancel'));
+  expect(store.value.shuttles).toHaveLength(1);
+  await fireEvent.press(screen.getByTestId('shuttle_delete'));
+  await fireEvent.press(await screen.findByTestId('shuttle_delete_confirm'));
   await waitFor(() => expect(screen.queryByText('Test shuttle')).toBeNull());
   expect(store.value.shuttles).toHaveLength(0);
 });

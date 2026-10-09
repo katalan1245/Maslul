@@ -2,7 +2,6 @@ import { GeoMath } from './geo';
 import { type GeoPoint, type Leg, type Place, makeLeg, placePoint } from './models';
 import { type Instant, dayOfWeek, localDate, plusDays, startOfDay } from './time';
 import type { Shuttle } from './userStore';
-import { WORK_WEEK } from './userStore';
 import { sortedBy } from './util';
 
 /** Colour of shuttle rides, so they stand apart from the operators' lines. */
@@ -69,21 +68,19 @@ const formatTime = (minutes: number) =>
 
 const formatTimes = (times: number[]) => times.map(formatTime).join(', ');
 
-const sameSet = (a: readonly number[], b: readonly number[]) => {
-  const sa = new Set(a);
-  const sb = new Set(b);
-  return sa.size === sb.size && [...sa].every((x) => sb.has(x));
-};
-
-/** "Sun–Thu", "Every day", "Fri, Sat". */
+/** "Sun–Thu", "Every day", "Fri, Sat": runs of three days or more as a range. */
 function formatDays(days: readonly number[]): string {
   const set = new Set(days);
   if (set.size === 7) return 'Every day';
-  if (sameSet(days, WORK_WEEK)) return 'Sun–Thu';
   // Week order as in Israel: Sunday first.
-  return [7, 1, 2, 3, 4, 5, 6]
-    .filter((d) => set.has(d))
-    .map((d) => DAY_NAMES[d])
+  const runs: number[][] = [[]];
+  for (const d of [7, 1, 2, 3, 4, 5, 6]) {
+    if (set.has(d)) runs[runs.length - 1].push(d);
+    else runs.push([]);
+  }
+  return runs
+    .filter((r) => r.length)
+    .map((r) => (r.length >= 3 ? `${DAY_NAMES[r[0]]}–${DAY_NAMES[r[r.length - 1]]}` : r.map((d) => DAY_NAMES[d]).join(', ')))
     .join(', ');
 }
 

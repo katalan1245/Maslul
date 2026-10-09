@@ -45,6 +45,9 @@ const config: ExpoConfig = {
       'android.permission.FOREGROUND_SERVICE',
       'android.permission.FOREGROUND_SERVICE_LOCATION',
       'android.permission.VIBRATE',
+      // Not in the Kotlin app: without it reminders are windowed alarms, minutes (up to an hour) late.
+      // Granted at install on Android 12-13; on 14+ the user can allow it under Alarms & reminders.
+      'android.permission.SCHEDULE_EXACT_ALARM',
     ],
     // Live directions run as a foreground service started from the app: no background-location permission.
     // (and nothing the template adds that the Kotlin app didn't ask for).

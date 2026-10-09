@@ -53,6 +53,8 @@ test('days read like a week', () => {
   expect(ShuttleSchedule.formatDays(WORK_WEEK)).toBe('Sun–Thu');
   expect(ShuttleSchedule.formatDays([1, 2, 3, 4, 5, 6, 7])).toBe('Every day');
   expect(ShuttleSchedule.formatDays([5, 7])).toBe('Sun, Fri');
+  expect(ShuttleSchedule.formatDays([7, 1, 2, 3, 4, 5])).toBe('Sun–Fri');
+  expect(ShuttleSchedule.formatDays([7, 1, 3, 4, 5, 6])).toBe('Sun, Mon, Wed–Sat');
 });
 
 test('a shuttle from the station is tried for the way back', () => {

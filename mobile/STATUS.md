@@ -1,13 +1,13 @@
 # Maslul React Native rewrite: status
 
-Branch `rewrite/react-native`, local commits only (never pushed). Development is complete and the Android app compiles. What's left needs a device: the emulator checklist (Phase C below) and iOS on a Mac.
+Branch `rewrite/react-native`, local commits only (never pushed). Development is complete, the Android app compiles, and two emulator rounds have run (below). Left: re-testing the fixes, Maestro and live buses on a device, and iOS on a Mac.
 
 ## Verified here (in the container, without a device)
 
 | What | How |
 |---|---|
 | All Kotlin `data/` code ported to TypeScript | Strict `tsc` clean |
-| Kotlin unit tests (all 15 files) ported | `npm test`: 21 suites, 167 tests pass |
+| Kotlin unit tests (all 15 files) ported | `npm test`: 23 suites, 173 tests pass |
 | Old-store migration: every field and default, broken entries, once only, retry when unreadable | Unit tests plus a whole-app first-launch test |
 | Parsers on real service responses (15 recorded fixtures, incl. a 3.6 MB SIRI snapshot) | Offline tests |
 | Live services: Transitous plan/geocode/stop times, Stride, SIRI, Photon, Nominatim, ride and shuttle planning, on-board | `npm run test:live`: 18 pass. Time-dependent parts skip with a warning (Shabbat, night, Stride's day) |
@@ -22,13 +22,25 @@ Branch `rewrite/react-native`, local commits only (never pushed). Development is
 | Upgrade test is possible: debug builds of both apps share the machine's debug key | `apksigner` shows the same certificate on the Kotlin app's and this app's debug APKs |
 | Built APKs: `com.maslul.app`, versionCode 5, arm64-v8a + x86_64; release has no debug-only permissions | `aapt2 dump badging`/`permissions`, `apksigner verify` on both APKs |
 
-## Not verified yet (needs the device environment)
+## Verified on the Android emulator
+
+A separate Claude session with mobile-mcp and adb ran `TESTING.md` on a Pixel 9 AVD (API 37, 2 GB RAM), on release build b0925a6 and earlier. Its report is `/share/maslul-test/report.md`.
+
+- **Upgrade from the Kotlin app** (versionCode 4 → 5, `adb install -r`): Home/Work, favourite places, line and stop, shuttle, theme, walk speed, rail preference, the Advanced switches and the reminder lead all migrated. They survive a kill, and the old data isn't read again.
+- Every tab opens and Back works, with no Maslul crash in `logcat -b crash`. Map tiles load in light and dark, with Hebrew and English names.
+- Trip planning, the trip notification with its progress bar and "End trip", the trip with the screen locked and after a swipe from Recents, the arrival alert firing once, and Share.
+- Shuttles: create, edit and delete persist. Dark theme on every screen.
+- **Reminders arrive, but late:** ~1 m 45 s (windowed alarms; see NOTES.md). The exact-alarm permission has been added since and is untested.
+
+Fixed after that round and not yet re-tested: the trip guide stuck on "Get off now", arrival not sticking, "Bus in 1208 min", dim dark-map labels, the Home buttons over the map attribution, shuttle delete confirmation and day ranges. The list is in NOTES.md, "Deliberate changes".
+
+## Not verified yet
 
 - **iOS native compile.** The Swift module and CocoaPods have never been built (needs a Mac).
-- **Anything on screen.** Map look and gestures, the bottom sheets, the dark theme, icons, splash, keyboard behaviour.
-- **Native module at runtime.** SIRI brotli decoding and parsing, the old-store read on a real upgrade, the live-trip notification with progress and "End trip".
-- **Live directions in the background,** with the screen off, through the foreground service.
-- **Reminders** firing on time.
+- **Live vehicles** (SIRI brotli decoding at runtime) and green live times: every test session so far fell on Shabbat or at night.
+- **Compass** after rotating (mobile-mcp has no two-finger gesture).
+- **Maestro flows** on a device: the 2 GB emulator's low-memory killer stops Maestro's driver, and mobile-mcp holds the UI-automation slot it needs.
+- **Blank map after switching back to Navigate** (known bug 6), seen only on the 2 GB emulator; re-test with more RAM.
 - **iOS as a whole.**
 
 ## Phase B: build (done for Android)

@@ -53,5 +53,8 @@ name: A complete shuttle is saved, edited and deleted
     text: 120 min
 - scrollUntilVisible:
     element: Delete
-- tapOn: Delete
+- tapOn:
+    id: shuttle_delete
+- tapOn:
+    id: shuttle_delete_confirm
 - assertNotVisible: Maestro shuttle

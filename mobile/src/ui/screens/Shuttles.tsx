@@ -8,6 +8,7 @@ import { ShuttleSchedule } from '../../data/shuttles';
 import { type Shuttle, WORK_WEEK } from '../../data/userStore';
 import { store, useUserData } from '../../state/store';
 import { Button, Chip, IconButton, PlaceRow, TextButton, Txt } from '../components/common';
+import { Dialog } from '../components/overlays';
 import { type RootStack, nav } from '../nav';
 import { hex, type, useTheme } from '../theme';
 
@@ -74,6 +75,7 @@ export function ShuttleEditScreen({ route }: NativeStackScreenProps<RootStack, '
   const [days, setDays] = useState<number[]>(existing?.days ?? draft?.days ?? WORK_WEEK);
   /** Set once Save was tapped with something missing: from then on the missing fields are marked. */
   const [showMissing, setShowMissing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const parsed = ShuttleSchedule.parseTimes(times);
   const missing = ShuttleSchedule.missing(name, from, to, times, rideMinutes, days);
@@ -233,16 +235,35 @@ export function ShuttleEditScreen({ route }: NativeStackScreenProps<RootStack, '
           <TextButton text="Save and add the way back" onPress={addReturn} />
           <View style={{ flex: 1 }} />
           {!isNew && (
-            <TextButton
-              text="Delete"
-              color={err}
-              onPress={() => {
-                store.removeShuttle(id);
-                nav.pop();
-              }}
-            />
+            <TextButton text="Delete" color={err} onPress={() => setConfirmDelete(true)} testID="shuttle_delete" />
           )}
         </View>
+        {/* Not in the Kotlin app: a shuttle's times take a while to type in, and there's no undo. */}
+        <Dialog
+          visible={confirmDelete}
+          title={`Delete ${name.trim() || 'this shuttle'}?`}
+          onDismiss={() => setConfirmDelete(false)}
+          testID="shuttle_delete_dialog"
+          actions={
+            <>
+              <TextButton text="Cancel" onPress={() => setConfirmDelete(false)} />
+              <TextButton
+                text="Delete"
+                color={err}
+                onPress={() => {
+                  setConfirmDelete(false);
+                  store.removeShuttle(id);
+                  nav.pop();
+                }}
+                testID="shuttle_delete_confirm"
+              />
+            </>
+          }
+        >
+          <Txt v="bodyMedium" color={t.x.subtle}>
+            Its times and days will be gone.
+          </Txt>
+        </Dialog>
       </ScrollView>
     </KeyboardAvoidingView>
   );

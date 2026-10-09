@@ -202,7 +202,8 @@ function SheetButtons({
   const t = useTheme();
   const ROW = 64;
   const style = useAnimatedStyle(() => {
-    const top = Math.min(position.value, height - bottomInset) - ROW;
+    // With the map expanded the row stays clear of the map's attribution (i), bottom left.
+    const top = Math.min(position.value, height - bottomInset - 28) - ROW;
     // Pulled up past the middle, the buttons would crowd the search card: they step aside.
     return { transform: [{ translateY: position.value > height * 0.4 ? top : -1000 }] };
   });

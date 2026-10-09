@@ -39,14 +39,26 @@ The JS fallbacks (`jsSnapshotFetcher`, Node zlib) are used only by tests, which 
 - **Surviving restarts.** The session is saved in AsyncStorage (`live_trip_v1`). After a restart, `restore()` picks it up if the location service is still running, and drops it otherwise.
 - **Alerts.** Each alert key fires once per session. If the JS runtime restarts mid-trip, the set of fired alerts is lost, so an alert may repeat once; Kotlin's in-process service had the same limit.
 - **Permissions** match the Kotlin app's, plus `RECEIVE_BOOT_COMPLETED` and `WAKE_LOCK` (expo-notifications keeps scheduled reminders across a reboot) and `ACCESS_WIFI_STATE` (MapLibre). The push (Firebase `c2dm`), install-referrer and launcher-badge permissions that expo-notifications' libraries bring in are removed through `blockedPermissions` in `app.config.ts`, since the app only posts local notifications. `SYSTEM_ALERT_WINDOW` is in debug builds only, for the dev menu.
-- **Reminders** use expo-notifications DATE triggers. Like the Kotlin AlarmManager code, they're exact only when the system allows exact alarms; neither app asks for `SCHEDULE_EXACT_ALARM`.
+- **Reminders** use expo-notifications DATE triggers. Like the Kotlin AlarmManager code, they're exact only when the system allows exact alarms, and otherwise come as windowed alarms. The emulator test found one ~2 min late, and the window can reach an hour. Unlike Kotlin, the manifest declares `SCHEDULE_EXACT_ALARM`: Android 12–13 grant it at install, and on 14+ it's off until the user allows it under Alarms & reminders. `USE_EXACT_ALARM` is left out because Play reserves it for alarm and calendar apps.
+
+## Deliberate changes from the Kotlin app
+
+Found by the emulator tests (`TESTING.md`); everything else follows Kotlin.
+
+- **Trip guide** (`src/live/tripGuide.ts`). Once past the last stop and more than 100 m from it, the guide moves on to the walk, even when the user isn't on the planned walking path. Kotlin stayed on "Get off now" for the whole walk. Arrival sticks: walking on afterwards no longer turns it back into "N m to go".
+- **Times more than an hour away** show as a time with its day when it isn't today (`Fmt.when`): "Bus 5 at Sun 21:05" instead of "Bus in 1208 min". The same goes for route cards and the reminder toast. After the last bus, the planner's routes are tomorrow's.
+- **Shuttle days** collapse runs of three or more into a range ("Sun–Fri", "Sun, Mon, Wed–Sat"); Kotlin did this only for Sun–Thu.
+- **Deleting a shuttle** asks first.
+- **Reminders** for one of your own shuttles name it without "Bus" in front.
+- **Exact alarms**: see Reminders above.
 
 ## Map
 
 - **MapLibre React Native 11** draws the map with OpenFreeMap styles: positron for light, and dark with the Kotlin app's `brightenDark` overrides, fetched once with the app's User-Agent.
 - Vehicles, the user's heading beam and markers are GeoJSON sources with SDF icons (`assets/map/*@3x.png`, made by `scripts/make-assets.mjs`), so their colours are set at runtime.
 - **Vehicles glide** to new positions. The animation keys on the vehicles' content, not the array's identity, because screens rebuild the list on every render; keying on the array caused an endless re-render loop, caught by the screen tests.
-- **Attribution.** The attribution button stays on, bottom-left, as the OpenStreetMap and OpenFreeMap licences require. The MapLibre logo is hidden, as in the Kotlin app.
+- **Attribution.** The attribution button stays on, bottom-left, as the OpenStreetMap and OpenFreeMap licences require. The MapLibre logo is hidden, as in the Kotlin app. On Home the sheet covers it, as in Kotlin, and the full credit is in About. With the map expanded, the Home buttons sit above it.
+- **Dark labels.** The dark style's overrides are filtered by paint-key prefix. A symbol layer's keys are `text-*`/`icon-*`, not `symbol-*`; the first port dropped them, which left the labels dim.
 
 ## Network
 
