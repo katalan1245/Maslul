@@ -28,6 +28,8 @@ export class TripGuide {
   /** Distance along the path of each stop on each transit leg (index 0 = boarding stop). */
   private readonly stopAlong = new Map<number, number[]>();
   private lastAlong = 0;
+  /** Arrival sticks: walking off afterwards mustn't turn the trip back into "N m to go". */
+  private arrived = false;
 
   constructor(
     private readonly itinerary: Itinerary,
@@ -79,8 +81,8 @@ export class TripGuide {
     const progress = total > 0 ? Math.min(Math.max(this.lastAlong / total, 0), 1) : 0;
 
     const dest = callPoint(legs[legs.length - 1].to);
-    const arrived = pos != null && (GeoMath.distance(pos, dest) < 60 || this.lastAlong >= total - 40);
-    if (arrived) {
+    this.arrived ||= pos != null && (GeoMath.distance(pos, dest) < 60 || this.lastAlong >= total - 40);
+    if (this.arrived) {
       return { legIndex, title: "You've arrived", text: this.destination, alert: 'ARRIVED', alertKey: 'arrived', progress: 1, finished: true };
     }
 
@@ -136,6 +138,11 @@ export class TripGuide {
           all.slice(1).filter((s) => (scheduledTime(s) ?? leg.end) > now).length;
     const arriveAt = live.get(legIndex)?.alightExpected ?? leg.end;
     const title = `${modeName(leg.mode)} ${lineLabel(leg)} → ${leg.to.name}`;
+    // Past the last stop and away from it, but off the walking path (so the walk leg never matched): off the bus.
+    if (remaining <= 0 && pos != null && legIndex + 1 < legs.length && GeoMath.distance(pos, callPoint(leg.to)) > 100) {
+      this.lastAlong = Math.max(this.lastAlong, this.legStart[legIndex + 1]);
+      return this.update(pos, now, live);
+    }
     if (remaining <= 0) {
       return { legIndex, title: 'Get off now', text: leg.to.name, alert: 'GET_OFF_NOW', alertKey: `off-${legIndex}`, progress, finished: false };
     }

@@ -66,3 +66,36 @@ test('a lift reads as a ride, not a walk', () => {
   expect(s.title).toBe('Get dropped off near A');
   expect(g.update(pt(-0.2), t0 + 100, none).title).toBe('Walk to A');
 });
+
+// The bus to E, then a 1 km walk east to the destination.
+const east = (km: number, kmEast: number): GeoPoint => ({ lat: pt(km).lat, lon: 34.8 + (kmEast * 1000) / (111_320 * Math.cos((pt(km).lat * Math.PI) / 180)) });
+const walkOn = makeLeg({
+  mode: 'WALK', from: call('E', 4, 780), to: { ...at(4), lon: east(4, 1).lon }, start: t0 + 780, end: t0 + 1500, distanceM: 1000,
+  geometry: [pt(4), east(4, 1)],
+});
+const withWalk: Itinerary = { id: 'w', start: t0, end: t0 + 1500, transfers: 0, legs: [walk, bus, walkOn] };
+
+test('leaves the bus step once away from the last stop, even off the walking path', () => {
+  const g = new TripGuide(withWalk, 'Office');
+  g.update(pt(3.2), t0 + 680, none);
+  expect(g.update(pt(3.97), t0 + 780, none).title).toBe("Get off now");
+  // Walked 500 m south of the stop: nowhere near the eastward walking path.
+  const s = g.update(pt(3.5), t0 + 900, none);
+  expect(s.legIndex).toBe(2);
+  expect(s.title).toBe('Walk to Office');
+  expect(s.alert).toBeNull();
+});
+
+test('stays arrived after walking away from the destination', () => {
+  // The walk turns north for its last 80 m; arriving within 60 m of the door leaves us ~50 m short along the path.
+  const door = east(4.08, 1);
+  const lastWalk = makeLeg({ ...walkOn, to: { ...walkOn.to, lat: door.lat, lon: door.lon }, geometry: [pt(4), east(4, 1), door] });
+  const g = new TripGuide({ ...withWalk, legs: [walk, bus, lastWalk] }, 'Office');
+  g.update(pt(3.2), t0 + 680, none);
+  g.update(east(4, 0.5), t0 + 1100, none);
+  expect(g.update(east(4.03, 0.97), t0 + 1500, none).finished).toBe(true);
+  // Back at the start: a big backwards jump, so the position along the trip doesn't move.
+  const s = g.update(pt(-0.3), t0 + 1600, none);
+  expect(s.finished).toBe(true);
+  expect(s.title).toBe("You've arrived");
+});
