@@ -1,4 +1,5 @@
 import * as Notifications from 'expo-notifications';
+import { S } from '../i18n';
 import { Platform } from 'react-native';
 import { type Instant, nowSec } from '../data/time';
 
@@ -13,22 +14,22 @@ export function ensureChannels(): Promise<void> {
   if (Platform.OS !== 'android') return Promise.resolve();
   channelsReady ??= Promise.all([
     Notifications.setNotificationChannelAsync(CH_TRIP, {
-      name: 'Live directions',
+      name: S.notify.liveDirections,
       importance: Notifications.AndroidImportance.LOW,
-      description: 'Ongoing step-by-step trip guidance',
+      description: S.notify.liveDirectionsHint,
       showBadge: false,
     }),
     Notifications.setNotificationChannelAsync(CH_ALERT, {
-      name: 'Get-off & boarding alerts',
+      name: S.notify.alerts,
       importance: Notifications.AndroidImportance.HIGH,
-      description: "Alerts when your ride is arriving or it's time to get off",
+      description: S.notify.alertsHint,
       enableVibrate: true,
       vibrationPattern: [0, 350, 150, 350],
     }),
     Notifications.setNotificationChannelAsync(CH_REMIND, {
-      name: 'Departure reminders',
+      name: S.settings.reminders,
       importance: Notifications.AndroidImportance.HIGH,
-      description: 'Reminders to leave on time',
+      description: S.notify.remindersHint,
     }),
   ]).then(() => undefined);
   return channelsReady;

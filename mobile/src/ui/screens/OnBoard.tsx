@@ -3,7 +3,8 @@ import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, View } 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Freshness } from '../../data/freshness';
 import type { GeoPoint, Place, TransitMode } from '../../data/models';
-import { vehicle as vehicleWord } from '../../data/models';
+import { vehicleKind } from '../../data/models';
+import { S } from '../../i18n';
 import { type BoardCandidate, candidateKey } from '../../data/onBoard';
 import type { Instant } from '../../data/time';
 import { location } from '../../state/location';
@@ -18,9 +19,8 @@ import { lineColorOf, useTheme } from '../theme';
 
 /** "On bus 480 to Haifa", "On the train to Nahariya". */
 export function boardName(c: BoardCandidate): string {
-  const ride =
-    c.lineLabel.toLowerCase() === modeName(c.mode).toLowerCase() || c.lineLabel === '—' ? `the ${vehicleWord(c.mode)}` : `${vehicleWord(c.mode)} ${c.lineLabel}`;
-  return `On ${ride}` + (c.headsign.trim() !== '' ? ` to ${c.headsign}` : '');
+  const named = c.lineLabel.toLowerCase() !== modeName(c.mode).toLowerCase() && c.lineLabel !== '—';
+  return S.onBoard.ride(vehicleKind(c.mode), named ? c.lineLabel : null, c.headsign.trim() !== '' ? c.headsign : null);
 }
 
 /**
@@ -58,7 +58,7 @@ class OnBoardModel extends Model {
     this.changed();
     const p = (await location.current().catch(() => null)) ?? location.last;
     if (p == null) {
-      this.error = "Your location is needed to find the ride you're on.";
+      this.error = S.onBoard.needLocation;
       this.loading = false;
       this.changed();
       return;
@@ -68,7 +68,7 @@ class OnBoardModel extends Model {
       this.candidates = this.tidy(await repo.boardCandidates(p));
       void this.resolveLoose();
     } catch {
-      if (this.candidates.length === 0) this.error = "Couldn't look for rides. Check your connection.";
+      if (this.candidates.length === 0) this.error = S.onBoard.loadFailed;
     }
     this.loading = false;
     this.changed();
@@ -132,7 +132,7 @@ class OnBoardModel extends Model {
     this.changed();
     const p = this.here;
     if (tripId == null || p == null) {
-      this.error = `Couldn't find the timetable of ${modeName(c.mode)} ${c.lineLabel}. Try another, or refresh.`;
+      this.error = S.onBoard.noTimetable(`${modeName(c.mode)} ${c.lineLabel}`);
       this.changed();
       return;
     }
@@ -150,16 +150,16 @@ export function OnBoardScreen({ route }: NativeStackScreenProps<RootStack, 'OnBo
     <View style={{ flex: 1, backgroundColor: t.c.background }} testID="onboard_screen">
       <View style={[styles.header, { backgroundColor: t.c.surface, paddingTop: insets.top + 4 }]}>
         <View style={styles.titleRow}>
-          <IconButton icon="arrow-back" label="Back" onPress={nav.pop} />
+          <IconButton icon="arrow-back" label={S.common.back} onPress={nav.pop} />
           <View style={{ flex: 1 }}>
-            <Txt v="titleLarge">Which ride are you on?</Txt>
+            <Txt v="titleLarge">{S.onBoard.title}</Txt>
             <Txt v="bodySmall" color={t.x.subtle}>
-              Plan the rest of your trip from it
+              {S.onBoard.subtitle}
             </Txt>
           </View>
-          <IconButton icon="refresh" label="Refresh" onPress={() => void model.refresh()} disabled={model.loading} />
+          <IconButton icon="refresh" label={S.common.refresh} onPress={() => void model.refresh()} disabled={model.loading} />
         </View>
-        <SearchBox query={model.query} onQuery={model.setQuery} placeholder="Line number or destination" testID="onboard_filter" />
+        <SearchBox query={model.query} onQuery={model.setQuery} placeholder={S.onBoard.filter} testID="onboard_filter" />
         {model.modes.length > 1 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingTop: 10 }}>
             {model.modes.map((m) => (
@@ -169,15 +169,15 @@ export function OnBoardScreen({ route }: NativeStackScreenProps<RootStack, 'OnBo
         )}
       </View>
       {model.loading ? (
-        <LoadingBox text="Looking for rides around you…" />
+        <LoadingBox text={S.onBoard.looking} />
       ) : model.candidates.length === 0 && model.error != null ? (
-        <MessageBox title="Can't tell which ride" body={model.error} action="Try again" onAction={() => void model.refresh()} />
+        <MessageBox title={S.onBoard.cantTell} body={model.error} action={S.routes.tryAgain} onAction={() => void model.refresh()} />
       ) : model.candidates.length === 0 ? (
         <MessageBox
-          title="No rides found around you"
-          body="Rides show up here while you're on a bus or train, or at a stop one is due at."
+          title={S.onBoard.noneFound}
+          body={S.onBoard.noneFoundHint}
           icon="directions-bus"
-          action="Refresh"
+          action={S.common.refresh}
           onAction={() => void model.refresh()}
         />
       ) : (
@@ -194,7 +194,7 @@ export function OnBoardScreen({ route }: NativeStackScreenProps<RootStack, 'OnBo
               )}
               {shown.length === 0 && (
                 <Txt v="bodyMedium" color={t.x.subtle} style={{ padding: 20 }}>
-                  Nothing matches. Clear the filter to see every ride around you.
+                  {S.onBoard.noMatch}
                 </Txt>
               )}
             </>
@@ -202,7 +202,7 @@ export function OnBoardScreen({ route }: NativeStackScreenProps<RootStack, 'OnBo
           renderItem={({ item }) => <CandidateRow c={item} now={now} busy={model.picking === candidateKey(item)} onPress={() => void model.pick(item)} />}
           ListFooterComponent={
             <Txt v="labelSmall" color={t.x.subtle} style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12 + insets.bottom }}>
-              Live buses closest to you come first. After you pick one, the trip is planned from its next stop: stay on, or where to get off and change.
+              {S.onBoard.footer}
             </Txt>
           }
         />
@@ -219,19 +219,19 @@ function CandidateRow({ c, now, busy, onPress }: { c: BoardCandidate; now: Insta
       <LineBadge label={c.lineLabel} mode={c.mode} color={lineColorOf(c.mode, c.routeColor, c.agencyId, c.agencyName)} />
       <View style={{ flex: 1, marginLeft: 12 }}>
         <Txt v="bodyLarge" style={{ fontWeight: '500' }} numberOfLines={1}>
-          {c.headsign.trim() !== '' ? `to ${c.headsign}` : modeName(c.mode)}
+          {c.headsign.trim() !== '' ? S.common.toward(c.headsign) : modeName(c.mode)}
         </Txt>
         {v != null ? (
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <LiveSignal freshness={Freshness.of(v.recordedAt, now)} />
             <Txt v="bodySmall" color={freshnessColor(Freshness.of(v.recordedAt, now), t)} style={{ marginLeft: 4 }}>
-              {`Live · ${Fmt.distance(c.distanceM)} from you`}
+              {S.onBoard.liveFromYou(Fmt.distance(c.distanceM))}
             </Txt>
           </View>
         ) : (
           <Txt v="bodySmall" color={t.x.subtle} numberOfLines={1}>
-            {([c.stopName != null ? `Due at ${c.stopName}` : null, c.stopTime != null ? Fmt.time(c.stopTime) : null].filter((x) => x != null).join(' · ') ||
-              'Timetable') + ' · no live data'}
+            {([c.stopName != null ? S.onBoard.dueAt(c.stopName) : null, c.stopTime != null ? Fmt.time(c.stopTime) : null].filter((x) => x != null).join(' · ') ||
+              S.onBoard.timetable) + S.onBoard.noLiveData}
           </Txt>
         )}
       </View>

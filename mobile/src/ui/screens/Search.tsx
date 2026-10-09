@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type Place, type PlaceKind, placeKey } from '../../data/models';
+import { S } from '../../i18n';
 import { favoriteFor } from '../../data/userStore';
 import { location } from '../../state/location';
 import { repo } from '../../state/services';
@@ -130,36 +131,36 @@ export function SearchScreen({ route }: NativeStackScreenProps<RootStack, 'Searc
 
   const rows: Row[] = [];
   if (query.length >= 2) {
-    if (failed) rows.push({ kind: 'message', key: 'failed', title: "Couldn't search", body: 'Check your connection and try again.' });
+    if (failed) rows.push({ kind: 'message', key: 'failed', title: S.search.failed, body: S.search.failedHint });
     else if (!loading && results.length === 0) {
-      rows.push({ kind: 'message', key: 'none', title: 'No results', body: 'Try a street, city or place name — Hebrew or English.', icon: 'place' });
+      rows.push({ kind: 'message', key: 'none', title: S.search.noResults, body: S.search.noResultsHint, icon: 'place' });
     }
     results.forEach((p) => rows.push({ kind: 'place', key: `r${placeKey(p)}${p.kind}`, place: p, star: !single }));
   } else {
     if (!single) {
-      rows.push({ kind: 'action', key: 'here', title: 'Current location', icon: 'my-location', tint: true, onPress: () => pick(CURRENT_LOCATION) });
+      rows.push({ kind: 'action', key: 'here', title: S.common.currentLocation, icon: 'my-location', tint: true, onPress: () => pick(CURRENT_LOCATION) });
       if (editing === 'FROM' && data.settings.onBoard) {
         rows.push({
           kind: 'action',
           key: 'onboard',
-          title: 'On a bus or train now',
-          subtitle: 'Plan from the ride you\'re on',
+          title: S.search.onBoard,
+          subtitle: S.search.onBoardHint,
           icon: 'directions-bus',
           tint: true,
           onPress: () => nav.push('OnBoard', { onPicked: (p) => (nav.pop(), pick(p)) }),
         });
       }
     }
-    rows.push({ kind: 'action', key: 'map', title: 'Choose on map', icon: 'map', onPress: () => nav.push('PickOnMap', { onPicked: (p) => (nav.pop(), pick(p)) }) });
+    rows.push({ kind: 'action', key: 'map', title: S.search.chooseOnMap, icon: 'map', onPress: () => nav.push('PickOnMap', { onPicked: (p) => (nav.pop(), pick(p)) }) });
     if (!single) {
       const home = data.home;
       const work = data.work;
-      if (home) rows.push({ kind: 'action', key: 'home', title: 'Home', subtitle: home.name, icon: 'home', onPress: () => pick(home) });
-      if (work) rows.push({ kind: 'action', key: 'work', title: 'Work', subtitle: work.name, icon: 'work', onPress: () => pick(work) });
+      if (home) rows.push({ kind: 'action', key: 'home', title: S.settings.home, subtitle: home.name, icon: 'home', onPress: () => pick(home) });
+      if (work) rows.push({ kind: 'action', key: 'work', title: S.settings.work, subtitle: work.name, icon: 'work', onPress: () => pick(work) });
     }
-    if (data.favoritePlaces.length) rows.push({ kind: 'header', key: 'hf', text: 'Favorites' });
+    if (data.favoritePlaces.length) rows.push({ kind: 'header', key: 'hf', text: S.search.favorites });
     data.favoritePlaces.forEach((f) => rows.push({ kind: 'favorite', key: `f${placeKey(f.place)}`, place: f.place, label: f.label, icon: f.icon }));
-    if (data.recents.length) rows.push({ kind: 'header', key: 'hr', text: 'Recent' });
+    if (data.recents.length) rows.push({ kind: 'header', key: 'hr', text: S.home.recent });
     data.recents.forEach((p) => rows.push({ kind: 'place', key: `h${placeKey(p)}`, place: p, icon: 'history', star: !single }));
   }
 
@@ -210,8 +211,8 @@ export function SearchScreen({ route }: NativeStackScreenProps<RootStack, 'Searc
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: t.c.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={[styles.header, { backgroundColor: t.c.surface, paddingTop: insets.top + 4 }]}>
         <View style={styles.titleRow}>
-          <IconButton icon="arrow-back" label="Back" onPress={nav.pop} />
-          {(single || title != null) && <Txt v="titleMedium">{title ?? 'Search'}</Txt>}
+          <IconButton icon="arrow-back" label={S.common.back} onPress={nav.pop} />
+          {(single || title != null) && <Txt v="titleMedium">{title ?? S.search.title}</Txt>}
         </View>
         <View style={styles.fields}>
           <View style={{ flex: 1 }}>
@@ -219,7 +220,7 @@ export function SearchScreen({ route }: NativeStackScreenProps<RootStack, 'Searc
               <Field
                 inputRef={fromInput}
                 value={fromText}
-                placeholder={from?.kind === 'CURRENT_LOCATION' ? 'Current location' : 'Starting point'}
+                placeholder={from?.kind === 'CURRENT_LOCATION' ? S.common.currentLocation : S.search.startingPoint}
                 hollow
                 dot={t.c.onSurface}
                 active={editing === 'FROM'}
@@ -231,7 +232,7 @@ export function SearchScreen({ route }: NativeStackScreenProps<RootStack, 'Searc
             <Field
               inputRef={toInput}
               value={toText}
-              placeholder={single ? 'Search address or place' : to?.kind === 'CURRENT_LOCATION' ? 'Current location' : 'Where to?'}
+              placeholder={single ? S.search.addressOrPlace : to?.kind === 'CURRENT_LOCATION' ? S.common.currentLocation : S.home.whereTo}
               dot={t.c.primary}
               active={editing === 'TO'}
               testID="field_to"
@@ -239,7 +240,7 @@ export function SearchScreen({ route }: NativeStackScreenProps<RootStack, 'Searc
               onChange={(v) => onText('TO', v)}
             />
           </View>
-          {!single ? <IconButton icon="swap-vert" label="Swap" onPress={swap} testID="swap" /> : <View style={{ width: 12 }} />}
+          {!single ? <IconButton icon="swap-vert" label={S.common.swap} onPress={swap} testID="swap" /> : <View style={{ width: 12 }} />}
         </View>
       </View>
       <ProgressBar active={loading} />
@@ -296,7 +297,7 @@ function Field({
         testID={testID}
       />
       {active && value !== '' && (
-        <Pressable onPress={() => onChange('')} hitSlop={8} accessibilityLabel="Clear">
+        <Pressable onPress={() => onChange('')} hitSlop={8} accessibilityLabel={S.common.clear}>
           <Icon name="close" size={18} color={t.x.subtle} />
         </Pressable>
       )}

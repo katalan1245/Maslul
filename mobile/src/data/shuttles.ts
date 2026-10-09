@@ -3,14 +3,12 @@ import { type GeoPoint, type Leg, type Place, makeLeg, placePoint } from './mode
 import { type Instant, dayOfWeek, localDate, plusDays, startOfDay } from './time';
 import type { Shuttle } from './userStore';
 import { sortedBy } from './util';
+import { S } from '../i18n';
 
 /** Colour of shuttle rides, so they stand apart from the operators' lines. */
 const COLOR = 0xff7c3aed;
-const AGENCY = 'My shuttle';
 /** Walking this far or less to or from a shuttle stop needs no planning. */
 const SAME_PLACE_M = 80;
-
-const DAY_NAMES = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 /** "7:30, 08:15 17:00" → [450, 495, 1020]; null if any part isn't a time. */
 function parseTimes(text: string): number[] | null {
@@ -46,21 +44,20 @@ function missing(
   days: readonly number[],
 ): string[] {
   const out: string[] = [];
-  if (name.trim() === '') out.push('a name');
-  if (from == null) out.push('where it leaves from');
-  if (to == null) out.push('where it goes');
-  if (from != null && to != null && isNear(placePoint(from), placePoint(to))) out.push('two different stops');
-  if (parseTimes(times) == null) out.push(isEmptyTimes(times) ? 'departure times' : 'departure times like 07:30');
-  if (rideMinutes == null) out.push('how long the ride takes');
-  if (days.length === 0) out.push('a day it runs');
+  const n = S.shuttles.needs;
+  if (name.trim() === '') out.push(n.name);
+  if (from == null) out.push(n.from);
+  if (to == null) out.push(n.to);
+  if (from != null && to != null && isNear(placePoint(from), placePoint(to))) out.push(n.differentStops);
+  if (parseTimes(times) == null) out.push(isEmptyTimes(times) ? n.times : n.timesLike);
+  if (rideMinutes == null) out.push(n.ride);
+  if (days.length === 0) out.push(n.day);
   return out;
 }
 
 /** "Still needed: a name and how long the ride takes." */
 function missingText(m: string[]): string | null {
-  if (m.length === 0) return null;
-  if (m.length === 1) return `Still needed: ${m[0]}.`;
-  return `Still needed: ${m.slice(0, -1).join(', ')} and ${m[m.length - 1]}.`;
+  return m.length === 0 ? null : S.shuttles.stillNeeded(m);
 }
 
 const formatTime = (minutes: number) =>
@@ -71,7 +68,8 @@ const formatTimes = (times: number[]) => times.map(formatTime).join(', ');
 /** "Sun–Thu", "Every day", "Fri, Sat": runs of three days or more as a range. */
 function formatDays(days: readonly number[]): string {
   const set = new Set(days);
-  if (set.size === 7) return 'Every day';
+  if (set.size === 7) return S.shuttles.everyDay;
+  const names = S.shuttles.days;
   // Week order as in Israel: Sunday first.
   const runs: number[][] = [[]];
   for (const d of [7, 1, 2, 3, 4, 5, 6]) {
@@ -80,7 +78,7 @@ function formatDays(days: readonly number[]): string {
   }
   return runs
     .filter((r) => r.length)
-    .map((r) => (r.length >= 3 ? `${DAY_NAMES[r[0]]}–${DAY_NAMES[r[r.length - 1]]}` : r.map((d) => DAY_NAMES[d]).join(', ')))
+    .map((r) => (r.length >= 3 ? `${names[r[0]]}–${names[r[r.length - 1]]}` : r.map((d) => names[d]).join(', ')))
     .join(', ');
 }
 
@@ -115,7 +113,7 @@ function leg(s: Shuttle, departure: Instant, geometry: GeoPoint[] = []): Leg {
     headsign: s.to.name,
     routeShortName: s.name,
     routeColor: COLOR,
-    agencyName: AGENCY,
+    agencyName: S.shuttles.agency,
     geometry: geometry.length ? geometry : [placePoint(s.from), placePoint(s.to)],
     shuttleId: s.id,
   });
@@ -162,7 +160,6 @@ function relevant(shuttles: Shuttle[], origin: GeoPoint, dest: GeoPoint, max = 3
 
 export const ShuttleSchedule = {
   COLOR,
-  AGENCY,
   parseTimes,
   isEmptyTimes,
   missing,

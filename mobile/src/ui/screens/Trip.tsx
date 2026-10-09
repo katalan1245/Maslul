@@ -2,6 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useRef } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { S } from '../../i18n';
 import type { Progress } from '../../data/eta';
 import { progressFreshness } from '../../data/freshness';
 import { type Leg, type StopCall, callPoint, lineLabel, platformLabel, scheduledTime } from '../../data/models';
@@ -70,13 +71,13 @@ export function TripScreen({ route }: NativeStackScreenProps<RootStack, 'Trip'>)
   return (
     <View style={{ flex: 1, backgroundColor: t.c.background }} testID="trip_screen">
       <View style={[styles.header, { backgroundColor: t.c.surface, paddingTop: insets.top + 4 }]}>
-        <IconButton icon="arrow-back" label="Back" onPress={nav.pop} />
+        <IconButton icon="arrow-back" label={S.common.back} onPress={nav.pop} />
         {trip != null && (
           <>
             <LineBadge label={lineLabel(trip)} mode={trip.mode} color={lineColor(trip)} large />
             <View style={{ flex: 1, marginLeft: 10 }}>
               <Txt v="titleSmall" numberOfLines={1}>
-                {trip.headsign != null ? `to ${trip.headsign}` : ''}
+                {trip.headsign != null ? S.common.toward(trip.headsign) : ''}
               </Txt>
               {trip.agencyName != null && (
                 <Txt v="bodySmall" color={t.x.subtle}>
@@ -88,9 +89,9 @@ export function TripScreen({ route }: NativeStackScreenProps<RootStack, 'Trip'>)
         )}
       </View>
       {trip == null && model.loading ? (
-        <LoadingBox text="Loading trip…" />
+        <LoadingBox text={S.trip.loading} />
       ) : trip == null ? (
-        <MessageBox title="Trip unavailable" body="This trip isn't in the current timetable." />
+        <MessageBox title={S.trip.unavailable} body={S.trip.unavailableHint} />
       ) : (
         <TripBody model={model} trip={trip} boardStopId={boardStopId} alightStopId={alightStopId} now={now} bottomInset={insets.bottom} />
       )}
@@ -158,26 +159,26 @@ function TripBody({
         />
         {following && p != null && (
           <View style={{ position: 'absolute', top: 8, left: 8, right: 8 }}>
-            <LiveLocationCard title={`${lineLabel(trip)} live location`} recordedAt={p.vehicle.recordedAt} onClose={() => model.follow(false)} />
+            <LiveLocationCard title={S.detail.liveLocation(lineLabel(trip))} recordedAt={p.vehicle.recordedAt} onClose={() => model.follow(false)} />
           </View>
         )}
       </View>
-      <Pressable disabled={p == null} onPress={() => model.follow(true)} style={[styles.status, { backgroundColor: t.c.surface }]} accessibilityHint={p ? 'Show on map' : undefined} testID="trip_status">
+      <Pressable disabled={p == null} onPress={() => model.follow(true)} style={[styles.status, { backgroundColor: t.c.surface }]} accessibilityHint={p ? S.cards.showOnMap : undefined} testID="trip_status">
         {p != null ? (
           <>
             <LiveSignal freshness={progressFreshness(p, tick)} size={14} />
             <Txt v="bodyMedium" color={progressFreshness(p, tick) === 'LIVE' ? t.c.onSurface : t.x.stale} style={{ flex: 1, marginLeft: 8 }}>
-              {(progressFreshness(p, tick) === 'LIVE' ? 'Live · ' : 'Not updating · ') + Fmt.ago(p.vehicle.recordedAt, tick).replace(/^./, (c) => c.toLowerCase())}
+              {(progressFreshness(p, tick) === 'LIVE' ? S.trip.live : S.trip.notUpdating) + Fmt.ago(p.vehicle.recordedAt, tick).replace(/^./, (c) => c.toLowerCase())}
             </Txt>
-            {!model.following && <Icon name="my-location" size={20} color={t.c.primary} accessibilityLabel="Show on map" />}
+            {!model.following && <Icon name="my-location" size={20} color={t.c.primary} accessibilityLabel={S.cards.showOnMap} />}
           </>
         ) : (
           <Txt v="bodyMedium" color={t.x.subtle}>
             {start != null && start > nowSec()
-              ? `Departs ${Fmt.time(start)} · not started yet`
+              ? S.trip.departs(Fmt.time(start))
               : trip.end < now
-                ? 'This trip has ended'
-                : 'No live position for this trip — showing the timetable'}
+                ? S.trip.ended
+                : S.trip.noPosition}
           </Txt>
         )}
       </Pressable>
@@ -211,14 +212,14 @@ function TripBody({
                   {c.name}
                 </Txt>
                 <Txt v="bodySmall" color={highlight ? t.c.primary : t.x.subtle} style={{ paddingBottom: 10 }}>
-                  {[i === board ? 'Board here' : i === alight ? 'Get off here' : null, c.code != null ? `#${c.code}` : null, platformLabel(c)]
+                  {[i === board ? S.trip.boardHere : i === alight ? S.trip.getOffHere : null, c.code != null ? `#${c.code}` : null, platformLabel(c)]
                     .filter((x) => x != null)
                     .join(' · ')}
                 </Txt>
               </TimelineRow>
               {p != null && i === p.lastPassed && i < calls.length - 1 && (
                 <TimelineRow above={rail} below={rail} node="VEHICLE" nodeColor={color} nodeY={16}>
-                  <Txt v="labelMedium" color={readableAccent(color, t)} style={{ paddingVertical: 6 }}>{`${lineLabel(trip)} is here`}</Txt>
+                  <Txt v="labelMedium" color={readableAccent(color, t)} style={{ paddingVertical: 6 }}>{S.trip.isHere(lineLabel(trip))}</Txt>
                 </TimelineRow>
               )}
             </View>

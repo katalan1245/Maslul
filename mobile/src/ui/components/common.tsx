@@ -14,6 +14,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import type { TransitMode } from '../../data/models';
+import { S } from '../../i18n';
 import { ModeColors, alpha, contentColorOn, numeric, type, useTheme } from '../theme';
 import { Icon, type IconName, modeIcon } from './icons';
 
@@ -49,7 +50,7 @@ export function LineBadge({
   return (
     <View
       style={[s.badge, { backgroundColor: color, borderRadius: large ? 10 : 8, paddingHorizontal: large ? 10 : 7, paddingVertical: large ? 5 : 3 }]}
-      accessibilityLabel={`Line ${label}`}
+      accessibilityLabel={S.common.line(label)}
     >
       {showIcon && (
         <View style={{ marginRight: 3 }}>
@@ -449,7 +450,7 @@ export function SearchBox({
         testID={testID}
         accessibilityLabel={placeholder}
       />
-      {query !== '' && <IconButton icon="close" label="Clear" size={18} onPress={() => onQuery('')} />}
+      {query !== '' && <IconButton icon="close" label={S.common.clear} size={18} onPress={() => onQuery('')} />}
     </View>
   );
 }

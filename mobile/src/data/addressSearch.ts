@@ -1,4 +1,5 @@
 import { type Place, placeKey } from './models';
+import { S } from '../i18n';
 import { distinctBy } from './util';
 
 /**
@@ -76,7 +77,7 @@ function resolve(q: AddressQuery, candidates: Place[]): Place[] | null {
   const approx: Place = {
     ...street,
     name: `${street.name} ${num}`,
-    subtitle: [`Street · no. ${num} not on the map`, street.subtitle].filter((s) => s != null).join(' · '),
+    subtitle: [S.address.notOnMap(num), street.subtitle].filter((s) => s != null).join(' · '),
     kind: 'ADDRESS',
   };
   return distinctBy([approx, ...candidates], placeKey);

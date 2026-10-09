@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import { AppState, FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Combine } from '../../data/combine';
-import { type Itinerary, type Leg, itinDurationSec, placeKey, rideKey, walkSec } from '../../data/models';
+import { type Itinerary, type Leg, type Place, itinDurationSec, placeKey, rideKey, walkSec } from '../../data/models';
 import { DEFAULT_MAX_WALK_MINUTES, type Settings, favoriteFor } from '../../data/userStore';
+import { S } from '../../i18n';
 import { useUserData } from '../../state/store';
 import { Chip, IconButton, LoadingBox, MessageBox, ProgressBar, TextButton, Txt } from '../components/common';
 import { FAVORITE_GOLD, type FavoriteDraft, FavoriteDialogHost, draftFor } from '../components/favorites';
@@ -66,7 +67,7 @@ export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Route
       case 'earlier':
         return (
           <View style={{ alignItems: 'flex-start', paddingLeft: 8 }}>
-            <TextButton text="Earlier" onPress={() => model.more(false)} disabled={model.loadingMore} />
+            <TextButton text={S.routes.earlier} onPress={() => model.more(false)} disabled={model.loadingMore} />
           </View>
         );
       case 'walk':
@@ -76,22 +77,22 @@ export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Route
           <LoadingBox />
         ) : (
           <View style={{ alignItems: 'center' }}>
-            <TextButton text="Later routes" onPress={() => model.more(true)} />
+            <TextButton text={S.routes.later} onPress={() => model.more(true)} />
           </View>
         );
       case 'credit':
         return (
           <Txt v="labelSmall" color={t.x.subtle} style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: insets.bottom }}>
-            Timetables: Ministry of Transport GTFS via Transitous · Live: MOT SIRI via Open Bus
+            {S.routes.credit}
           </Txt>
         );
       case 'itin': {
         const itin = item.itin;
         const tags: string[] = [];
         // Ranked list: the first card is the recommended option.
-        if (itin === itineraries[0] && itineraries.length > 1) tags.push('Best');
-        if (itin.id === fastest) tags.push('Fastest');
-        if (itin.id === leastWalk && itin.id !== fastest) tags.push('Least walking');
+        if (itin === itineraries[0] && itineraries.length > 1) tags.push(S.routes.best);
+        if (itin.id === fastest) tags.push(S.routes.fastest);
+        if (itin.id === leastWalk && itin.id !== fastest) tags.push(S.routes.leastWalking);
         // Transfer slack as the rides are expected to run, late ones included.
         const risk = model.riskiest(expectedOf(itin));
         return (
@@ -117,13 +118,13 @@ export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Route
     <View style={{ flex: 1, backgroundColor: t.c.background }} testID="routes_screen">
       <View style={[styles.header, { backgroundColor: t.c.surface, paddingTop: insets.top + 4 }]}>
         <View style={styles.headerRow}>
-          <IconButton icon="arrow-back" label="Back" onPress={nav.pop} />
+          <IconButton icon="arrow-back" label={S.common.back} onPress={nav.pop} />
           <View style={[styles.endpoints, { backgroundColor: t.c.surfaceVariant }]}>
-            <EndpointRow text={model.from.name} hollow onPress={() => model.edit('FROM')} testID="routes_from" />
-            <EndpointRow text={model.to.name} onPress={() => model.edit('TO')} testID="routes_to" />
+            <EndpointRow text={nameOf(model.from)} hollow onPress={() => model.edit('FROM')} testID="routes_from" />
+            <EndpointRow text={nameOf(model.to)} onPress={() => model.edit('TO')} testID="routes_to" />
           </View>
           <View>
-            <IconButton icon="swap-vert" label="Swap" onPress={model.swap} disabled={model.onBoardTripId != null} />
+            <IconButton icon="swap-vert" label={S.routes.swap} onPress={model.swap} disabled={model.onBoardTripId != null} />
             <SaveMenu model={model} />
           </View>
         </View>
@@ -138,17 +139,17 @@ export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Route
             {(model.ride != null || (s.rides && model.onBoardTripId == null)) && (
               <Chip label={rideLabel(model.ride)} icon="directions-car" selected={model.ride != null} onPress={() => setShowRide(true)} maxWidth={200} testID="ride_chip" />
             )}
-            <Chip label="Options" icon="tune" selected={custom} onPress={() => setOptionsBefore(data.settings)} testID="options_chip" />
-            {s.wheelchair && <Chip label="Accessible" icon="accessible" selected onPress={() => setOptionsBefore(data.settings)} />}
+            <Chip label={S.routes.options} icon="tune" selected={custom} onPress={() => setOptionsBefore(data.settings)} testID="options_chip" />
+            {s.wheelchair && <Chip label={S.routes.accessible} icon="accessible" selected onPress={() => setOptionsBefore(data.settings)} />}
           </ScrollView>
-          <IconButton icon="refresh" label="Refresh" onPress={model.refreshNow} disabled={model.loading} testID="refresh_chip" />
+          <IconButton icon="refresh" label={S.routes.refresh} onPress={model.refreshNow} disabled={model.loading} testID="refresh_chip" />
         </View>
       </View>
       <ProgressBar active={model.refining && !model.loading} testID="refining" />
       {model.loading ? (
-        <LoadingBox text="Finding routes…" />
+        <LoadingBox text={S.routes.finding} />
       ) : model.error != null && model.itineraries.length === 0 && model.walkOnly == null ? (
-        <MessageBox title="No routes" body={model.error} action="Try again" onAction={() => model.search()} />
+        <MessageBox title={S.routes.noRoutes} body={model.error} action={S.routes.tryAgain} onAction={() => model.search()} />
       ) : (
         <FlatList
           ref={list}
@@ -211,11 +212,11 @@ function SaveMenu({ model }: { model: RoutesModel }) {
   const canFavorite = model.to.kind !== 'CURRENT_LOCATION';
   const favorite = favoriteFor(data, model.to);
   const items = [
-    ...(canSaveTrip ? [{ text: tripSaved ? 'Remove saved trip' : 'Save this trip', icon: 'swap-calls' as const, onPress: model.toggleSaved, testID: 'save_trip' }] : []),
+    ...(canSaveTrip ? [{ text: tripSaved ? S.routes.removeSavedTrip : S.routes.saveTrip, icon: 'swap-calls' as const, onPress: model.toggleSaved, testID: 'save_trip' }] : []),
     ...(canFavorite
       ? [
           {
-            text: favorite ? `Edit favorite “${favorite.label}”` : 'Save destination as favorite',
+            text: favorite ? S.routes.editFavorite(favorite.label) : S.routes.saveDestination,
             icon: favorite ? FAVORITE_ICON_NAMES[favorite.icon] : ('star-border' as const),
             onPress: () => setDraft(draftFor(model.to)),
             testID: 'save_destination',
@@ -226,12 +227,15 @@ function SaveMenu({ model }: { model: RoutesModel }) {
   const saved = tripSaved || favorite != null;
   return (
     <>
-      <IconButton icon={saved ? 'star' : 'star-border'} label="Save" color={saved ? FAVORITE_GOLD : t.c.onSurfaceVariant} onPress={() => setOpen(true)} testID="save_menu" />
+      <IconButton icon={saved ? 'star' : 'star-border'} label={S.common.save} color={saved ? FAVORITE_GOLD : t.c.onSurfaceVariant} onPress={() => setOpen(true)} testID="save_menu" />
       <Menu visible={open} onDismiss={() => setOpen(false)} items={items} />
       <FavoriteDialogHost draft={draft} onClose={() => setDraft(null)} />
     </>
   );
 }
+
+/** A saved "Current location" keeps the name it had in the language it was saved in. */
+const nameOf = (p: Place) => (p.kind === 'CURRENT_LOCATION' ? S.common.currentLocation : p.name);
 
 function EndpointRow({ text, hollow, onPress, testID }: { text: string; hollow?: boolean; onPress: () => void; testID: string }) {
   const t = useTheme();

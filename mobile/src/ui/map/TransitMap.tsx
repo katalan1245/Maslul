@@ -13,6 +13,7 @@ import { type MutableRefObject, useEffect, useMemo, useRef, useState } from 'rea
 import { Easing, type NativeSyntheticEvent, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import type { GeoPoint } from '../../data/models';
+import { S } from '../../i18n';
 import { contentColorOn, useTheme } from '../theme';
 import { DARK_STYLE, LIGHT_STYLE, mapStyle as loadMapStyle } from './darkStyle';
 import { angleDiff, useHeading } from './heading';
@@ -468,7 +469,7 @@ function Compass({ bearing, style, onPress }: { bearing: number; style: ViewStyl
   return (
     <Pressable
       onPress={onPress}
-      accessibilityLabel="Reset map to north"
+      accessibilityLabel={S.map.resetNorth}
       accessibilityRole="button"
       style={[styles.compass, { backgroundColor: t.c.surface }, style]}
       testID="map_compass"

@@ -14,8 +14,8 @@ import {
   platformLabel,
   rideKey,
   transitLegs,
-  vehicle,
-  vehiclesOf,
+  kindOf,
+  vehicleKind,
   walkMeters,
   walkSec,
 } from '../../data/models';
@@ -23,6 +23,7 @@ import type { Transfer } from '../../data/ranking';
 import { isWalking } from '../../data/ranking';
 import { RidePlanner, type RideOffer } from '../../data/rides';
 import { type Instant, type LocalDate, localDate, today } from '../../data/time';
+import { S } from '../../i18n';
 import { Fmt, modeName } from '../fmt';
 import { LineBadge, Pill, Txt } from '../components/common';
 import { Icon, type IconName, modeIcon } from '../components/icons';
@@ -42,18 +43,18 @@ export function rideName(l: Leg): string {
 }
 
 export function rideLabel(r: RideOffer | null): string {
-  if (r == null) return 'Ride';
-  return r.kind === 'toPlace' ? `Ride to ${r.dest.name}` : `${r.minutes} min ride`;
+  if (r == null) return S.cards.ride;
+  return r.kind === 'toPlace' ? S.cards.rideTo(r.dest.name) : S.cards.rideMinutes(r.minutes);
 }
 
 export function timeLabel(mode: TimeMode, t: Instant | null): string {
-  if (mode === 'NOW' || t == null) return 'Leave now';
+  if (mode === 'NOW' || t == null) return S.cards.leaveNow;
   const d: LocalDate = localDate(t);
   const day = d === today() ? '' : ` · ${Fmt.day(d)}`;
-  return (mode === 'DEPART' ? `Depart ${Fmt.time(t)}` : `Arrive by ${Fmt.time(t)}`) + day;
+  return (mode === 'DEPART' ? S.cards.depart(Fmt.time(t)) : S.cards.arriveBy(Fmt.time(t))) + day;
 }
 
-const transfersText = (n: number) => (n === 0 ? 'Direct' : `${n} transfer${n > 1 ? 's' : ''}`);
+const transfersText = (n: number) => (n === 0 ? S.cards.direct : S.cards.transfers(n));
 
 export function ItineraryCard({
   itin,
@@ -123,10 +124,10 @@ export function ItineraryCard({
             </View>
           )}
           <Txt v="titleLarge" num>
-            {`${Fmt.when(leaveAt, now)} – ${Fmt.time(endAt)}`}
+            {S.fmt.span(Fmt.when(leaveAt, now), Fmt.time(endAt))}
           </Txt>
           <Txt v="bodySmall" color={t.x.subtle}>
-            {[Fmt.duration(endAt - leaveAt), transfersText(itin.transfers), walkSec(itin) >= 60 ? `${Fmt.duration(walkSec(itin))} walk` : null]
+            {[Fmt.duration(endAt - leaveAt), transfersText(itin.transfers), walkSec(itin) >= 60 ? S.cards.walkTotal(Fmt.duration(walkSec(itin))) : null]
               .filter((x) => x != null)
               .join(' · ')}
           </Txt>
@@ -158,28 +159,30 @@ export function ItineraryCard({
           icon="directions-car"
           title={
             first == null && RidePlanner.dropOffName(itin) == null
-              ? `Ride all the way · ${Fmt.duration(legDurationSec(car))}`
-              : `Get dropped off ${RidePlanner.dropOffName(itin) != null ? `near ${RidePlanner.dropOffName(itin)}` : 'on the way'}`
+              ? S.cards.rideAllTheWay(Fmt.duration(legDurationSec(car)))
+              : RidePlanner.dropOffName(itin) != null
+                ? S.cards.dropOffNear(RidePlanner.dropOffName(itin)!)
+                : S.cards.dropOffOnTheWay
           }
-          detail={`${Fmt.time(car.end)} · ${Fmt.duration(legDurationSec(car))} by car`}
+          detail={S.cards.byCar(Fmt.time(car.end), Fmt.duration(legDurationSec(car)))}
         />
       )}
       {onBoard && first != null &&
         (stayOn ? (
           <HintLine
             icon={modeIcon(first.mode)}
-            title={`Stay on until ${first.to.name}`}
+            title={S.cards.stayOnUntil(first.to.name)}
             detail={
-              `Get off ${Fmt.time(Combine.arrives(first, live))}` +
-              (transitLegs(itin)[1] ? ` · then ${rideName(transitLegs(itin)[1])}` : platformLabel(first.to) ? ` · ${platformLabel(first.to)}` : '')
+              S.cards.getOffAt(Fmt.time(Combine.arrives(first, live))) +
+              (transitLegs(itin)[1] ? ` · ${S.cards.then(rideName(transitLegs(itin)[1]))}` : platformLabel(first.to) ? ` · ${platformLabel(first.to)}` : '')
             }
           />
         ) : (
           // Where the next ride boards (it may be a stop next to the one you get off at), at its expected time.
           <HintLine
             icon="place"
-            title="Get off at the next stop"
-            detail={`Then ${rideName(first)} from ${first.from.name} at ${Fmt.time(expected.legs[itin.legs.indexOf(first)]?.start ?? first.start)}`}
+            title={S.cards.getOffNext}
+            detail={S.cards.thenFrom(rideName(first), first.from.name, Fmt.time(expected.legs[itin.legs.indexOf(first)]?.start ?? first.start))}
           />
         ))}
       {first != null && !strips.includes(first) && !onBoard && (
@@ -219,7 +222,7 @@ export function ItineraryCard({
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
           <Icon name="warning-amber" size={16} color="#F5A524" />
           <Txt v="bodySmall" color={t.x.subtle} style={{ marginLeft: 6 }}>
-            Service alert on this route
+            {S.cards.serviceAlert}
           </Txt>
         </View>
       )}
@@ -301,11 +304,11 @@ export function RideOptions({
   const options = all.slice(0, SHOWN_RIDES);
   const more = all.length - options.length;
   // The user's own shuttle reads as one, not as a bus.
-  const what = lines > 1 ? `${lines} lines` : options.every(([o]) => o.shuttleId != null) ? 'Next shuttles' : `Next ${vehiclesOf(options.map(([o]) => o))}`;
+  const what = lines > 1 ? S.cards.lines(lines) : options.every(([o]) => o.shuttleId != null) ? S.cards.nextShuttles : S.cards.next(kindOf(options.map(([o]) => o)));
   return (
     <View style={[styles.boxColumn, { backgroundColor: t.c.surfaceVariant }]}>
       <Txt v="bodySmall" color={t.x.subtle} numberOfLines={1}>
-        {`${what} from ${leg.from.name}`}
+        {S.cards.from(what, leg.from.name)}
       </Txt>
       <View style={styles.flow}>
         {options.map(([o, c]) => {
@@ -326,7 +329,7 @@ export function RideOptions({
               </Txt>
               {hurry(o) && (
                 <Txt v="labelMedium" color={t.x.late} style={{ marginLeft: 4, fontWeight: '600' }}>
-                  Hurry
+                  {S.cards.hurry}
                 </Txt>
               )}
             </View>
@@ -334,7 +337,7 @@ export function RideOptions({
         })}
         {more > 0 && (
           <Txt v="labelLarge" color={t.x.subtle} testID="more_rides">
-            {`+${more} more`}
+            {S.cards.more(more)}
           </Txt>
         )}
       </View>
@@ -356,12 +359,11 @@ export function TransferWarning({ t: tr, missed }: { t: Transfer; missed?: Leg |
       </View>
       <View style={{ marginLeft: 6, flex: 1 }}>
         <Txt v="bodySmall" color={t.x.subtle}>
-          {`Tight transfer · ${min < 1 ? 'under 1 min' : `${min} min`} to catch ${lineLabel(tr.next)}` +
-            (isWalking(tr) ? ` after a ${Fmt.distance(tr.walkM)} walk` : '')}
+          {S.cards.tightTransfer(min, lineLabel(tr.next)) + (isWalking(tr) ? S.cards.afterWalk(Fmt.distance(tr.walkM)) : '')}
         </Txt>
         {missed != null && (
           <Txt v="bodySmall" color={t.x.subtle}>
-            {`If missed, next ${lineLabel(missed)} at ${Fmt.time(missed.start)} (+${Fmt.duration(missed.start - tr.next.start)})`}
+            {S.cards.ifMissed(lineLabel(missed), Fmt.time(missed.start), Fmt.duration(missed.start - tr.next.start))}
           </Txt>
         )}
       </View>
@@ -377,31 +379,31 @@ function LeaveIn({ leaveAt, now, freshness, hurry, mode }: { leaveAt: Instant; n
       {hurry && min <= 0 ? (
         <>
           <Txt v="titleMedium" color={t.x.late}>
-            Hurry
+            {S.cards.hurry}
           </Txt>
-          <Txt v="labelSmall" color={t.x.subtle}>{`${vehicle(mode)} is close`}</Txt>
+          <Txt v="labelSmall" color={t.x.subtle}>{S.cards.isClose(vehicleKind(mode))}</Txt>
         </>
       ) : min <= 0 && min > -2 ? (
         <Txt v="titleMedium" color={t.x.live}>
-          Go now
+          {S.cards.goNow}
         </Txt>
       ) : min >= 1 && min <= 90 ? (
         <>
           <Txt v="labelSmall" color={t.x.subtle}>
-            leave in
+            {S.cards.leaveIn}
           </Txt>
           <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
             <Txt v="headlineSmall" num color={freshnessColor(freshness, t)}>
               {String(min)}
             </Txt>
             <Txt v="labelMedium" style={{ marginBottom: 3 }}>
-              {' min'}
+              {S.cards.minUnit}
             </Txt>
           </View>
         </>
       ) : min < 0 ? (
         <Txt v="labelMedium" color={t.x.subtle}>
-          Missed
+          {S.cards.missed}
         </Txt>
       ) : null}
     </View>
@@ -432,8 +434,8 @@ export function LiveLine({
   let body;
   if (live?.status === 'LIVE') {
     const f = callFreshness(live, now);
-    const eta = bestTime(live) - now < 45 ? 'is arriving' : `in ${Fmt.relative(bestTime(live), now)}`;
-    const away = live.stopsAway != null && live.stopsAway >= 1 && live.stopsAway <= 30 ? ` · ${live.stopsAway} stop${live.stopsAway > 1 ? 's' : ''} away` : '';
+    const eta = bestTime(live) - now < 45 ? S.cards.arriving(vehicleKind(mode)) : S.cards.inTime(Fmt.relative(bestTime(live), now));
+    const away = live.stopsAway != null && live.stopsAway >= 1 && live.stopsAway <= 30 ? ` · ${S.cards.stopsAway(live.stopsAway)}` : '';
     body = (
       <>
         <LiveSignal freshness={f} size={14} />
@@ -443,7 +445,7 @@ export function LiveLine({
             <Text style={{ color: freshnessColor(f, t), fontWeight: '600' }}>{eta}</Text>
             {away}
           </Text>
-          <Txt v="bodySmall" color={t.x.subtle} numberOfLines={1}>{`at ${stop}`}</Txt>
+          <Txt v="bodySmall" color={t.x.subtle} numberOfLines={1}>{S.cards.atStop(stop)}</Txt>
         </View>
       </>
     );
@@ -452,7 +454,7 @@ export function LiveLine({
       <>
         <Icon name="warning-amber" size={16} color={t.x.late} />
         <Txt v="bodyMedium" color={t.x.late} numberOfLines={2} style={{ flex: 1, marginLeft: 8 }}>
-          {`${label} has already passed ${stop}`}
+          {S.cards.alreadyPassed(label, stop)}
         </Txt>
       </>
     );
@@ -461,9 +463,9 @@ export function LiveLine({
       <>
         <Icon name={modeIcon(mode)} size={16} color={t.x.subtle} />
         <View style={{ flex: 1, marginLeft: 8 }}>
-          <Txt v="bodyMedium" numberOfLines={1}>{`${label} from ${stop}`}</Txt>
+          <Txt v="bodyMedium" numberOfLines={1}>{S.cards.from(label, stop)}</Txt>
           <Txt v="bodySmall" color={t.x.subtle}>
-            {`Scheduled ${Fmt.time(scheduled)}` + (live?.status === 'UNTRACKED' ? ' · no live data' : '')}
+            {S.cards.scheduled(Fmt.time(scheduled)) + (live?.status === 'UNTRACKED' ? S.cards.noLiveData : '')}
           </Txt>
         </View>
       </>
@@ -473,7 +475,7 @@ export function LiveLine({
     <Pressable
       onPress={tappable ? onPress : undefined}
       disabled={!tappable}
-      accessibilityHint={tappable ? 'Show on map' : undefined}
+      accessibilityHint={tappable ? S.cards.showOnMap : undefined}
       style={[styles.box, { backgroundColor: t.c.surfaceVariant }]}
       testID="live_line"
     >
@@ -490,12 +492,12 @@ export function WalkOnlyCard({ itin, now, onPress }: { itin: Itinerary; now: Ins
         <Icon name="directions-walk" color={t.c.onSurface} />
       </View>
       <View style={{ flex: 1, marginLeft: 14 }}>
-        <Txt v="titleMedium">{`Walk ${Fmt.duration(itinDurationSec(itin))}`}</Txt>
+        <Txt v="titleMedium">{S.cards.walk(Fmt.duration(itinDurationSec(itin)))}</Txt>
         <Txt v="bodySmall" color={t.x.subtle}>
           {Fmt.distance(walkMeters(itin))}
         </Txt>
       </View>
-      <Txt v="bodyMedium" style={numeric}>{`Arrive ${Fmt.time(now + itinDurationSec(itin))}`}</Txt>
+      <Txt v="bodyMedium" style={numeric}>{S.cards.arrive(Fmt.time(now + itinDurationSec(itin)))}</Txt>
     </Pressable>
   );
 }

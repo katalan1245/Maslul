@@ -4,6 +4,7 @@ import Animated, { type SharedValue, useAnimatedStyle } from 'react-native-reani
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GeoMath } from '../../data/geo';
 import { type GeoPoint, type Place, placeKey, placePoint } from '../../data/models';
+import { S } from '../../i18n';
 import type { SavedTrip, UserData } from '../../data/userStore';
 import { DEFAULT_LOCATION, location, useLastLocation } from '../../state/location';
 import { repo } from '../../state/services';
@@ -28,7 +29,7 @@ export function pickHomeOrWork(isHome: boolean) {
     to: null,
     editing: 'TO',
     single: true,
-    title: isHome ? 'Set home' : 'Set work',
+    title: isHome ? S.home.setHome : S.home.setWork,
     onDone: (p) => {
       if (isHome) store.setHome(p);
       else store.setWork(p);
@@ -98,7 +99,7 @@ export function NavHomeScreen() {
       to: null,
       editing: 'TO',
       single: true,
-      title: 'Add favorite',
+      title: S.settings.addFavorite,
       onDone: (p) => {
         nav.pop();
         setDraft(draftFor(p));
@@ -131,7 +132,7 @@ export function NavHomeScreen() {
               const s = stops.find((x) => x.stopId === id);
               if (s) nav.push('Stop', { place: s });
             }}
-            onLongPress={(p) => planTo({ name: 'Dropped pin', lat: p.lat, lon: p.lon, kind: 'PIN' })}
+            onLongPress={(p) => planTo({ name: S.home.droppedPin, lat: p.lat, lon: p.lon, kind: 'PIN' })}
             onCameraIdle={onCameraIdle}
             compassStyle={{ top: insets.top + 84, right: 16 }}
           />
@@ -143,9 +144,9 @@ export function NavHomeScreen() {
               <Pressable onPress={openSearch} style={[styles.searchCard, { backgroundColor: t.c.surface }]} accessibilityRole="search" testID="home_search">
                 <Icon name="search" color={t.c.primary} />
                 <Txt v="titleMedium" color={t.c.onSurfaceVariant} style={{ flex: 1, marginLeft: 12 }}>
-                  Where to?
+                  {S.home.whereTo}
                 </Txt>
-                <IconButton icon="settings" label="Settings" onPress={() => nav.push('Settings')} testID="settings_button" />
+                <IconButton icon="settings" label={S.settings.title} onPress={() => nav.push('Settings')} testID="settings_button" />
               </Pressable>
             </View>
             <SheetButtons
@@ -166,7 +167,7 @@ export function NavHomeScreen() {
               >
                 <Icon name="expand-less" color={t.c.onSurface} />
                 <Txt v="labelLarge" style={{ marginLeft: 8 }}>
-                  Places
+                  {S.settings.places}
                 </Txt>
               </Pressable>
             )}
@@ -214,14 +215,14 @@ function SheetButtons({
         <Pressable onPress={onBoard} style={[styles.onBoard, { backgroundColor: t.c.surface }]} testID="on_board" accessibilityRole="button">
           <Icon name="directions-bus" size={18} color={t.c.primary} />
           <Txt v="labelLarge" style={{ marginLeft: 6 }}>
-            On a bus?
+            {S.home.onABus}
           </Txt>
         </Pressable>
       )}
       <View style={{ flex: 1 }} />
-      <SmallFab icon={hidden ? 'fullscreen-exit' : 'fullscreen'} label={hidden ? 'Show places' : 'Expand map'} onPress={onExpand} testID="home_map_expand" />
+      <SmallFab icon={hidden ? 'fullscreen-exit' : 'fullscreen'} label={hidden ? S.home.showPlaces : S.detail.expandMap} onPress={onExpand} testID="home_map_expand" />
       <View style={{ width: 8 }} />
-      <SmallFab icon="my-location" label="My location" color={t.c.primary} onPress={onMyLocation} testID="home_my_location" />
+      <SmallFab icon="my-location" label={S.common.myLocation} color={t.c.primary} onPress={onMyLocation} testID="home_my_location" />
     </Animated.View>
   );
 }
@@ -242,15 +243,15 @@ function HomePlaces({ data, onEdit, onAddFavorite }: { data: UserData; onEdit: (
       {/* Home and Work share the width; labelled favourites scroll beneath them. */}
       <View style={styles.quickRow}>
         <QuickPlace
-          title="Home"
-          subtitle={data.home?.name ?? 'Set location'}
+          title={S.settings.home}
+          subtitle={data.home?.name ?? S.home.setLocation}
           icon="home"
           onPress={() => (data.home ? planTo(data.home) : pickHomeOrWork(true))}
           onEdit={() => pickHomeOrWork(true)}
         />
         <QuickPlace
-          title="Work"
-          subtitle={data.work?.name ?? 'Set location'}
+          title={S.settings.work}
+          subtitle={data.work?.name ?? S.home.setLocation}
           icon="work"
           onPress={() => (data.work ? planTo(data.work) : pickHomeOrWork(false))}
           onEdit={() => pickHomeOrWork(false)}
@@ -262,7 +263,7 @@ function HomePlaces({ data, onEdit, onAddFavorite }: { data: UserData; onEdit: (
             key={placeKey(f.place)}
             onPress={() => planTo(f.place)}
             onLongPress={() => onEdit(f.place)}
-            accessibilityHint="Long-press to edit"
+            accessibilityHint={S.home.longPressToEdit}
             style={[styles.favChip, { backgroundColor: t.c.surfaceVariant }]}
           >
             <Icon name={FAVORITE_ICON_NAMES[f.icon]} size={18} color={t.c.primary} />
@@ -274,19 +275,19 @@ function HomePlaces({ data, onEdit, onAddFavorite }: { data: UserData; onEdit: (
         <Pressable onPress={onAddFavorite} style={[styles.addChip, { borderColor: t.c.outlineVariant }]} testID="add_favorite" accessibilityRole="button">
           <Icon name="add" size={18} color={t.c.primary} />
           <Txt v="labelLarge" color={t.c.primary} style={{ marginLeft: 6 }}>
-            {data.favoritePlaces.length === 0 ? 'Add favorite place' : 'Add'}
+            {data.favoritePlaces.length === 0 ? S.settings.addFavoritePlace : S.home.add}
           </Txt>
         </Pressable>
       </ScrollView>
       {data.savedTrips.length > 0 && (
         <>
-          <SectionHeader text="Saved trips" />
+          <SectionHeader text={S.home.savedTrips} />
           {data.savedTrips.map((s) => (
             <SavedTripRow key={placeKey(s.from) + placeKey(s.to)} trip={s} />
           ))}
         </>
       )}
-      <SectionHeader text="Recent" />
+      <SectionHeader text={S.home.recent} />
       {data.recents.length === 0 && (
         <Txt v="bodyMedium" color={t.x.subtle} style={{ paddingHorizontal: 20, paddingVertical: 8 }}>
           Search for a place, or long-press the map to get directions there.
@@ -298,7 +299,7 @@ function HomePlaces({ data, onEdit, onAddFavorite }: { data: UserData; onEdit: (
           title={p.name}
           subtitle={p.subtitle}
           icon="history"
-          trailing={<IconButton icon="close" label="Remove" size={18} color={t.x.subtle} onPress={() => store.removeRecent(p)} />}
+          trailing={<IconButton icon="close" label={S.home.remove} size={18} color={t.x.subtle} onPress={() => store.removeRecent(p)} />}
           onLongPress={() => onEdit(p)}
           onPress={() => planTo(p)}
         />
@@ -320,7 +321,7 @@ function QuickPlace({ title, subtitle, icon, onPress, onEdit }: { title: string;
           {subtitle}
         </Txt>
       </View>
-      <IconButton icon="edit" label={`Edit ${title}`} size={16} color={t.x.subtle} onPress={onEdit} />
+      <IconButton icon="edit" label={S.home.edit(title)} size={16} color={t.x.subtle} onPress={onEdit} />
     </Pressable>
   );
 }
@@ -330,7 +331,7 @@ function SavedTripRow({ trip }: { trip: SavedTrip }) {
   return (
     <PlaceRow
       title={trip.label ?? trip.to.name}
-      subtitle={`From ${trip.from.name}`}
+      subtitle={S.home.fromPlace(trip.from.kind === 'CURRENT_LOCATION' ? S.common.currentLocation : trip.from.name)}
       icon="swap-calls"
       iconTint={t.c.primary}
       onPress={() => planTo(trip.to, trip.from)}
