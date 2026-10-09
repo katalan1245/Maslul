@@ -110,13 +110,21 @@ struct SiriParser {
     return Double(s)
   }
 
-  private func time(_ v: Any?) -> Int64? {
-    guard let s = str(v) else { return nil }
+  // Made once: a snapshot has thousands of times, and ISO8601DateFormatter (thread-safe) is costly to create.
+  private static let plain: ISO8601DateFormatter = {
     let f = ISO8601DateFormatter()
     f.formatOptions = [.withInternetDateTime]
-    if let d = f.date(from: s) { return Int64(d.timeIntervalSince1970.rounded(.down)) }
+    return f
+  }()
+  private static let fractional: ISO8601DateFormatter = {
+    let f = ISO8601DateFormatter()
     f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    return f.date(from: s).map { Int64($0.timeIntervalSince1970.rounded(.down)) }
+    return f
+  }()
+
+  private func time(_ v: Any?) -> Int64? {
+    guard let s = str(v), let d = SiriParser.plain.date(from: s) ?? SiriParser.fractional.date(from: s) else { return nil }
+    return Int64(d.timeIntervalSince1970.rounded(.down))
   }
 
   private func visit(_ v: Any, _ c: Columns) {
