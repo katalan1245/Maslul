@@ -1,5 +1,5 @@
 import type { TransitMode } from '../data/models';
-import { type Instant, type LocalDate, dayOfWeek, localParts, plusDays, today } from '../data/time';
+import { type Instant, type LocalDate, dayOfWeek, localDate, localParts, plusDays, today } from '../data/time';
 import { fixed } from '../data/util';
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
@@ -13,12 +13,18 @@ export const Fmt = {
     return `${pad2(p.hour)}:${pad2(p.minute)}`;
   },
 
-  /** "Now", "4 min", or "21:40" once more than an hour away. */
+  /** "18:13" today, "Sat 18:13" on another day (in Israel time): after the last bus, plans and reminders are for tomorrow. */
+  when(t: Instant, now: Instant): string {
+    const date = localDate(t);
+    return date === localDate(now) ? Fmt.time(t) : `${DAYS[dayOfWeek(date)]} ${Fmt.time(t)}`;
+  },
+
+  /** "Now", "4 min", or "21:40" ("Sat 18:15" on another day) once more than an hour away. */
   relative(t: Instant, now: Instant): string {
     const sec = t - now;
     if (sec < 45) return 'Now';
     if (sec < 60 * 60) return `${Math.trunc((sec + 30) / 60)} min`;
-    return Fmt.time(t);
+    return Fmt.when(t, now);
   },
 
   /** "Updated 30s ago", "Updated 2 min ago" — how old a live position is. */

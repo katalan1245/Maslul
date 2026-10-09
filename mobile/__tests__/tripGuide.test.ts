@@ -49,6 +49,13 @@ test('boarding alert when ride is close', () => {
   expect(s.alertKey).toBe('board-1');
 });
 
+test('a bus more than an hour away is given as a time, with its day if not today', () => {
+  // The evening before (Sat 19:05 for Sun 21:05): after the last bus, the planner returns tomorrow's.
+  const s = new TripGuide(itin, 'Home').update(pt(-0.3), t0 + 300 - 26 * 3600, none);
+  expect(s.text).toBe('Bus 5 at Sun 21:05');
+  expect(new TripGuide(itin, 'Home').update(pt(-0.3), t0 + 300 - 2 * 3600, none).text).toBe('Bus 5 at 21:05');
+});
+
 test('ignores GPS jumps backwards', () => {
   const g = new TripGuide(itin, 'Home');
   g.update(pt(3.2), t0 + 680, none);
