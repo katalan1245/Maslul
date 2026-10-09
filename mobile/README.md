@@ -34,6 +34,7 @@ The app has its own native module (`modules/maslul-native`), so it can't run in 
 | `npm run test:live` | Smoke tests against the real services: Transitous, Stride, SIRI snapshots, Photon and Nominatim. `RECORD=1` refreshes `fixtures/` |
 | `npm run typecheck` | Strict `tsc` |
 | `npm run prebuild` | Generates `android/` and `ios/` from `app.config.ts` (git-ignored, recreated on every build) |
+| `npm run build:test-apk` | Standalone release APK (JS bundled, no Metro) to `../test-artifacts/maslul-latest.apk`, with `build-info.txt` (commit, app id, time, configuration). `test-artifacts/` is git-ignored |
 | `npm run android` / `npm run ios` | Builds a debug app and installs it on a connected device or emulator |
 | `npm start` | Metro for an installed development build |
 | `maestro test .maestro/` | Device flows mirroring the Kotlin app's AppFlowTest (needs [Maestro](https://maestro.dev) and the app installed) |

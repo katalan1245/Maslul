@@ -42,7 +42,9 @@ cd android && ./gradlew assembleDebug                         # app/build/output
 cd mobile/ios && pod install && cd .. && npm run ios          # on the Mac
 ```
 
-On the emulator: `adb install -r android/app/build/outputs/apk/debug/app-debug.apk`, then `npm start` for Metro (the debug build loads its JS from Metro). The release APK runs on its own.
+For the emulator session: `npm run build:test-apk` puts the standalone APK in `/workspace/test-artifacts/maslul-latest.apk` with `build-info.txt`; the Kotlin app for the upgrade test is copied there as `maslul-kotlin-v4.apk`. Both are signed with the same debug key.
+
+Or by hand: `adb install -r android/app/build/outputs/apk/debug/app-debug.apk`, then `npm start` for Metro (the debug build loads its JS from Metro). The release APK runs on its own.
 
 ## Phase C: device checklist
 
