@@ -23,7 +23,7 @@ Both APKs are signed with the same key, so the new one installs over the old one
 - Don't modify, rebuild or re-sign the APKs, and don't push anything anywhere.
 - Take a screenshot at every check, named after the check (e.g. `R1-home-work.png`), and keep it in `evidence/`.
 - A failure is a finding: record it and go on. Don't stop at the first failure.
-- A missing file or tool only blocks the checks that need it. Only R9 needs `maestro/`, and only R0 and R1 need `maslul-kotlin-v4.apk`. Mark those **couldn't test** and do every other check. Never end the run because one thing is missing.
+- A missing file or tool only blocks the checks that need it. Only R9 needs `maestro/`; this round no check needs `maslul-kotlin-v4.apk`. Mark those **couldn't test** and do every other check. Never end the run because one thing is missing.
 - If a check is impossible, mark it **couldn't test** with the exact reason. Never skip silently.
 - Keep what you **saw** separate from what you **guess** about the cause.
 - The emulator was unstable last round: the launcher restarted, Play services crashed, and Android soft-restarted. If something odd happens right after one of those, repeat the check once before you report it, and say in the report whether it happened again.
@@ -38,7 +38,7 @@ Use `adb` from a shell if you have one. If a command isn't available to you, mar
 | Lock / unlock the screen | `adb shell input keyevent KEYCODE_SLEEP`, then `adb shell input keyevent KEYCODE_WAKEUP` and swipe up |
 | Recents | `adb shell input keyevent KEYCODE_APP_SWITCH`, then swipe Maslul's card up |
 | Move the location | `adb emu geo fix <longitude> <latitude>`, repeated every few seconds along the route |
-| Find an element with no visible text | `adb shell uiautomator dump /sdcard/ui.xml && adb pull /sdcard/ui.xml`. Ids include `settings_button`, `my_shuttles`, `add_shuttle`, `rides_switch`, `on_board_switch`, `on_board` |
+| Find an element with no visible text | `adb shell uiautomator dump /sdcard/ui.xml && adb pull /sdcard/ui.xml`. Ids include `settings_button`, `my_shuttles`, `add_shuttle`, `rides_switch`, `on_board_switch`, `on_board`, `home_map_expand`, `shuttle_delete` |
 
 ## Set up
 
@@ -48,109 +48,65 @@ Use `adb` from a shell if you have one. If a command isn't available to you, mar
 2. Location in Tel Aviv: `adb emu geo fix 34.7818 32.0853`.
 3. **Buses don't run on Shabbat** (Friday evening to Saturday evening, about 19:00 Israel time) or at night. Mark the checks that need running buses **couldn't test (Shabbat)** if that's the case; don't count them as failures.
 
-## Already reported: don't re-test these on the new app (R0 compares them on the old one)
+## Known and not being changed (don't report again)
 
-These are being fixed. Don't spend time on them. If you happen to see one behave differently (worse, or with a crash), add a note.
-
-1. Times are mixed between the device's time zone and Israel time when the device isn't on Israel time (arrival times, time picker, "Bus in 1276 min").
-2. A second trip started right after one ends says "You've arrived" at once and fires the arrival alert again.
-3. Trip steps don't advance: "Walk to…" stays until it jumps to "arrived".
-4. The line timetable shows yesterday's date.
-5. "Leave now" lists routes that already left as Best/Fastest.
-6. The map is blank for up to 30 s after switching back to Navigate.
-7. The notification permission is only asked on the first trip Start, which delayed that trip's notification.
-8. Seen once each, not reproduced: the Home sheet vanished with the map buttons behind the tab bar; Maslul left the screen right after granting location.
+1. The line timetable shows yesterday's date early in the day, while Stride hasn't loaded today's feed yet. The old app does the same.
+2. "Leave now" late in the evening lists tomorrow's routes, because tonight's buses are over. The old app does the same; the new one now puts the day in front of the time.
+3. The notification permission is asked on the first trip Start, as in the old app.
+4. Line search "1" lists lines from all over the country in Stride's order, as in the old app.
+5. On the stop screen, the Directions button covers a row until you scroll to the end; the list leaves room below its last row.
+6. The low-memory killer on a 2 GB emulator closes Maslul (and Maestro). That's the environment, not the app.
 
 ## Already passed: no need to repeat
 
-- About credits and licence.
-- Every tab opens without a crash.
-- Back button.
-- Theme, walking speed and rail preference persist (new app).
-- Trip planning to "Dizengoff Center".
-- Map tiles in light and dark, the location dot, Hebrew and English street names.
-- Line 480's screen.
-- Trip notification with progress bar and "End trip".
-- Trip survives going to the background.
-- Arrival alert fires once.
-- Share route.
+- Upgrade from the old app (all of R1 last round) and everything listed in the last report as pass: tabs, Back, theme and settings persistence, planning, line 480, trip notification and "End trip", trip with the screen locked and after Recents, arrival alert once, Share, shuttles saved/edited/deleted, About credits, dark theme on every screen, Hebrew text.
 
 ## What to test now, in this order
 
-Number your findings and checks R1, R2… as below.
+Round 3 re-tests what was fixed after round 2. Number checks R1, R2… as below. If it's Shabbat or night, mark the checks that need running buses **couldn't test (Shabbat)**.
 
-**R0. Same scenarios on the old app.** So far only the new app has been tested. The old Kotlin app is the reference: the new one should behave the same unless it fixes something. For each scenario below, record **same as the new app** or **different** (say how), with a screenshot of each app.
-1. `adb uninstall com.maslul.app`, then `adb install maslul-kotlin-v4.apk`. Open it, grant location and notifications.
-2. Using the old app, repeat what you did last round on the new one:
-   - **Planning:** "Dizengoff Center", leave now. Do routes that already left show up as Best/Fastest? (known bug 5)
-   - **Line 480:** what date does the timetable show? (known bug 4)
-   - **Trip:** start one and move the location along it. Do the steps advance from "Walk to…" through the bus step? (known bug 3) When it arrives, end it and start another trip at once. Does it say "You've arrived" straight away? (known bug 2)
-   - **Notification permission:** when is it asked, at first launch or on the first trip Start? (known bug 7)
-   - **Map:** switch to another tab and back to Navigate. Is the map blank for a while? (known bug 6)
-   - **Time zone:** set the emulator to **UTC** for a moment. Plan a trip and compare the times shown with the Israel time. Do the arrival times, the time picker or "Bus in N min" look wrong? (known bug 1) Then set the time zone back to Israel.
-   - **Anything else** that looked odd in the new app last round: is the old app the same?
-3. Then go on to R1, which starts from a clean install of the old app.
+**Before you start:** if the emulator can be restarted with more RAM (4 GB), do that and say so in the report. Install the new build over whatever is there: `adb install -r maslul-latest.apk`.
 
-**R1. Upgrade migration (most important).** This checks that people updating from the old app keep their data. If `maslul-kotlin-v4.apk` isn't in the folder, stop and report that; it should be there now.
-1. `adb uninstall com.maslul.app`, then `adb install maslul-kotlin-v4.apk`. Open it and grant location and notifications.
-2. In the **old** app, enter this data and write down exactly what you entered:
-   - **Home** and **Work** (two different addresses);
-   - **two favourite places**;
-   - a **favourite line** (Lines tab) and a **favourite stop** (Stations tab);
-   - a **shuttle**: Settings → My shuttles → add;
-   - **theme** dark;
-   - **walking speed** and **rail preference** changed (they're under Route options);
-   - **both Advanced switches** on in Settings.
-3. `adb shell am force-stop com.maslul.app`, then `adb install -r maslul-latest.apk`. It must install **without uninstalling**. If it fails, quote the error.
-4. Open the new app. Check **every item** from step 2, one screenshot each.
-5. Kill it (`adb shell am force-stop com.maslul.app`) and reopen: everything is still there.
-6. Change the theme back to light, kill, reopen: it stays light (the old data must not be read again over it).
+**R1. Trip guide after getting off** (was finding 2 and 3).
+1. Plan a trip to "Dizengoff Center" that includes a bus, and start it.
+2. Move the location along the route (`adb emu geo fix`, every few seconds) through the walk and the bus ride.
+3. At the last bus stop the step is "Get off now". Then move **about 150 m away from that stop in a direction off the planned walking path**: within one or two updates the step becomes "Walk to Dizengoff Center · N m to go".
+4. Walk on to the destination: "You've arrived". Then move 200 m away: it must **stay** "You've arrived".
+Screenshot each step, the app and the notification.
 
-**R2. Shuttles** (new app): Settings → My shuttles. Create a shuttle, edit it (change its name or time), then delete it. Each change shows up at once and survives a kill and reopen.
+**R2. Times far away carry their day** (was finding 4). Late in the evening or on Shabbat, when the next bus is tomorrow:
+- the trip's first step says "Bus N at <Day> HH:MM", not "Bus N in 1208 min";
+- route cards show the leave time with its day, e.g. "Sat 18:13 – 18:52";
+- "Remind me" says "Reminder set for Sat 18:03 (...)".
+If the next bus is today and within the hour it's still "in N min", which is right. Say which case you saw.
 
-**R3. Stops and lines:**
-- Stations tab: open a stop near you. Arrival times are listed, and during service hours some turn **green** (live).
-- Lines tab: search line **1** and open it.
-- During service hours, on line 1 or 480, bus icons appear on the map within about 30 s and move.
+**R3. Dark map labels** (was finding 5). Dark theme, Navigate tab, zoom into Tel Aviv: street and place labels are bright and easy to read. Compare with your round-2 screenshot.
 
-**R4. Map:**
-- Rotate the map with two fingers: a compass appears, and tapping it turns north up.
-- Tap the **(i)** at the bottom-left: the credit "© OpenStreetMap contributors" / OpenFreeMap appears. The (i) button is the intended design, the same as the old app.
+**R4. Map attribution on Home** (was finding 6). Expand the map (the full-screen button). The (i) at the bottom-left is fully visible, and tapping it opens the credit dialog, not "Which ride are you on?". Turn on the On-board switch first (Settings → Advanced) so the "On a bus?" button is shown.
 
-**R5. Trip with the screen locked.**
-1. Plan a trip to "Dizengoff Center" and start it.
-2. Lock the screen (see Tools).
-3. Move the location along the route for a minute or two.
-4. Unlock: the notification kept updating, and the app shows the new position.
+**R5. Shuttles** (was finding 7 and 8).
+1. Create a shuttle running Sun, Mon, Tue, Wed, Thu, Fri: the list shows "Sun–Fri".
+2. Kill the app, reopen, go to My shuttles and tap the shuttle **at once**. Do this 3 times: it opens "Edit shuttle" each time, never a blank "New shuttle". If it ever opens a blank form, say where exactly you tapped (`uiautomator dump` right before helps).
+3. Delete: a dialog asks "Delete <name>?". Cancel keeps it; Delete removes it.
 
-**R6. Trip after a swipe from Recents.** Start a trip, open Recents, swipe Maslul away, wait 20 s, reopen. The trip should still be running, and the notification should still be there.
+**R6. Reminders on time** (was finding 1). The app now declares the exact-alarm permission.
+1. `adb shell appops get com.maslul.app SCHEDULE_EXACT_ALARM`: write down what it says.
+2. With it as it is, set a reminder (Settings → reminders 2 min, on a route ~5 min out; a shuttle works on Shabbat). `adb shell dumpsys alarm | grep -A3 com.maslul.app`: is it exact or windowed? When does the notification arrive?
+3. `adb shell appops set com.maslul.app SCHEDULE_EXACT_ALARM allow`, set another reminder, and repeat: now it should be exact and arrive within a few seconds.
+4. The notification for a shuttle says "Leave at … · <shuttle name> from …", without "Bus" in front.
 
-**R7. Reminder arrives.**
-1. On a route leaving in about 5 minutes, tap "Remind me" and note the time it says.
-2. Stay on the home screen and wait.
-3. Record when the notification arrives and how far off it was.
-4. If the emulator restarts before then, say so and try once more.
+**R7. Blank map after switching tabs** (old known bug 6). Lines tab, wait 10 s, back to Navigate: how long until the map tiles show? Do it 3 times and give the times. Say how much RAM the emulator has.
 
-**R8. Dark theme and Hebrew on the remaining screens.** Turn on dark theme and check for unreadable text, wrong colours and garbled Hebrew on:
-- the Lines tab and a line screen;
-- the Stations tab and a stop screen;
-- the trip screen;
-- My shuttles and the shuttle editor;
-- pick on map (in the "Where to?" search);
-- on a bus (Settings → turn on the On-board switch, then the on-board button).
+**R8. Live buses**, only outside Shabbat and night: on a stop screen some times turn green, and on line 1 or 480 bus icons appear on the map within about 30 s and move. Rotate the map if you can (compass appears; tap it turns north up).
 
-**R9. Automated flows, if time allows.**
-- With a shell: install [Maestro](https://maestro.dev) (needs Java 17+) and run `maestro test maestro/ --format junit --output maestro-report.xml`.
-- Without Maestro: pick 3 flows (`search_line.yaml`, `shuttle_save.yaml`, `on_board.yaml`) and do their steps yourself:
-  - `launchApp: clearState: true` means `adb shell pm clear com.maslul.app`, then open the app and allow every permission;
-  - `tapOn` means tap;
-  - `inputText` means type;
-  - `assertVisible` and `extendedWaitUntil` mean it must be on screen;
-  - `runFlow` means do that file's steps with its `env` values.
+**R9. Automated flows (Maestro).** Maestro needs the UI-automation slot that mobile-mcp's on-device agent holds, and enough memory.
+1. Stop mobile-mcp's agent: `adb shell pkill -f com.mobilenext` (and don't use mobile-mcp tools until the run ends).
+2. `maestro --device emulator-5554 test maestro/ --format junit --output maestro-report.xml`.
+3. If the driver still doesn't start, quote the error and the `lowmemorykiller` lines, and mark it **couldn't test**.
 
 ## Report
 
-Write `report.md` in this folder, with `evidence/` next to it. End your session with the Summary as your final message.
+First rename last round's `report.md` to `report-round2.md` (and `evidence/` to `evidence-round2/`) so nothing is overwritten. Then write a new `report.md` in this folder, with a new `evidence/` next to it. End your session with the Summary as your final message.
 
 ```
 # Maslul test report
@@ -173,6 +129,6 @@ emulator: <image, API level>   time zone: <...>   tested at: <date, Israel time>
 ## All checks
 | check | result | note |
 |---|---|---|
-| R1.4 home/work | pass | |
+| R1.3 off the path after the last stop | pass | |
 ...
 ```
