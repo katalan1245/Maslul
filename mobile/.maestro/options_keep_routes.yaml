@@ -1,0 +1,28 @@
+appId: com.maslul.app
+name: Closing Options untouched keeps the routes
+---
+- launchApp
+- runFlow: _plan_to_dizengoff.yaml
+- extendedWaitUntil:
+    visible: ".*min walk.*"
+    timeout: 60000
+- tapOn:
+    id: options_chip
+- tapOn: Show routes
+- assertNotVisible: ".*Finding routes.*"
+- assertVisible: ".*min walk.*"
+# Changing an option searches again (then put it back).
+- tapOn:
+    id: options_chip
+- tapOn: Brisk
+- tapOn: Show routes
+- extendedWaitUntil:
+    visible: ".*min walk.*"
+    timeout: 60000
+- tapOn:
+    id: options_chip
+- tapOn: Normal
+- tapOn: Show routes
+- extendedWaitUntil:
+    visible: ".*min walk.*"
+    timeout: 60000

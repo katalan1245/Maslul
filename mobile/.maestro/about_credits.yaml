@@ -1,0 +1,12 @@
+appId: com.maslul.app
+name: Settings → About credits the data sources
+---
+- launchApp
+- tapOn:
+    id: settings_button
+- scrollUntilVisible:
+    element:
+      id: about_credits
+- assertVisible: ".*GNU AGPL v3.*"
+- assertVisible: ".*OpenFreeMap, © OpenStreetMap contributors.*"
+- assertVisible: ".*Open Bus / The Public Knowledge Workshop \\(Hasadna\\).*"

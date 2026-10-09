@@ -1,0 +1,57 @@
+appId: com.maslul.app
+name: A complete shuttle is saved, edited and deleted
+---
+- launchApp
+- runFlow: _new_shuttle.yaml
+- tapOn:
+    id: shuttle_name
+- inputText: Maestro shuttle
+- hideKeyboard
+- tapOn: From
+- tapOn:
+    id: field_to
+- inputText: dizengoff center
+- extendedWaitUntil:
+    visible: "Dizengoff Center.*"
+    timeout: 20000
+- tapOn: "Dizengoff Center.*"
+- tapOn: To
+- tapOn:
+    id: field_to
+- inputText: azrieli center
+- extendedWaitUntil:
+    visible: "Azrieli Center.*"
+    timeout: 20000
+- tapOn: "Azrieli Center.*"
+- tapOn:
+    id: shuttle_times
+- inputText: "8:15 07:30"
+- hideKeyboard
+# Drag the ride-time slider to the right end (120 min).
+- swipe:
+    from:
+      id: shuttle_ride_slider
+    direction: RIGHT
+- assertVisible:
+    id: shuttle_ride
+    text: 120 min
+- assertNotVisible:
+    id: shuttle_missing
+- scrollUntilVisible:
+    element:
+      id: shuttle_save
+- tapOn:
+    id: shuttle_save
+- extendedWaitUntil:
+    visible: Maestro shuttle
+    timeout: 5000
+- assertVisible: "07:30, 08:15 · Sun–Thu"
+- tapOn: Maestro shuttle
+- assertVisible: Edit shuttle
+- assertVisible:
+    id: shuttle_ride
+    text: 120 min
+- scrollUntilVisible:
+    element: Delete
+- tapOn: Delete
+- assertNotVisible: Maestro shuttle

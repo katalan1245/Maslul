@@ -1,0 +1,21 @@
+appId: com.maslul.app
+name: Search a line and open it
+---
+- launchApp
+- tapOn:
+    id: tab_lines
+- tapOn:
+    id: line_search
+- inputText: "480"
+- extendedWaitUntil:
+    visible:
+      id: line_row
+    timeout: 20000
+- tapOn:
+    id: line_row
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: line_stops
+    timeout: 30000
+- tapOn: Timetable

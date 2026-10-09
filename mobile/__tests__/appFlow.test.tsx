@@ -153,3 +153,33 @@ it('credits the data sources in Settings → About', async () => {
 });
 
 // The home sheet's hide/drag/bring-back scenario needs real sheet positions: a device (Maestro) check.
+
+it('opens a route and the ride on it', async () => {
+  await planToDizengoff();
+  await fireEvent.press(screen.getAllByTestId('route_card')[0]);
+  await screen.findByTestId('route_detail_screen');
+  expect(screen.getByTestId('start_button')).toBeTruthy();
+  await fireEvent.press(screen.getAllByTestId('open_trip')[0]);
+  await screen.findByTestId('trip_screen');
+  await screen.findByText('Bat Yam', { exact: false });
+});
+
+it('finds a nearby stop, its departures, and a trip from there', async () => {
+  await start();
+  await fireEvent.press(screen.getByTestId('tab_stations'));
+  await fireEvent.press(await screen.findByText('Arlozorov/Ibn Gabirol'));
+  await screen.findByTestId('stop_screen');
+  await fireEvent.press(await screen.findByTestId('board_row'));
+  await screen.findByTestId('trip_screen');
+});
+
+it('picks a destination on the map', async () => {
+  await fireEvent.press(await start());
+  await fireEvent.press(await screen.findByText('Choose on map'));
+  await screen.findByTestId('pick_on_map_screen');
+  // The map settling reports its centre, which is then looked up as an address.
+  await fireEvent(screen.getByTestId('maplibre_map'), 'onRegionDidChange', { nativeEvent: { center: [34.7703, 32.0631], zoom: 16, bearing: 0, pitch: 0 } });
+  await waitFor(() => expect(screen.getByTestId('picked_label')).toHaveTextContent('Rothschild 1'));
+  await fireEvent.press(screen.getByTestId('choose_location'));
+  await screen.findByTestId('routes_list');
+});

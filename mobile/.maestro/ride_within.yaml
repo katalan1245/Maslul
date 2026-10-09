@@ -1,0 +1,31 @@
+appId: com.maslul.app
+name: A ride within minutes says where to get out
+---
+- launchApp:
+    clearState: true
+- runFlow:
+    file: _settings_advanced.yaml
+    env:
+      RIDES: "on"
+      ON_BOARD: "off"
+- tapOn: "Where to?"
+- tapOn:
+    id: field_to
+- inputText: haifa center
+- extendedWaitUntil:
+    visible: "Haifa Center HaShemona.*"
+    timeout: 20000
+- tapOn: "Haifa Center HaShemona.*"
+- extendedWaitUntil:
+    visible:
+      id: ride_chip
+    timeout: 40000
+- tapOn:
+    id: ride_chip
+- tapOn: 15 min
+- tapOn:
+    id: ride_within
+- extendedWaitUntil:
+    visible: ".*Get dropped off.*"
+    timeout: 60000
+- assertVisible: 15 min ride

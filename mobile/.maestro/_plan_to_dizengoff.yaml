@@ -1,0 +1,15 @@
+# Shared: plan from here to Dizengoff Center and wait for the routes.
+appId: com.maslul.app
+---
+- tapOn: "Where to?"
+- tapOn:
+    id: field_to
+- inputText: dizengoff center
+- extendedWaitUntil:
+    visible: "Dizengoff Center.*"
+    timeout: 20000
+- tapOn: "Dizengoff Center.*"
+- extendedWaitUntil:
+    visible:
+      id: routes_list
+    timeout: 40000

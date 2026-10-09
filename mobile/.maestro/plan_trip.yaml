@@ -1,0 +1,10 @@
+appId: com.maslul.app
+name: Plan a trip to a place
+---
+- launchApp
+- runFlow: _plan_to_dizengoff.yaml
+# A route card's span, "06:10 – 06:42".
+- extendedWaitUntil:
+    visible: ".*\\d\\d:\\d\\d – \\d\\d:\\d\\d.*"
+    timeout: 20000
+# "leave in" only shows for rides within 90 minutes, so it isn't asserted (overnight it's absent).

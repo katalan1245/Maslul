@@ -1,0 +1,45 @@
+appId: com.maslul.app
+name: The home map can be enlarged and the places brought back
+---
+- launchApp:
+    clearState: true
+- runFlow:
+    file: _settings_advanced.yaml
+    env:
+      RIDES: "off"
+      ON_BOARD: "on"
+- assertVisible: "Where to?"
+# The button hides the places; the map has the screen and its buttons stay in reach.
+- tapOn:
+    id: home_map_expand
+- extendedWaitUntil:
+    visible:
+      id: home_show_places
+    timeout: 5000
+- assertVisible:
+    id: on_board
+- assertVisible:
+    id: home_my_location
+- assertVisible: "Where to?"
+- tapOn:
+    id: home_show_places
+- assertNotVisible:
+    id: home_show_places
+# Dragging the sheet down does the same; the corner button brings it back.
+- swipe:
+    start: 50%, 70%
+    end: 50%, 99%
+- extendedWaitUntil:
+    visible:
+      id: home_show_places
+    timeout: 5000
+- tapOn: Show places
+- assertNotVisible:
+    id: home_show_places
+# Pulled all the way up, it stops under the search card, which stays usable.
+- swipe:
+    start: 50%, 70%
+    end: 50%, 5%
+- tapOn: "Where to?"
+- assertVisible:
+    id: field_to

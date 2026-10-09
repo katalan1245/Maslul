@@ -8,6 +8,7 @@ const place = (name: string, lat: number, lon: number, kind: Place['kind'] = 'PO
 
 export const DIZENGOFF = place('Dizengoff Center', 32.0753, 34.7748);
 export const AZRIELI = place('Azrieli Center', 32.0743, 34.7922);
+export const STOP: Place = { name: 'Arlozorov/Ibn Gabirol', lat: 32.0866, lon: 34.7818, kind: 'STOP', stopId: 'il-Israel-MOT_21437' };
 const HOME = { lat: 32.0853, lon: 34.7818 };
 
 /** A bus ride [inMin] minutes from now, with walks on either side. */
@@ -44,8 +45,14 @@ export function makeFakeRepo() {
     planCalls,
     searchPlaces: async (text: string) => [DIZENGOFF, AZRIELI].filter((p) => p.name.toLowerCase().includes(text.toLowerCase().split(' ')[0])),
     searchStops: async () => [],
-    reverseGeocode: async () => null,
-    nearbyStops: async () => [],
+    reverseGeocode: async () => place('Rothschild 1', 32.0631, 34.7703, 'ADDRESS'),
+    nearbyStops: async () => [STOP],
+    stopBoard: async () => {
+      const t = nowSec() + 300;
+      const stop = call(STOP.stopId!, STOP.name, STOP.lat, STOP.lon, t, t);
+      return [{ departure: { tripId: 'trip-5', routeId: null, mode: 'BUS', lineLabel: '5', headsign: 'Bat Yam', agency: 'Dan', routeColor: null, scheduled: t, stop }, live: null }];
+    },
+    tripLive: async () => [busTrip('t', 5, '5').legs[1], null],
     plan: async (req: unknown): Promise<PlanResult> => {
       planCalls.push(req);
       return { itineraries: [busTrip('a', 12, '5'), busTrip('b', 30, '61')], walkOnly: null, nextCursor: null, previousCursor: null };

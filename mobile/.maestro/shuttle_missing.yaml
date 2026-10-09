@@ -1,0 +1,34 @@
+appId: com.maslul.app
+name: A shuttle says what's missing, the ride time included
+---
+- launchApp
+- runFlow: _new_shuttle.yaml
+- assertVisible:
+    id: shuttle_ride
+    text: Not set
+- scrollUntilVisible:
+    element:
+      id: shuttle_save
+- tapOn:
+    id: shuttle_save
+- assertVisible: New shuttle
+- assertVisible: "Still needed: a name, where it leaves from, where it goes, departure times and how long the ride takes."
+- assertVisible: Add at least one departure time
+- tapOn:
+    id: shuttle_name
+- inputText: Office
+- tapOn:
+    id: shuttle_times
+- inputText: "07:30, soon"
+- assertVisible: ".*Use 24-hour times.*"
+- assertVisible: ".*departure times like 07:30.*"
+- eraseText: 20
+- inputText: "07:30, 17:00"
+- assertVisible: 2 departures a day
+# The ride-time slider is set by dragging; check by hand that it reads "60 min" at the middle and
+# that "Still needed" then drops the ride time.
+- hideKeyboard
+- scrollUntilVisible:
+    element: Save and add the way back
+- tapOn: Save and add the way back
+- assertVisible: New shuttle
