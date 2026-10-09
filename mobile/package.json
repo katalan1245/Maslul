@@ -53,7 +53,8 @@
     "test:live": "jest --selectProjects live --runInBand",
     "typecheck": "tsc --noEmit",
     "prebuild": "expo prebuild --clean --no-install",
-    "build:test-apk": "scripts/build-test-apk.sh"
+    "build:test-apk": "scripts/build-test-apk.sh",
+    "publish:test": "scripts/publish-test.sh"
   },
   "private": true,
   "license": "AGPL-3.0-only"
