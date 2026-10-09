@@ -20,6 +20,8 @@ declare class MaslulNativeModule extends NativeModule<Record<string, never>> {
   readLegacyStore(): Promise<string | null>;
   /** Downloads and parses one SIRI snapshot off the JS thread; null when the file isn't there. */
   fetchSiriVehicles(url: string, userAgent: string, snapshotEpochSec: number): Promise<SiriColumns | null>;
+  /** Shows the live-directions step in the location service's notification (Android); false when it isn't running. */
+  updateTripNotification(taskName: string, title: string, text: string, progress: number, endUrl: string): Promise<boolean>;
 }
 
 /** Null where the native module isn't built in (Expo Go, tests). */

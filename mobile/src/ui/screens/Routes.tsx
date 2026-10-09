@@ -1,0 +1,258 @@
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useEffect, useRef, useState } from 'react';
+import { AppState, FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Combine } from '../../data/combine';
+import { type Itinerary, type Leg, itinDurationSec, placeKey, rideKey, walkSec } from '../../data/models';
+import { DEFAULT_MAX_WALK_MINUTES, type Settings, favoriteFor } from '../../data/userStore';
+import { useUserData } from '../../state/store';
+import { Chip, IconButton, LoadingBox, MessageBox, ProgressBar, TextButton, Txt } from '../components/common';
+import { FAVORITE_GOLD, type FavoriteDraft, FavoriteDialogHost, draftFor } from '../components/favorites';
+import { FAVORITE_ICON_NAMES } from '../components/icons';
+import { useNow } from '../components/live';
+import { Menu } from '../components/overlays';
+import { useModel } from '../model';
+import { type RootStack, nav } from '../nav';
+import { useTheme } from '../theme';
+import { ItineraryCard, WalkOnlyCard, rideLabel, timeLabel } from './routeCards';
+import { OptionsSheet, RideSheet, TimeSheet } from './routeSheets';
+import { RoutesModel } from './routesModel';
+
+type Item = { kind: 'earlier' } | { kind: 'walk'; itin: Itinerary } | { kind: 'itin'; itin: Itinerary } | { kind: 'later' } | { kind: 'credit' };
+
+export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Routes'>) {
+  const t = useTheme();
+  const insets = useSafeAreaInsets();
+  const data = useUserData();
+  const model = useModel(() => new RoutesModel(route.params.from, route.params.to));
+  const now = useNow(15_000);
+  const [showTime, setShowTime] = useState(false);
+  const [showRide, setShowRide] = useState(false);
+  /** The options as they were when the sheet opened (null while it's closed). */
+  const [optionsBefore, setOptionsBefore] = useState<Settings | null>(null);
+  const list = useRef<FlatList<Item>>(null);
+  const offset = useRef(0);
+  model.scrollToTop = () => list.current?.scrollToOffset({ offset: 0, animated: false });
+  model.atTop = () => offset.current < 200;
+
+  // Coming back to a "leave now" search after a while re-runs it.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => s === 'active' && model.refreshIfStale());
+    return () => sub.remove();
+  }, [model]);
+
+  const liveOf = (l: Leg) => model.rideLive.get(rideKey(l));
+  const expectedOf = (i: Itinerary) => Combine.expected(i, liveOf);
+  // Leaving now: options whose connection a late bus has made impossible aren't options (unless nothing else is left).
+  const connected = model.timeMode !== 'NOW' ? model.itineraries : model.itineraries.filter((i) => Combine.connects(i, now, liveOf));
+  const itineraries = connected.length ? connected : model.itineraries;
+  const fastest = itineraries.length ? itineraries.reduce((a, b) => (itinDurationSec(expectedOf(b)) < itinDurationSec(expectedOf(a)) ? b : a)).id : null;
+  const leastWalk = itineraries.length > 2 ? itineraries.reduce((a, b) => (walkSec(b) < walkSec(a) ? b : a)).id : null;
+
+  const s = data.settings;
+  const custom =
+    s.modes.length < 6 || s.maxWalkMinutes !== DEFAULT_MAX_WALK_MINUTES || s.wheelchair || s.walkSpeed !== 'NORMAL' || s.railPreference !== 'NONE';
+
+  const items: Item[] = [
+    ...(model.canPage ? [{ kind: 'earlier' } as const] : []),
+    ...(model.walkOnly ? [{ kind: 'walk', itin: model.walkOnly } as const] : []),
+    ...itineraries.map((itin) => ({ kind: 'itin', itin }) as const),
+    ...(model.canPage ? [{ kind: 'later' } as const] : []),
+    { kind: 'credit' },
+  ];
+
+  const renderItem = ({ item }: { item: Item }) => {
+    switch (item.kind) {
+      case 'earlier':
+        return (
+          <View style={{ alignItems: 'flex-start', paddingLeft: 8 }}>
+            <TextButton text="Earlier" onPress={() => model.more(false)} disabled={model.loadingMore} />
+          </View>
+        );
+      case 'walk':
+        return <WalkOnlyCard itin={item.itin} now={now} onPress={() => model.open(item.itin)} />;
+      case 'later':
+        return model.loadingMore ? (
+          <LoadingBox />
+        ) : (
+          <View style={{ alignItems: 'center' }}>
+            <TextButton text="Later routes" onPress={() => model.more(true)} />
+          </View>
+        );
+      case 'credit':
+        return (
+          <Txt v="labelSmall" color={t.x.subtle} style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: insets.bottom }}>
+            Timetables: Ministry of Transport GTFS via Transitous · Live: MOT SIRI via Open Bus
+          </Txt>
+        );
+      case 'itin': {
+        const itin = item.itin;
+        const tags: string[] = [];
+        // Ranked list: the first card is the recommended option.
+        if (itin === itineraries[0] && itineraries.length > 1) tags.push('Best');
+        if (itin.id === fastest) tags.push('Fastest');
+        if (itin.id === leastWalk && itin.id !== fastest) tags.push('Least walking');
+        // Transfer slack as the rides are expected to run, late ones included.
+        const risk = model.riskiest(expectedOf(itin));
+        return (
+          <ItineraryCard
+            itin={itin}
+            live={model.live.get(itin.id)}
+            now={now}
+            tags={tags}
+            risk={risk}
+            missed={risk ? model.nextIfMissed(risk) : null}
+            rideLive={model.rideLive}
+            onLiveClick={() => model.openLive(itin)}
+            onBoardTripId={model.onBoardTripId}
+            onPress={() => model.open(itin)}
+            testID="route_card"
+          />
+        );
+      }
+    }
+  };
+
+  return (
+    <View style={{ flex: 1, backgroundColor: t.c.background }} testID="routes_screen">
+      <View style={[styles.header, { backgroundColor: t.c.surface, paddingTop: insets.top + 4 }]}>
+        <View style={styles.headerRow}>
+          <IconButton icon="arrow-back" label="Back" onPress={nav.pop} />
+          <View style={[styles.endpoints, { backgroundColor: t.c.surfaceVariant }]}>
+            <EndpointRow text={model.from.name} hollow onPress={() => model.edit('FROM')} testID="routes_from" />
+            <EndpointRow text={model.to.name} onPress={() => model.edit('TO')} testID="routes_to" />
+          </View>
+          <View>
+            <IconButton icon="swap-vert" label="Swap" onPress={model.swap} disabled={model.onBoardTripId != null} />
+            <SaveMenu model={model} />
+          </View>
+        </View>
+        {/* Chips scroll; Refresh is a fixed icon button so it always stays reachable. */}
+        <View style={styles.chipRow}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingLeft: 16, paddingRight: 8 }} style={{ flex: 1 }}>
+            {/* On board, the trip starts when the bus gets to its next stop. */}
+            {model.onBoardTripId == null && (
+              <Chip label={timeLabel(model.timeMode, model.time)} icon="schedule" selected={model.timeMode !== 'NOW'} onPress={() => setShowTime(true)} testID="time_chip" />
+            )}
+            {/* Getting a ride (טרמפ): an advanced tool, so only offered once it's switched on. */}
+            {(model.ride != null || (s.rides && model.onBoardTripId == null)) && (
+              <Chip label={rideLabel(model.ride)} icon="directions-car" selected={model.ride != null} onPress={() => setShowRide(true)} maxWidth={200} testID="ride_chip" />
+            )}
+            <Chip label="Options" icon="tune" selected={custom} onPress={() => setOptionsBefore(data.settings)} testID="options_chip" />
+            {s.wheelchair && <Chip label="Accessible" icon="accessible" selected onPress={() => setOptionsBefore(data.settings)} />}
+          </ScrollView>
+          <IconButton icon="refresh" label="Refresh" onPress={model.refreshNow} disabled={model.loading} testID="refresh_chip" />
+        </View>
+      </View>
+      <ProgressBar active={model.refining && !model.loading} testID="refining" />
+      {model.loading ? (
+        <LoadingBox text="Finding routes…" />
+      ) : model.error != null && model.itineraries.length === 0 && model.walkOnly == null ? (
+        <MessageBox title="No routes" body={model.error} action="Try again" onAction={() => model.search()} />
+      ) : (
+        <FlatList
+          ref={list}
+          data={items}
+          renderItem={renderItem}
+          keyExtractor={(i, k) => (i.kind === 'itin' || i.kind === 'walk' ? i.itin.id : `${i.kind}${k}`)}
+          contentContainerStyle={{ paddingTop: 6, paddingBottom: 24 }}
+          onScroll={(e) => (offset.current = e.nativeEvent.contentOffset.y)}
+          scrollEventThrottle={100}
+          testID="routes_list"
+        />
+      )}
+      {showTime && (
+        <TimeSheet
+          mode={model.timeMode}
+          time={model.time}
+          onDismiss={() => setShowTime(false)}
+          onApply={(mode, time) => {
+            setShowTime(false);
+            model.setTime(mode, time);
+          }}
+        />
+      )}
+      {showRide && (
+        <RideSheet
+          current={model.ride}
+          onDismiss={() => setShowRide(false)}
+          onPickDestination={() => {
+            setShowRide(false);
+            model.pickDriverDestination();
+          }}
+          onApply={(r) => {
+            setShowRide(false);
+            model.useRide(r);
+          }}
+        />
+      )}
+      {optionsBefore != null && (
+        <OptionsSheet
+          onDismiss={() => {
+            const before = optionsBefore;
+            setOptionsBefore(null);
+            model.optionsClosed(before);
+          }}
+        />
+      )}
+    </View>
+  );
+}
+
+/** Star menu: save the whole trip, and/or save the destination as a labelled favourite place. */
+function SaveMenu({ model }: { model: RoutesModel }) {
+  const t = useTheme();
+  const data = useUserData();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<FavoriteDraft | null>(null);
+  const tripSaved = data.savedTrips.some((s) => placeKey(s.from) === placeKey(model.from) && placeKey(s.to) === placeKey(model.to));
+  // A trip from the bus you're on now isn't one to come back to.
+  const canSaveTrip = model.from.kind !== 'ON_BOARD';
+  const canFavorite = model.to.kind !== 'CURRENT_LOCATION';
+  const favorite = favoriteFor(data, model.to);
+  const items = [
+    ...(canSaveTrip ? [{ text: tripSaved ? 'Remove saved trip' : 'Save this trip', icon: 'swap-calls' as const, onPress: model.toggleSaved, testID: 'save_trip' }] : []),
+    ...(canFavorite
+      ? [
+          {
+            text: favorite ? `Edit favorite “${favorite.label}”` : 'Save destination as favorite',
+            icon: favorite ? FAVORITE_ICON_NAMES[favorite.icon] : ('star-border' as const),
+            onPress: () => setDraft(draftFor(model.to)),
+            testID: 'save_destination',
+          },
+        ]
+      : []),
+  ];
+  const saved = tripSaved || favorite != null;
+  return (
+    <>
+      <IconButton icon={saved ? 'star' : 'star-border'} label="Save" color={saved ? FAVORITE_GOLD : t.c.onSurfaceVariant} onPress={() => setOpen(true)} testID="save_menu" />
+      <Menu visible={open} onDismiss={() => setOpen(false)} items={items} />
+      <FavoriteDialogHost draft={draft} onClose={() => setDraft(null)} />
+    </>
+  );
+}
+
+function EndpointRow({ text, hollow, onPress, testID }: { text: string; hollow?: boolean; onPress: () => void; testID: string }) {
+  const t = useTheme();
+  const c = hollow ? t.c.onSurface : t.c.primary;
+  return (
+    <Pressable onPress={onPress} style={styles.endpoint} accessibilityRole="button" testID={testID}>
+      <View style={[styles.dot, { backgroundColor: c }]}>{hollow && <View style={[styles.hole, { backgroundColor: t.c.surfaceVariant }]} />}</View>
+      <Txt v="bodyLarge" numberOfLines={1} style={{ marginLeft: 12, flex: 1 }}>
+        {text}
+      </Txt>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  header: { paddingBottom: 10, elevation: 2, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } },
+  headerRow: { flexDirection: 'row', alignItems: 'center', paddingRight: 4 },
+  endpoints: { flex: 1, borderRadius: 14, paddingVertical: 4 },
+  endpoint: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8 },
+  dot: { width: 10, height: 10, borderRadius: 5, alignItems: 'center', justifyContent: 'center' },
+  hole: { width: 5, height: 5, borderRadius: 2.5 },
+  chipRow: { flexDirection: 'row', alignItems: 'center', paddingTop: 6, paddingRight: 4 },
+});
+

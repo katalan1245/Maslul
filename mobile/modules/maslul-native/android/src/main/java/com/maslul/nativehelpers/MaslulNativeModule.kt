@@ -1,6 +1,12 @@
 package com.maslul.nativehelpers
 
+import android.app.Notification
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.graphics.drawable.Icon
+import android.net.Uri
 import android.util.JsonReader
 import android.util.JsonToken
 import expo.modules.kotlin.functions.Coroutine
@@ -21,6 +27,8 @@ import java.time.OffsetDateTime
  *   read once on the first launch after the update so it can be moved over.
  * - fetchSiriVehicles: downloads a brotli SIRI snapshot and parses it off the JS thread
  *   (a snapshot is ~3.6 MB of JSON), returning only the vehicles, in columns.
+ * - updateTripNotification: puts the current step of live directions in the foreground
+ *   service's notification (expo-location posts it; the text is ours), with "End trip".
  */
 class MaslulNativeModule : Module() {
   private val context: Context
@@ -38,6 +46,43 @@ class MaslulNativeModule : Module() {
     AsyncFunction("fetchSiriVehicles") Coroutine { url: String, userAgent: String, snapshotEpochSec: Double ->
       withContext(Dispatchers.IO) { fetchSiri(url, userAgent, snapshotEpochSec.toLong()) }
     }
+
+    AsyncFunction("updateTripNotification") { taskName: String, title: String, text: String, progress: Double, endUrl: String ->
+      runCatching { updateTripNotification(taskName, title, text, progress, endUrl) }.getOrDefault(false)
+    }
+  }
+
+  /**
+   * Re-posts the location service's notification (on the channel expo-location names
+   * "<app>:<taskName>") with [title], [text] and a progress bar, like the Kotlin app's
+   * LiveTripService did. False when the service isn't running.
+   */
+  private fun updateTripNotification(taskName: String, title: String, text: String, progress: Double, endUrl: String): Boolean {
+    val nm = context.getSystemService(NotificationManager::class.java) ?: return false
+    val active = nm.activeNotifications.firstOrNull { it.notification.channelId?.endsWith(":$taskName") == true } ?: return false
+    val open = context.packageManager.getLaunchIntentForPackage(context.packageName)?.let {
+      it.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+      PendingIntent.getActivity(context, 0, it, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+    }
+    // "End trip" opens the app on a link it handles by stopping live directions.
+    val end = PendingIntent.getActivity(
+      context, 1,
+      Intent(Intent.ACTION_VIEW, Uri.parse(endUrl)).setPackage(context.packageName),
+      PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
+    val n = Notification.Builder(context, active.notification.channelId)
+      .setSmallIcon(active.notification.smallIcon)
+      .setContentTitle(title)
+      .setContentText(text)
+      .setOngoing(true)
+      .setOnlyAlertOnce(true)
+      .setProgress(100, (progress * 100).toInt().coerceIn(0, 100), false)
+      .setCategory(Notification.CATEGORY_NAVIGATION)
+      .setContentIntent(open)
+      .addAction(Notification.Action.Builder(null as Icon?, "End trip", end).build())
+      .build()
+    nm.notify(active.id, n)
+    return true
   }
 
   /** The vehicles in columns (null when the server hasn't got this minute's file). */

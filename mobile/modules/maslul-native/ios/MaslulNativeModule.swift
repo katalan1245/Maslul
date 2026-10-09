@@ -15,6 +15,11 @@ public class MaslulNativeModule: Module {
       nil
     }
 
+    // iOS has no ongoing notification to update (live directions show in the app and alert by notification).
+    AsyncFunction("updateTripNotification") { (taskName: String, title: String, text: String, progress: Double, endUrl: String) -> Bool in
+      false
+    }
+
     AsyncFunction("fetchSiriVehicles") { (url: String, userAgent: String, snapshotEpochSec: Double) async throws -> [String: Any]? in
       guard let u = URL(string: url) else { return nil }
       var req = URLRequest(url: u, timeoutInterval: 30)
