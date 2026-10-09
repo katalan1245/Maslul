@@ -57,8 +57,10 @@ export const GeoMath = {
 
   /**
    * Projects [p] onto the polyline. Uses a local equirectangular approximation, which is
-   * accurate to well under a metre at city scale. When [hintAlongM] is given, among
-   * candidates within [snapM] of the line it picks the one closest to the hint (loops).
+   * accurate to well under a metre at city scale. When [hintAlongM] is given and the line passes
+   * within [snapM] more than once (loops, out-and-back streets), it takes the pass closest to the
+   * hint, and the nearest point of that pass: the point of a pass nearest the hint would lag behind
+   * the real position by up to [snapM].
    */
   project(
     line: readonly GeoPoint[],
@@ -73,6 +75,12 @@ export const GeoMath = {
     const ky = 110540;
     let nearest: Projection | null = null;
     let nearHint: Projection | null = null;
+    // The nearest point of the current pass: consecutive segments within snapM.
+    let pass: Projection | null = null;
+    const endPass = () => {
+      if (pass && (nearHint === null || Math.abs(pass.alongM - hintAlongM!) < Math.abs(nearHint.alongM - hintAlongM!))) nearHint = pass;
+      pass = null;
+    };
     for (let i = Math.max(fromIndex, 0); i < line.length - 1; i++) {
       const a = line[i];
       const b = line[i + 1];
@@ -89,14 +97,11 @@ export const GeoMath = {
       const off = Math.sqrt(cx * cx + cy * cy);
       const along = cum[i] + t * (cum[i + 1] - cum[i]);
       if (nearest === null || off < nearest.offsetM) nearest = { alongM: along, offsetM: off };
-      if (
-        hintAlongM != null &&
-        off <= snapM &&
-        (nearHint === null || Math.abs(along - hintAlongM) < Math.abs(nearHint.alongM - hintAlongM))
-      ) {
-        nearHint = { alongM: along, offsetM: off };
-      }
+      if (hintAlongM == null) continue;
+      if (off > snapM) endPass();
+      else if (pass === null || off < pass.offsetM) pass = { alongM: along, offsetM: off };
     }
+    if (hintAlongM != null) endPass();
     return nearHint ?? nearest;
   },
 

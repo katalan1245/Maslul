@@ -30,6 +30,8 @@ export class TripGuide {
   private lastAlong = 0;
   /** Arrival sticks: walking off afterwards mustn't turn the trip back into "N m to go". */
   private arrived = false;
+  /** When "Get off now" first showed, per transit leg. */
+  private readonly offAt = new Map<number, Instant>();
 
   constructor(
     private readonly itinerary: Itinerary,
@@ -75,7 +77,15 @@ export class TripGuide {
       if (proj != null && proj.offsetM < 400 && proj.alongM > this.lastAlong - 150) along = proj.alongM;
     }
     if (along != null) this.lastAlong = Math.max(this.lastAlong, along);
-    const legIndex = pos != null ? this.legAt(this.lastAlong) : this.legByTime(now);
+    let legIndex = pos != null ? this.legAt(this.lastAlong) : this.legByTime(now);
+    // At the stop the position is already the walk's start: say "Get off now" there, for a minute at most
+    // (a transfer may mean waiting at that same stop).
+    const prev = legs[legIndex - 1];
+    const offSince = this.offAt.get(legIndex - 1);
+    if (pos != null && prev && isTransit(prev.mode) && !isTransit(legs[legIndex].mode) && GeoMath.distance(pos, callPoint(prev.to)) < 40 && (offSince == null || now - offSince < 60)) legIndex--;
+    // Waiting at the boarding stop is still the walk's step, which counts down to the bus.
+    const board = legs[legIndex];
+    if (pos != null && prev && !isTransit(prev.mode) && isTransit(board.mode) && GeoMath.distance(pos, callPoint(board.from)) < 40 && now < (live.get(legIndex)?.expected ?? board.start)) legIndex--;
     const leg = legs[legIndex];
     const total = this.totalM;
     const progress = total > 0 ? Math.min(Math.max(this.lastAlong / total, 0), 1) : 0;
@@ -148,6 +158,7 @@ export class TripGuide {
       return this.update(pos, now, live);
     }
     if (remaining <= 0) {
+      if (!this.offAt.has(legIndex)) this.offAt.set(legIndex, now);
       return { legIndex, title: 'Get off now', text: leg.to.name, alert: 'GET_OFF_NOW', alertKey: `off-${legIndex}`, progress, finished: false };
     }
     if (remaining === 1) {
