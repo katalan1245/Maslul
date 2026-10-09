@@ -3,6 +3,8 @@
 # records its build details next to it, then publishes it with scripts/publish-test.sh.
 # Needs JAVA_HOME (JDK 17) and ANDROID_HOME. Usage: npm run build:test-apk
 set -euo pipefail
+# apksigner runs `java` from PATH, not JAVA_HOME.
+export PATH="$JAVA_HOME/bin:$PATH"
 cd "$(dirname "$0")/.."
 npm run prebuild -- --platform android
 (cd android && ./gradlew assembleRelease)
