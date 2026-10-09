@@ -42,7 +42,7 @@ cd android && ./gradlew assembleDebug                         # app/build/output
 cd mobile/ios && pod install && cd .. && npm run ios          # on the Mac
 ```
 
-For the emulator session: `npm run build:test-apk` puts the standalone APK in `/workspace/test-artifacts/maslul-latest.apk` with `build-info.txt`; the Kotlin app for the upgrade test is copied there as `maslul-kotlin-v4.apk`. Both are signed with the same debug key.
+For the emulator session: `npm run build:test-apk` builds the standalone APK and publishes it to the host handoff folder `/share/maslul-test` (Windows: `C:\Users\Raz\Desktop\CS\Claude\shared\maslul\maslul-test`). It goes there as `maslul-latest.apk`, with `TESTING.md`, the Maestro flows, the old Kotlin app (`maslul-kotlin-v4.apk`, signed with the same debug key) and `build-info.txt` (commit, configuration, checksums; written last). The tester writes `report.md` and `evidence/` there. `npm run publish:test` re-publishes the last build without rebuilding.
 
 Or by hand: `adb install -r android/app/build/outputs/apk/debug/app-debug.apk`, then `npm start` for Metro (the debug build loads its JS from Metro). The release APK runs on its own.
 

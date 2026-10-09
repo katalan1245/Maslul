@@ -6,6 +6,8 @@ You are a Claude session with tools (an MCP) that control an Android emulator. Y
 
 ## Files in this folder
 
+The folder is `C:\Users\Raz\Desktop\CS\Claude\shared\maslul\maslul-test` on the Windows host. Inside the build container it's `/share/maslul-test`. Write your report and evidence here too.
+
 | File | What it is |
 |---|---|
 | `maslul-latest.apk` | The new app: versionCode 5, standalone release build (no Metro needed) |
@@ -21,6 +23,7 @@ Both APKs are signed with the same key, so the new one installs over the old one
 - Don't modify, rebuild or re-sign the APKs, and don't push anything anywhere.
 - Take a screenshot at every check, named after the check (e.g. `R1-home-work.png`), and keep it in `evidence/`.
 - A failure is a finding: record it and go on. Don't stop at the first failure.
+- A missing file or tool only blocks the checks that need it. Only R9 needs `maestro/`, and only R0 and R1 need `maslul-kotlin-v4.apk`. Mark those **couldn't test** and do every other check. Never end the run because one thing is missing.
 - If a check is impossible, mark it **couldn't test** with the exact reason. Never skip silently.
 - Keep what you **saw** separate from what you **guess** about the cause.
 - The emulator was unstable last round: the launcher restarted, Play services crashed, and Android soft-restarted. If something odd happens right after one of those, repeat the check once before you report it, and say in the report whether it happened again.
