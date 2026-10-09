@@ -102,12 +102,17 @@ If the next bus is today and within the hour it's still "in N min", which is rig
 **R9. Automated flows (Maestro).** Maestro needs the UI-automation slot that mobile-mcp's on-device agent holds, and enough memory.
 1. Stop mobile-mcp's agent: `adb shell pkill -f com.mobilenext` (and don't use mobile-mcp tools until the run ends).
 2. `maestro --device emulator-5554 test maestro/ --format junit --output maestro-report.xml`.
-3. Last run's failures in plan_trip, options_keep_routes, advanced_tools, shuttle_save and shuttle_missing were the flows' own; they're fixed in this `maestro/`. home_sheet failed on an app bug, fixed in this build. All 11 should pass, except ride_within, which may find no rides on Shabbat or at night; then say so.
+3. Last run's failures, and what changed:
+   - plan_trip, options_keep_routes, advanced_tools and shuttle_save: the result tap matched the search box (your diagnosis). The flows now tap inside the results list. shuttle_save also accepts 100–120 min from the slider swipe.
+   - shuttle_missing: "departure times like 07:30" is in the "Still needed" line below the form, which the keyboard hid. The flow now hides the keyboard first.
+   - home_sheet (your finding 10) was an app bug: the sheet was sized by the window, not the space above the tab bar. Fixed in this build.
+   - ride_within: "Couldn't load routes" was most likely the emulator's network. The same request succeeded from the build machine on Shabbat. If it happens again, retry it once, and check the network with `adb shell ping -c 3 api.transitous.org`.
+   All 11 should pass.
 4. If the driver still doesn't start, quote the error and the `lowmemorykiller` lines, and mark it **couldn't test**.
 
 ## Report
 
-First rename last round's `report.md` to `report-round2.md` (and `evidence/` to `evidence-round2/`) so nothing is overwritten. Then write a new `report.md` in this folder, with a new `evidence/` next to it. End your session with the Summary as your final message.
+Last round's report and evidence are kept as `report-round2.md` and `evidence-round2/` (with `maestro-report-round2.xml`). Write this round's results into the empty `report.md`, with screenshots in `evidence/`. End your session with the Summary as your final message.
 
 ```
 # Maslul test report
