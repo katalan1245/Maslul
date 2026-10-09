@@ -1,41 +1,32 @@
-This is an Expo/React Native mobile application. Prioritize mobile-first patterns, performance, and cross-platform compatibility.
+Maslul's React Native + Expo app (Android and iOS), a port of the Kotlin app in `../app`, which it replaces. Read these first:
+- [README.md](README.md): setup, scripts, release builds.
+- [STATUS.md](STATUS.md): what's verified, what's left, the device checklist.
+- [NOTES.md](NOTES.md): design decisions.
 
-## Expo has changed — do not trust your training data
+## Expo has changed: don't trust your training data
 
-Expo ships breaking changes every SDK release. APIs you remember are likely renamed, moved, or removed. Before writing any code that touches an Expo, EAS, or React Native API:
-
-1. Read the major version of the `expo` package in `package.json`.
-2. Fetch the matching versioned docs: `https://docs.expo.dev/versions/v<major>.0.0/`
-3. For anything else, fetch https://docs.expo.dev/llms.txt — an index of all Expo docs with corrections to common LLM misconceptions. Follow its links to the specific page you need; never answer from memory.
+Expo ships breaking changes with every SDK. Before writing code that touches an Expo or React Native API, read the `expo` major version in `package.json` and check the matching docs at `https://docs.expo.dev/versions/v<major>.0.0/`. Start from https://docs.expo.dev/llms.txt for anything else.
 
 ## Commands
 
-Use `bunx` instead of `npx` if the project uses bun (`bun.lock` present).
-
 ```bash
-npx expo install <package>  # ALWAYS use instead of npm/yarn/pnpm/bun add — resolves SDK-compatible versions
-npx expo start              # start the dev server
-npx expo lint               # lint
-npx tsc --noEmit            # typecheck
-npx expo-doctor             # diagnose dependency and config issues
-npx expo install --fix      # fix incompatible package versions
+npx expo install <package>   # always, instead of npm install: picks SDK-compatible versions
+npm run typecheck            # strict tsc
+npm test                     # offline Jest: unit + screen flows
+npm run test:live            # real services; skips what isn't running now
+npx expo install --check     # versions match the SDK
+npm run prebuild             # regenerate android/ and ios/ (both git-ignored)
 ```
 
-Run lint and typecheck before declaring any task done.
-
-## Navigation & Routing
-
-- Use **Expo Router** for all navigation. Routes live in `src/app/` — every file there is a screen, `_layout.tsx` files define navigators. Keep non-route code (components, hooks, utils) outside `src/app/`.
-- Import `Link`, `router`, and `useLocalSearchParams` from `expo-router`.
-- Docs: https://docs.expo.dev/router/introduction.md
-
-## Building with EAS
-
-Use EAS to build, sign, and submit the app in the cloud (`eas build`, `eas submit`) and to ship over-the-air updates (`eas update`) — no local Xcode or Android Studio required. Run EAS CLI as `bunx eas-cli <command>` in Bun projects, or `npx eas-cli@latest <command>` otherwise; substitute that for bare `eas` in docs examples.
-Docs: https://docs.expo.dev/eas/index.md
+Run the typecheck and `npm test` before calling a task done.
 
 ## Rules
 
-- If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
-- Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
-- Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
+- **Never push, publish or deploy:** no `git push`, `eas build`/`submit`/`update`, or store uploads. Local commits on `rewrite/react-native` are fine.
+- **Release signing** reads `../keystore.properties`. It stays out of the repo, and the owner signs releases.
+- **Generated native projects.** `android/` and `ios/` are generated from `app.config.ts` and config plugins (`plugins/`), so never edit them by hand. Native code of our own lives in `modules/maslul-native`.
+- **Development builds only.** The app has a native module, so Expo Go won't run it; use `npm run android` or `npm run ios`.
+- **Keep the port's shape.** `src/data/` mirrors `../app/src/main/java/com/maslul/app/data` file for file. Behaviour follows the Kotlin app unless a change is deliberate and written up in NOTES.md.
+- **Keep the licence and credits:** AGPL-3.0, the data-source credits in Settings → About (`ABOUT` in `src/ui/screens/Settings.tsx`), and the OpenStreetMap/OpenFreeMap attribution on the map.
+- **Time.** Instants are epoch seconds and times are Israel time via `src/data/time.ts`; never use the device's time zone.
+- **Navigation** uses React Navigation (native stack over bottom tabs, in `src/App.tsx` and `src/ui/nav.ts`), not Expo Router.
