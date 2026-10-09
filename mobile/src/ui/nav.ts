@@ -1,5 +1,6 @@
 import { StackActions, createNavigationContainerRef } from '@react-navigation/native';
 import type { Itinerary, LineRoute, Place } from '../data/models';
+import { S } from '../i18n';
 import type { Shuttle } from '../data/userStore';
 
 export type SearchField = 'FROM' | 'TO';
@@ -63,4 +64,11 @@ export const nav = {
   },
 };
 
-export const CURRENT_LOCATION: Place = { name: 'Current location', lat: 0, lon: 0, kind: 'CURRENT_LOCATION' };
+export const CURRENT_LOCATION: Place = {
+  get name() {
+    return S.common.currentLocation;
+  },
+  lat: 0,
+  lon: 0,
+  kind: 'CURRENT_LOCATION',
+};

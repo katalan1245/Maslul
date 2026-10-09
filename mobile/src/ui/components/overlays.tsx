@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { alpha, useTheme } from '../theme';
+import { S } from '../../i18n';
 import { Txt } from './common';
 import { Icon, type IconName } from './icons';
 
@@ -12,7 +13,7 @@ export function Sheet({ visible, onDismiss, children, testID }: { visible: boole
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onDismiss} statusBarTranslucent>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.32)' }]} onPress={onDismiss} accessibilityLabel="Close" />
+        <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.32)' }]} onPress={onDismiss} accessibilityLabel={S.common.close} />
         <View style={[styles.sheet, { backgroundColor: t.c.surface, paddingBottom: insets.bottom + 24, maxHeight: '90%' }]} testID={testID}>
           <View style={[styles.handle, { backgroundColor: t.c.outline }]} />
           <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 20 }}>
@@ -44,7 +45,7 @@ export function Dialog({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss} statusBarTranslucent>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.center}>
-        <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.32)' }]} onPress={onDismiss} accessibilityLabel="Close" />
+        <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.32)' }]} onPress={onDismiss} accessibilityLabel={S.common.close} />
         <View style={[styles.dialog, { backgroundColor: t.c.surfaceContainerHigh }]} testID={testID} accessibilityViewIsModal>
           <Txt v="headlineSmall" style={{ marginBottom: 12 }}>
             {title}
@@ -70,7 +71,7 @@ export function Menu({ visible, onDismiss, items, testID }: { visible: boolean; 
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss} statusBarTranslucent>
-      <Pressable style={StyleSheet.absoluteFill} onPress={onDismiss} accessibilityLabel="Close menu" />
+      <Pressable style={StyleSheet.absoluteFill} onPress={onDismiss} accessibilityLabel={S.common.close} />
       <View style={[styles.menu, { backgroundColor: t.c.surfaceContainer, top: insets.top + 56 }]} testID={testID}>
         {items.map((i) => (
           <Pressable

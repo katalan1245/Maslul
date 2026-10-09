@@ -17,9 +17,9 @@ export const THEME_MODES = ['SYSTEM', 'LIGHT', 'DARK'] as const;
 export type ThemeMode = (typeof THEME_MODES)[number];
 
 export const WALK_SPEEDS = {
-  SLOW: { mps: 1.0, label: 'Relaxed' },
-  NORMAL: { mps: 1.3, label: 'Normal' },
-  FAST: { mps: 1.6, label: 'Brisk' },
+  SLOW: { mps: 1.0 },
+  NORMAL: { mps: 1.3 },
+  FAST: { mps: 1.6 },
 } as const;
 export type WalkSpeed = keyof typeof WALK_SPEEDS;
 
@@ -29,9 +29,9 @@ export type WalkSpeed = keyof typeof WALK_SPEEDS;
  * per bus boarded.
  */
 export const RAIL_PREFERENCES = {
-  NONE: { label: 'No', busMinuteCost: 0.0, busLegSec: 0.0 },
-  PREFER: { label: 'Yes', busMinuteCost: 0.35, busLegSec: 240.0 },
-  STRONG: { label: 'Strongly', busMinuteCost: 0.75, busLegSec: 450.0 },
+  NONE: { busMinuteCost: 0.0, busLegSec: 0.0 },
+  PREFER: { busMinuteCost: 0.35, busLegSec: 240.0 },
+  STRONG: { busMinuteCost: 0.75, busLegSec: 450.0 },
 } as const;
 export type RailPreference = keyof typeof RAIL_PREFERENCES;
 

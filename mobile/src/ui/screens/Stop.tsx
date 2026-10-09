@@ -1,6 +1,7 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { S } from '../../i18n';
 import { bestTime } from '../../data/eta';
 import { callFreshness, callRecordedAt } from '../../data/freshness';
 import { type Place, platformLabel, placePoint } from '../../data/models';
@@ -36,7 +37,7 @@ class StopModel extends Model {
   refresh = async () => {
     const id = this.place.stopId;
     if (id == null) {
-      this.error = 'Unknown stop';
+      this.error = S.stopBoard.unknown;
       this.loading = false;
       this.changed();
       return;
@@ -45,7 +46,7 @@ class StopModel extends Model {
       this.entries = await repo.stopBoard(id);
       this.error = null;
     } catch {
-      if (this.entries.length === 0) this.error = "Couldn't load departures";
+      if (this.entries.length === 0) this.error = S.stopBoard.loadFailed;
     }
     this.loading = false;
     this.changed();
@@ -84,7 +85,7 @@ export function StopScreen({ route }: NativeStackScreenProps<RootStack, 'Stop'>)
   return (
     <View style={{ flex: 1, backgroundColor: t.c.background }} testID="stop_screen">
       <View style={[styles.header, { backgroundColor: t.c.surface, paddingTop: insets.top + 4 }]}>
-        <IconButton icon="arrow-back" label="Back" onPress={nav.pop} />
+        <IconButton icon="arrow-back" label={S.common.back} onPress={nav.pop} />
         <View style={{ flex: 1 }}>
           <Txt v="titleMedium" numberOfLines={1}>
             {place.name}
@@ -97,7 +98,7 @@ export function StopScreen({ route }: NativeStackScreenProps<RootStack, 'Stop'>)
         </View>
         <IconButton
           icon={fav ? 'star' : 'star-border'}
-          label="Favorite stop"
+          label={S.stopBoard.favorite}
           color={fav ? FAVORITE_GOLD : t.c.onSurfaceVariant}
           onPress={() => store.toggleFavoriteStop(place)}
           testID="favorite_stop"
@@ -113,11 +114,11 @@ export function StopScreen({ route }: NativeStackScreenProps<RootStack, 'Stop'>)
       />
       <ProgressBar active={model.loading} />
       {model.loading && model.entries.length === 0 ? (
-        <LoadingBox text="Loading departures…" />
+        <LoadingBox text={S.stopBoard.loading} />
       ) : model.error != null ? (
-        <MessageBox title="No departures" body={model.error} action="Retry" onAction={() => void model.refresh()} />
+        <MessageBox title={S.stopBoard.noDepartures} body={model.error} action={S.common.retry} onAction={() => void model.refresh()} />
       ) : groups.length === 0 ? (
-        <MessageBox title="No upcoming departures" body="Nothing scheduled from this stop in the next hours." />
+        <MessageBox title={S.stopBoard.noUpcoming} body={S.stopBoard.noUpcomingHint} />
       ) : (
         <FlatList
           data={groups}
@@ -140,7 +141,7 @@ export function StopScreen({ route }: NativeStackScreenProps<RootStack, 'Stop'>)
       >
         <Icon name="directions" color={t.c.onPrimaryContainer} />
         <Txt v="labelLarge" color={t.c.onPrimaryContainer} style={{ marginLeft: 8 }}>
-          Directions
+          {S.stopBoard.directions}
         </Txt>
       </Pressable>
     </View>
@@ -161,9 +162,9 @@ function BoardRow({ group, now, onTimePress, onPress }: { group: BoardGroup; now
   let sub: string;
   if (live?.status === 'LIVE') {
     const rec = callRecordedAt(live);
-    sub = freshness === 'STALE' && rec != null ? Fmt.ago(rec, now).toLowerCase() : 'live';
-  } else if (live?.status === 'UNTRACKED') sub = 'no live data';
-  else sub = time - now < 3600 ? Fmt.time(time) : 'scheduled';
+    sub = freshness === 'STALE' && rec != null ? Fmt.ago(rec, now).toLowerCase() : S.stopBoard.live;
+  } else if (live?.status === 'UNTRACKED') sub = S.stopBoard.noLiveData;
+  else sub = time - now < 3600 ? Fmt.time(time) : S.stopBoard.scheduled;
   return (
     <Pressable onPress={onPress} style={styles.row} accessibilityRole="button" testID="board_row">
       <View style={{ minWidth: 64 }}>
@@ -174,7 +175,7 @@ function BoardRow({ group, now, onTimePress, onPress }: { group: BoardGroup; now
           {d.headsign}
         </Txt>
         <Txt v="bodySmall" color={t.x.subtle} numberOfLines={1}>
-          {[platformLabel(d.stop), d.agency, later.trim() !== '' ? `then ${later}` : null].filter((x) => x != null).join(' · ')}
+          {[platformLabel(d.stop), d.agency, later.trim() !== '' ? S.common.then(later) : null].filter((x) => x != null).join(' · ')}
         </Txt>
       </View>
       <View style={{ alignItems: 'flex-end', marginLeft: 8 }}>

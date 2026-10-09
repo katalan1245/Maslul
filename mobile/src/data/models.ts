@@ -2,6 +2,7 @@ import { fixed, sumOf } from './util';
 import type { Instant, LocalDate } from './time';
 import { TripIds } from './geo';
 import { S } from '../i18n';
+import type { VehicleKind } from '../i18n/en';
 
 export interface GeoPoint {
   lat: number;
@@ -16,38 +17,35 @@ export type TransitMode = (typeof TRANSIT_MODES)[number];
 
 export const isTransit = (m: TransitMode) => m !== 'WALK' && m !== 'CAR';
 
-/** One vehicle of this mode, as riders say it: "train is close". */
-export function vehicle(m: TransitMode): string {
+/** The kind of vehicle riders call this mode by: a light rail is a "train". */
+export function vehicleKind(m: TransitMode): VehicleKind {
   switch (m) {
     case 'BUS':
-      return 'bus';
+    case 'CABLE_CAR':
+    case 'FERRY':
+    case 'CAR':
+      return m;
     case 'TRAIN':
     case 'LIGHT_RAIL':
     case 'METRO':
-      return 'train';
-    case 'CABLE_CAR':
-      return 'cable car';
-    case 'FERRY':
-      return 'ferry';
-    case 'CAR':
-      return 'car';
+      return 'TRAIN';
     default:
-      return 'ride';
+      return 'RIDE';
   }
 }
 
-/** Several vehicles of this mode: "Next trains". */
-export function vehicles(m: TransitMode): string {
-  if (m === 'BUS') return 'buses';
-  if (m === 'FERRY') return 'ferries';
-  return vehicle(m) + 's';
+/** For a mix of rides: their mode's kind when they share one, else RIDE. */
+export function kindOf(rides: readonly Leg[]): VehicleKind {
+  const modes = new Set(rides.map((r) => r.mode));
+  return modes.size === 1 ? vehicleKind([...modes][0]) : 'RIDE';
 }
 
+/** One vehicle of this mode, as riders say it: "train is close". */
+export const vehicle = (m: TransitMode) => S.vehicle[vehicleKind(m)];
+/** Several vehicles of this mode: "Next trains". */
+export const vehicles = (m: TransitMode) => S.vehicles[vehicleKind(m)];
 /** [vehicles] for a mix of rides: their mode's word when they share one, else "rides". */
-export function vehiclesOf(rides: readonly Leg[]): string {
-  const modes = new Set(rides.map((r) => r.mode));
-  return modes.size === 1 ? vehicles([...modes][0]) : 'rides';
-}
+export const vehiclesOf = (rides: readonly Leg[]) => S.vehicles[kindOf(rides)];
 
 /** Maps a MOTIS mode string to the modes that exist in Israel. */
 export function modeFromMotis(mode: string | null | undefined): TransitMode {

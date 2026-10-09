@@ -5,7 +5,7 @@ import { useSyncExternalStore } from 'react';
 import type { LiveCall } from '../data/eta';
 import { type GeoPoint, type Itinerary, isTransit } from '../data/models';
 import { nowSec } from '../data/time';
-import { type Lang, lang, languageSet, setLanguage } from '../i18n';
+import { type Lang, S, lang, languageSet, setLanguage } from '../i18n';
 import MaslulNative from '../../modules/maslul-native/src/MaslulNativeModule';
 import { location } from '../state/location';
 import { repo } from '../state/services';
@@ -82,7 +82,7 @@ class ActiveTrip {
         activityType: Location.ActivityType.OtherNavigation,
         showsBackgroundLocationIndicator: true,
         foregroundService: {
-          notificationTitle: 'Starting live directions…',
+          notificationTitle: S.notify.starting,
           notificationBody: destination,
           notificationColor: BRAND,
         },
@@ -151,7 +151,7 @@ class ActiveTrip {
       if (this.current !== s) return;
       const state = guide.update(pos ?? this.pos, now, this.live);
       this.set({ ...s, state });
-      await MaslulNative?.updateTripNotification(TRIP_TASK, state.title, state.text, state.progress, END_TRIP_URL).catch(() => false);
+      await MaslulNative?.updateTripNotification(TRIP_TASK, state.title, state.text, state.progress, END_TRIP_URL, S.notify.endTrip).catch(() => false);
       if (state.alert != null && state.alertKey != null && !this.fired.has(state.alertKey)) {
         this.fired.add(state.alertKey);
         if (await canNotify(false)) await alert(state.title, state.text).catch(() => {});

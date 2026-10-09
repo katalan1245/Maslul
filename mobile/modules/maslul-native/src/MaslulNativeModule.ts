@@ -21,7 +21,7 @@ declare class MaslulNativeModule extends NativeModule<Record<string, never>> {
   /** Downloads and parses one SIRI snapshot off the JS thread; null when the file isn't there. */
   fetchSiriVehicles(url: string, userAgent: string, snapshotEpochSec: number): Promise<SiriColumns | null>;
   /** Shows the live-directions step in the location service's notification (Android); false when it isn't running. */
-  updateTripNotification(taskName: string, title: string, text: string, progress: number, endUrl: string): Promise<boolean>;
+  updateTripNotification(taskName: string, title: string, text: string, progress: number, endUrl: string, endLabel: string): Promise<boolean>;
   /** Whether reminders can fire on time (Android 12+: "Alarms & reminders"); always true on iOS. */
   canScheduleExactAlarms(): boolean;
   /** Opens the app's "Alarms & reminders" setting (Android 12+). */

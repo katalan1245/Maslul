@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { type Place } from '../../data/models';
+import { S } from '../../i18n';
 import { FAVORITE_ICONS, type FavoriteIcon, type FavoritePlace, favoriteFor, favoriteKey } from '../../data/userStore';
 import { store } from '../../state/store';
 import { alpha, type, useTheme } from '../theme';
@@ -37,14 +38,14 @@ function FavoriteDialog({ draft, onClose }: { draft: FavoriteDraft; onClose: () 
   return (
     <Dialog
       visible
-      title={existing == null ? 'Save favorite' : 'Edit favorite'}
+      title={existing == null ? S.favorites.save : S.favorites.edit}
       onDismiss={onClose}
       testID="favorite_dialog"
       actions={
         <>
           {existing != null && (
             <TextButton
-              text="Remove"
+              text={S.home.remove}
               color={t.c.error}
               onPress={() => {
                 store.removeFavorite(favoriteKey(existing));
@@ -52,8 +53,8 @@ function FavoriteDialog({ draft, onClose }: { draft: FavoriteDraft; onClose: () 
               }}
             />
           )}
-          <TextButton text="Cancel" onPress={onClose} />
-          <TextButton text="Save" onPress={save} testID="favorite_save" />
+          <TextButton text={S.common.cancel} onPress={onClose} />
+          <TextButton text={S.common.save} onPress={save} testID="favorite_save" />
         </>
       }
     >
@@ -65,12 +66,12 @@ function FavoriteDialog({ draft, onClose }: { draft: FavoriteDraft; onClose: () 
         onChangeText={setLabel}
         autoFocus
         selectTextOnFocus
-        placeholder="e.g. Gym, Mom"
+        placeholder={S.favorites.placeholder}
         placeholderTextColor={t.x.subtle}
         returnKeyType="done"
         onSubmitEditing={save}
         autoCapitalize="sentences"
-        accessibilityLabel="Label"
+        accessibilityLabel={S.favorites.label}
         testID="favorite_label"
         style={[type.bodyLarge, styles.input, { color: t.c.onSurface, borderColor: t.c.outline }]}
       />
@@ -81,7 +82,7 @@ function FavoriteDialog({ draft, onClose }: { draft: FavoriteDraft; onClose: () 
             <Pressable
               key={i}
               onPress={() => setIcon(i)}
-              accessibilityLabel={i.toLowerCase()}
+              accessibilityLabel={S.favorites.icons[i]}
               accessibilityState={{ selected: on }}
               style={[
                 styles.iconChoice,
@@ -102,7 +103,7 @@ function FavoriteDialog({ draft, onClose }: { draft: FavoriteDraft; onClose: () 
 export function FavoriteStar({ saved, onPress }: { saved: boolean; onPress: () => void }) {
   const t = useTheme();
   return (
-    <Pressable onPress={onPress} hitSlop={8} accessibilityLabel={saved ? 'Edit favorite' : 'Save as favorite'} style={{ padding: 8 }}>
+    <Pressable onPress={onPress} hitSlop={8} accessibilityLabel={saved ? S.favorites.edit : S.favorites.saveAs} style={{ padding: 8 }}>
       <Icon name={saved ? 'star' : 'star-border'} size={20} color={saved ? FAVORITE_GOLD : alpha(t.x.subtle, 1)} />
     </Pressable>
   );

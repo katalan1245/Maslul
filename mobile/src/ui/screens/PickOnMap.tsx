@@ -2,6 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { S } from '../../i18n';
 import type { GeoPoint, Place } from '../../data/models';
 import { DEFAULT_LOCATION, useLastLocation } from '../../state/location';
 import { repo } from '../../state/services';
@@ -35,7 +36,7 @@ export function PickOnMapScreen({ route }: NativeStackScreenProps<RootStack, 'Pi
 
   const confirm = () => {
     if (center == null) return;
-    const p: Place = { name: label?.name ?? 'Pinned location', lat: center.lat, lon: center.lon, kind: 'PIN' };
+    const p: Place = { name: label?.name ?? S.pick.pinned, lat: center.lat, lon: center.lon, kind: 'PIN' };
     if (label?.subtitle != null) p.subtitle = label.subtitle;
     route.params.onPicked(p);
   };
@@ -56,21 +57,21 @@ export function PickOnMapScreen({ route }: NativeStackScreenProps<RootStack, 'Pi
         </View>
       </View>
       <View style={{ position: 'absolute', top: insets.top + 12, left: 12 }}>
-        <IconButton icon="arrow-back" label="Back" onPress={nav.pop} filled color={t.c.onSurface} />
+        <IconButton icon="arrow-back" label={S.common.back} onPress={nav.pop} filled color={t.c.onSurface} />
       </View>
       <View style={[styles.sheet, { backgroundColor: t.c.surface, paddingBottom: insets.bottom + 20 }]}>
         <Txt v="labelMedium" color={t.x.subtle}>
-          Move the map to choose a spot
+          {S.pick.hint}
         </Txt>
         <Txt v="titleMedium" numberOfLines={1} style={{ marginTop: 6 }} testID="picked_label">
-          {resolving ? 'Finding address…' : (label?.name ?? 'Pinned location')}
+          {resolving ? S.pick.finding : (label?.name ?? S.pick.pinned)}
         </Txt>
         {label?.subtitle != null && (
           <Txt v="bodySmall" color={t.x.subtle}>
             {label.subtitle}
           </Txt>
         )}
-        <Button text="Choose this location" onPress={confirm} disabled={center == null} style={{ marginTop: 14, height: 50 }} testID="choose_location" />
+        <Button text={S.pick.choose} onPress={confirm} disabled={center == null} style={{ marginTop: 14, height: 50 }} testID="choose_location" />
       </View>
     </View>
   );
