@@ -18,6 +18,8 @@ Branch `rewrite/react-native`, local commits only (never pushed). Development is
 | Android config: `com.maslul.app`, versionCode 5, permissions, background location removed, release-signing patch | `expo prebuild` output inspected |
 | JS compiles for both platforms | `expo export` to Hermes bytecode, Android and iOS |
 | **Android native compile**: our Kotlin module, every library, the C++/NDK parts | `./gradlew assembleDebug assembleRelease` succeed. No compiler warnings from `maslul-native` |
+| Maestro flows are valid | `maestro check-syntax` (Maestro 2.11.0) on all 11 flows and 3 sub-flows. Running them needs a device |
+| Upgrade test is possible: debug builds of both apps share the machine's debug key | `apksigner` shows the same certificate on the Kotlin app's and this app's debug APKs |
 | Built APKs: `com.maslul.app`, versionCode 5, arm64-v8a + x86_64; release has no debug-only permissions | `aapt2 dump badging`/`permissions`, `apksigner verify` on both APKs |
 
 ## Not verified yet (needs the device environment)
@@ -46,7 +48,7 @@ On the emulator: `adb install -r android/app/build/outputs/apk/debug/app-debug.a
 
 ### Android emulator
 
-1. `maestro test .maestro/` runs all 11 flows (plus 3 shared sub-flows). The shuttle ride-time slider is set by swipe; if that's flaky, set it by hand.
+1. `maestro test .maestro/` runs all 11 flows (the 3 shared steps in `subflows/` run from inside them). The shuttle ride-time slider is set by swipe; if that's flaky, set it by hand.
 2. **Map.** Light and dark styles load. Attribution sits bottom-left. Rotate the map: the compass appears, and tapping it resets north. Your location and heading beam show. Live buses show on a line, glide between updates, and show labels.
 3. **Live data.** On a line or stop screen during service hours, vehicles appear within about 30 s, and arrival times turn live (green).
 4. **Live directions.** Start a route:
@@ -59,7 +61,7 @@ On the emulator: `adb install -r android/app/build/outputs/apk/debug/app-debug.a
 
 ### Upgrade migration (most important)
 
-Both builds must be signed with the same key. Two debug builds work, since both use the default debug keystore.
+Both builds must be signed with the same key. Two debug builds built on the same machine work: both use `~/.android/debug.keystore` (`plugins/withReleaseSigning.js` points this app's debug build there), so build the Kotlin app first, which creates it.
 
 1. Install the Kotlin app (versionCode 4): `adb install app/build/outputs/apk/debug/app-debug.apk` from the repo root, after `sh gradlew assembleDebug` there (`gradlew` is committed without its execute bit).
 2. In it, set Home and Work, add two favourite places, a favourite line, a favourite stop, a saved trip and a shuttle. Change the theme, walk speed and rail preference, and switch on both Advanced switches.

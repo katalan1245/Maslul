@@ -2,7 +2,7 @@ appId: com.maslul.app
 name: A complete shuttle is saved, edited and deleted
 ---
 - launchApp
-- runFlow: _new_shuttle.yaml
+- runFlow: subflows/_new_shuttle.yaml
 - tapOn:
     id: shuttle_name
 - inputText: Maestro shuttle
