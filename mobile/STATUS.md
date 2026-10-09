@@ -19,7 +19,6 @@ Branch `rewrite/react-native`, local commits only (never pushed). Development is
 | JS compiles for both platforms | `expo export` to Hermes bytecode, Android and iOS |
 | **Android native compile**: our Kotlin module, every library, the C++/NDK parts | `./gradlew assembleDebug assembleRelease` succeed. No compiler warnings from `maslul-native` |
 | Built APKs: `com.maslul.app`, versionCode 5, arm64-v8a + x86_64; release has no debug-only permissions | `aapt2 dump badging`/`permissions`, `apksigner verify` on both APKs |
-| Kotlin app builds with the same toolchain (versionCode 4), for the upgrade test | `./gradlew assembleDebug` at the repo root |
 
 ## Not verified yet (needs the device environment)
 
