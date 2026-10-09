@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { brotliDecompressSync } from 'node:zlib';
 import { vehicleCount } from '../src/data/liveRepository';
 import { parseSnapshotJson, latestPerVehicle } from '../src/data/liveRepository';
-import { isTransit, scheduledTime } from '../src/data/models';
+import { type Itinerary, isTransit, scheduledTime } from '../src/data/models';
 import { nominatimToPlace } from '../src/data/nominatimApi';
 import { featureToPlace } from '../src/data/photonApi';
 import { lineStops, routeToDomain } from '../src/data/strideApi';
@@ -21,7 +21,7 @@ const fetchedAt = (name: string) => parseInstant(readFileSync(join(dir, `${name}
 
 test('Transitous plan: itineraries with transit legs, shapes and MOT trip ids', () => {
   const dto = json('transitous-plan');
-  const itins = dto.itineraries.map(itineraryToDomain);
+  const itins: Itinerary[] = dto.itineraries.map(itineraryToDomain);
   expect(itins.length).toBeGreaterThan(0);
   for (const it of itins) {
     expect(it.end).toBeGreaterThan(it.start);

@@ -1,3 +1,5 @@
-/** The only place to bump the version: raise VERSION_CODE by 1 with every release (the Kotlin app ended at 4). */
-export const APP_VERSION = '2.0.0';
-export const VERSION_CODE = 5;
+import v from '../version.json';
+
+/** From version.json, the one place the version is set (app.config.ts reads it too). */
+export const APP_VERSION: string = v.version;
+export const VERSION_CODE: number = v.versionCode;

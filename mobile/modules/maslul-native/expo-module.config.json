@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["MaslulNativeModule"]
+  },
+  "android": {
+    "modules": ["com.maslul.nativehelpers.MaslulNativeModule"]
+  }
+}

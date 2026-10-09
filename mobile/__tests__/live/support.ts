@@ -6,7 +6,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { brotliDecompressSync } from 'node:zlib';
-import { LiveRepository, jsBrotliFetcher } from '../../src/data/liveRepository';
+import { LiveRepository, jsSnapshotFetcher } from '../../src/data/liveRepository';
 import { TransitRepository } from '../../src/data/transitRepository';
 
 export const FIXTURES = join(__dirname, '..', '..', 'fixtures');
@@ -52,5 +52,5 @@ if (process.env.RECORD === '1') {
   };
 }
 
-export const brotliFetcher = jsBrotliFetcher((b) => brotliDecompressSync(b));
-export const newRepo = () => new TransitRepository(new LiveRepository(brotliFetcher));
+export const snapshotFetcher = jsSnapshotFetcher((b) => brotliDecompressSync(b));
+export const newRepo = () => new TransitRepository(new LiveRepository(snapshotFetcher));

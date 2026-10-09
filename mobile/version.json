@@ -1,0 +1,5 @@
+{
+  "//": "The only place to bump the version: raise versionCode by 1 with every release (the Kotlin app ended at 4).",
+  "version": "2.0.0",
+  "versionCode": 5
+}

@@ -15,10 +15,11 @@ export interface Snapshot {
 export const vehicleCount = (s: Snapshot) => [...s.byLine.values()].reduce((n, vs) => n + vs.length, 0);
 
 /**
- * Fetches a snapshot file and returns its decompressed JSON text, or null when the server
- * hasn't got it (any non-success status). The app does this natively, off the JS thread.
+ * Fetches the snapshot file at [url] and returns its vehicles (as [parseSnapshotJson] would for
+ * [snapshotTime]), or null when the server hasn't got it (any non-success status). The app does
+ * this natively, off the JS thread: a snapshot is ~3.6 MB of JSON.
  */
-export type BrotliFetcher = (url: string, userAgent: string) => Promise<string | null>;
+export type SnapshotFetcher = (url: string, userAgent: string, snapshotTime: Instant) => Promise<Vehicle[] | null>;
 
 /** The feed sometimes repeats a vehicle; keep only its newest report per trip. */
 export function latestPerVehicle(vs: Vehicle[]): Vehicle[] {
@@ -131,7 +132,7 @@ export class LiveRepository {
   private inflight: Promise<Snapshot | null> | null = null;
 
   constructor(
-    private readonly fetchBrotli: BrotliFetcher,
+    private readonly fetchSnapshot: SnapshotFetcher,
     private readonly base = 'https://open-bus-siri-requester.hasadna.org.il',
     private readonly clock: () => Instant = nowSec,
   ) {}
@@ -170,9 +171,8 @@ export class LiveRepository {
     for (let back = 0; back <= 3; back++) {
       const minute = current - back * 60;
       if (have != null && !(minute > have)) return null;
-      const json = await this.fetchBrotli(`${this.base}/${snapshotPath(minute)}.br`, USER_AGENT);
-      if (json != null) {
-        const vehicles = parseSnapshotJson(json, minute);
+      const vehicles = await this.fetchSnapshot(`${this.base}/${snapshotPath(minute)}.br`, USER_AGENT, minute);
+      if (vehicles != null) {
         const byLine = new Map<string, Vehicle[]>();
         for (const [line, vs] of groupBy(vehicles, (v) => v.lineRef)) byLine.set(line, latestPerVehicle(vs));
         return { minute, fetchedAt: this.clock(), byLine };
@@ -196,12 +196,12 @@ export function forTrip(vs: readonly Vehicle[], tripNumber: string | null, origi
   );
 }
 
-/** Plain fetch + a JS brotli decoder, for tests and scripts in Node. */
-export function jsBrotliFetcher(decompress: (b: Uint8Array) => Uint8Array): BrotliFetcher {
-  return async (url) => {
+/** Plain fetch, a brotli decoder and the JS parser: for tests and scripts in Node. */
+export function jsSnapshotFetcher(decompress: (b: Uint8Array) => Uint8Array): SnapshotFetcher {
+  return async (url, _ua, snapshotTime) => {
     const r = await Http.get(url);
     if (!r.ok) return null;
     const bytes = decompress(new Uint8Array(await r.arrayBuffer()));
-    return new TextDecoder('utf-8').decode(bytes);
+    return parseSnapshotJson(new TextDecoder('utf-8').decode(bytes), snapshotTime);
   };
 }
