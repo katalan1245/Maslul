@@ -13,7 +13,7 @@ const RLM = '‏';
 /** Hebrew text. Western digits throughout, as on Israeli signs and timetables. */
 export const he: Strings = {
   fmt: {
-    days: ['', 'יום ב׳', 'יום ג׳', 'יום ד׳', 'יום ה׳', 'יום ו׳', 'שבת', 'יום א׳'],
+    days: ['', 'יום ב׳', 'יום ג׳', 'יום ד׳', 'יום ה׳', 'יום ו׳', 'יום שבת', 'יום א׳'],
     months: ['ינו׳', 'פבר׳', 'מרץ', 'אפר׳', 'מאי', 'יוני', 'יולי', 'אוג׳', 'ספט׳', 'אוק׳', 'נוב׳', 'דצמ׳'],
     now: 'עכשיו',
     today: 'היום',
