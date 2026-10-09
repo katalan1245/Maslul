@@ -11,3 +11,6 @@ dist/
 keystore.properties
 *.jks
 *.keystore
+
+# APKs and build info for the emulator test session
+test-artifacts/
