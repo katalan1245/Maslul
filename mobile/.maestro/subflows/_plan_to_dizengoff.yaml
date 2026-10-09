@@ -6,9 +6,16 @@ appId: com.maslul.app
     id: field_to
 - inputText: dizengoff center
 - extendedWaitUntil:
-    visible: "Dizengoff Center.*"
+    visible:
+      text: "Dizengoff Center.*"
+      childOf:
+        id: search_results
     timeout: 20000
-- tapOn: "Dizengoff Center.*"
+# Scoped to the results: the typed text in the field matches too (Maestro ignores case).
+- tapOn:
+    text: "Dizengoff Center.*"
+    childOf:
+      id: search_results
 - extendedWaitUntil:
     visible:
       id: routes_list

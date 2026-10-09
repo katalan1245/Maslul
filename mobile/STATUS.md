@@ -32,6 +32,8 @@ A separate Claude session with mobile-mcp and adb ran `TESTING.md` on a Pixel 9 
 - Shuttles: create, edit and delete persist. Dark theme on every screen.
 - **Reminders arrive, but late:** ~1 m 45 s (windowed alarms; see NOTES.md). The exact-alarm permission has been added since and is untested.
 
+- **Maestro** (first run, 9 Oct 23:27, build b0925a6): 4 of 11 flows passed. Five failures were flow bugs, now fixed. Picking a search result matched the typed text in the field (Maestro ignores case). The "Still needed" line was under the keyboard. The slider swipe stops at 115 min, not 120. With the selector fixed, the host's rerun passed plan_trip, options_keep_routes and advanced_tools. One failure was an app bug: home_sheet, where the expanded Home sheet covered the search card. `MapSheet` sized itself by the window instead of its container above the tab bar, which also put the Home buttons over the map attribution. ride_within (rides on Shabbat) is still to be re-run.
+
 Fixed after that round and not yet re-tested: the trip guide stuck on "Get off now", arrival not sticking, "Bus in 1208 min", dim dark-map labels, the Home buttons over the map attribution, shuttle delete confirmation and day ranges. The list is in NOTES.md, "Deliberate changes".
 
 ## Not verified yet
@@ -39,7 +41,6 @@ Fixed after that round and not yet re-tested: the trip guide stuck on "Get off n
 - **iOS native compile.** The Swift module and CocoaPods have never been built (needs a Mac).
 - **Live vehicles** (SIRI brotli decoding at runtime) and green live times: every test session so far fell on Shabbat or at night.
 - **Compass** after rotating (mobile-mcp has no two-finger gesture).
-- **Maestro flows** on a device: the 2 GB emulator's low-memory killer stops Maestro's driver, and mobile-mcp holds the UI-automation slot it needs.
 - **Blank map after switching back to Navigate** (known bug 6), seen only on the 2 GB emulator; re-test with more RAM.
 - **iOS as a whole.**
 

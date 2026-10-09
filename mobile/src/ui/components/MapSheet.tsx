@@ -46,7 +46,9 @@ export function MapSheet({
 }) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
+  // The container's height, not the window's: on a tab screen the tab bar takes the bottom, and sizing by the
+  // window let the expanded sheet run up over the search card.
+  const [height, setHeight] = useState(useWindowDimensions().height);
   const sheet = useRef<BottomSheet>(null);
   const [index, setIndex] = useState(0);
   const position = useSharedValue(height);
@@ -64,7 +66,7 @@ export function MapSheet({
     peekHeight,
   };
   return (
-    <View style={styles.fill} testID={testID}>
+    <View style={styles.fill} testID={testID} onLayout={(e) => setHeight(e.nativeEvent.layout.height)}>
       {map(controls)}
       {overlay?.(controls)}
       <BottomSheet

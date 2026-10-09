@@ -102,7 +102,8 @@ If the next bus is today and within the hour it's still "in N min", which is rig
 **R9. Automated flows (Maestro).** Maestro needs the UI-automation slot that mobile-mcp's on-device agent holds, and enough memory.
 1. Stop mobile-mcp's agent: `adb shell pkill -f com.mobilenext` (and don't use mobile-mcp tools until the run ends).
 2. `maestro --device emulator-5554 test maestro/ --format junit --output maestro-report.xml`.
-3. If the driver still doesn't start, quote the error and the `lowmemorykiller` lines, and mark it **couldn't test**.
+3. Last run's failures in plan_trip, options_keep_routes, advanced_tools, shuttle_save and shuttle_missing were the flows' own; they're fixed in this `maestro/`. home_sheet failed on an app bug, fixed in this build. All 11 should pass, except ride_within, which may find no rides on Shabbat or at night; then say so.
+4. If the driver still doesn't start, quote the error and the `lowmemorykiller` lines, and mark it **couldn't test**.
 
 ## Report
 
