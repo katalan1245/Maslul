@@ -9,6 +9,7 @@ import {
 } from './models';
 import { DEFAULT_MAX_WALK_MINUTES } from './transitousApi';
 import { distinctBy } from './util';
+import { LANGUAGES, type LanguageSetting } from '../i18n';
 
 export { DEFAULT_MAX_WALK_MINUTES };
 
@@ -42,6 +43,8 @@ export type FavoriteIcon = (typeof FAVORITE_ICONS)[number];
 
 export interface Settings {
   theme: ThemeMode;
+  /** Not in the Kotlin app, which was English only. SYSTEM follows the phone. */
+  language: LanguageSetting;
   walkSpeed: WalkSpeed;
   maxWalkMinutes: number;
   modes: TransitMode[];
@@ -58,6 +61,7 @@ export const DEFAULT_MODES: TransitMode[] = ['BUS', 'TRAIN', 'LIGHT_RAIL', 'METR
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: 'SYSTEM',
+  language: 'SYSTEM',
   walkSpeed: 'NORMAL',
   maxWalkMinutes: DEFAULT_MAX_WALK_MINUTES,
   modes: DEFAULT_MODES,
@@ -245,6 +249,7 @@ export function readSettings(v: unknown): Settings {
   const d = DEFAULT_SETTINGS;
   return {
     theme: oneOf(THEME_MODES, v.theme) ?? d.theme,
+    language: oneOf(LANGUAGES, v.language) ?? d.language,
     walkSpeed: oneOf(Object.keys(WALK_SPEEDS) as WalkSpeed[], v.walkSpeed) ?? d.walkSpeed,
     maxWalkMinutes: int(v.maxWalkMinutes) ?? d.maxWalkMinutes,
     modes: Array.isArray(v.modes) ? distinctBy(list(v.modes, (m) => oneOf(TRANSIT_MODES, m)), (m) => m) : d.modes,

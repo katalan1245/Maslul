@@ -1,6 +1,7 @@
 import { fixed, sumOf } from './util';
 import type { Instant, LocalDate } from './time';
 import { TripIds } from './geo';
+import { S } from '../i18n';
 
 export interface GeoPoint {
   lat: number;
@@ -147,8 +148,8 @@ export const callPoint = (s: StopCall): GeoPoint => ({ lat: s.lat, lon: s.lon })
 /** "Platform 13", "Platform 5, floor 6" — where to stand at a big station. */
 export function platformLabel(s: StopCall): string | null {
   const parts: string[] = [];
-  if (s.track != null) parts.push(`Platform ${s.track}`);
-  if (s.floor != null) parts.push(s.track != null ? `floor ${s.floor}` : `Floor ${s.floor}`);
+  if (s.track != null) parts.push(S.stop.platform(s.track));
+  if (s.floor != null) parts.push(s.track != null ? S.stop.floorAfterPlatform(s.floor) : S.stop.floor(s.floor));
   return parts.length ? parts.join(', ') : null;
 }
 
@@ -227,7 +228,7 @@ export function legOptions(l: Leg): Leg[] {
 export function lineLabel(l: Leg): string {
   const s = l.routeShortName;
   if (s != null && s.trim() !== '' && s !== 'NaN') return s;
-  return l.mode === 'TRAIN' ? 'Train' : l.mode === 'CABLE_CAR' ? 'Cable' : '—';
+  return l.mode === 'TRAIN' ? S.stop.trainLine : l.mode === 'CABLE_CAR' ? S.stop.cableLine : '—';
 }
 
 /** Stable identity of one ride, for live-state maps. */
@@ -292,7 +293,7 @@ export const routeOrigin = (r: LineRoute) => LongName.parse(r.longName)[0];
 export const routeDestination = (r: LineRoute) => LongName.parse(r.longName)[1];
 export function routeLabel(r: LineRoute): string {
   if (r.shortName.trim() !== '' && r.shortName !== 'NaN') return r.shortName;
-  return r.mode === 'TRAIN' ? 'Train' : '—';
+  return r.mode === 'TRAIN' ? S.stop.trainLine : '—';
 }
 
 /** A line groups all its directions/alternatives (same operator + mkt); the first is the main one. */

@@ -14,7 +14,7 @@ import { Easing, type NativeSyntheticEvent, Pressable, StyleSheet, View, type Vi
 import Svg, { Path } from 'react-native-svg';
 import type { GeoPoint } from '../../data/models';
 import { contentColorOn, useTheme } from '../theme';
-import { DARK_STYLE, LIGHT_STYLE, darkStyle } from './darkStyle';
+import { DARK_STYLE, LIGHT_STYLE, mapStyle as loadMapStyle } from './darkStyle';
 import { angleDiff, useHeading } from './heading';
 
 export interface MapLine {
@@ -224,7 +224,7 @@ export function TransitMap({
   const camera = useRef<CameraRef>(null);
   const map = useRef<MapRef>(null);
   const [loaded, setLoaded] = useState(false);
-  const [dark, setDark] = useState<StyleSpecification | null>(null);
+  const [loadedStyle, setLoadedStyle] = useState<{ dark: boolean; style: StyleSpecification } | null>(null);
   const [orientation, setOrientation] = useState({ bearing: 0, pitch: 0 });
   const view = useRef({ center: initialCenter ?? fitPoints[0] ?? null, zoom: initialZoom });
   const heading = useHeading(user != null);
@@ -232,14 +232,15 @@ export function TransitMap({
   const followingNow = focusVehicleId != null && vehicles.some((v) => v.id === focusVehicleId) ? focusVehicleId : null;
 
   useEffect(() => {
-    if (!t.dark) return;
     let alive = true;
-    darkStyle().then((s) => alive && setDark(s));
+    const dark = t.dark;
+    loadMapStyle(dark).then((style) => alive && style && setLoadedStyle({ dark, style }));
     return () => {
       alive = false;
     };
   }, [t.dark]);
-  const mapStyle: string | StyleSpecification = t.dark ? (dark ?? DARK_STYLE) : LIGHT_STYLE;
+  // The plain style URL until the adapted one (labels in the app's language) has loaded.
+  const mapStyle: string | StyleSpecification = loadedStyle?.dark === t.dark ? loadedStyle.style : t.dark ? DARK_STYLE : LIGHT_STYLE;
 
   if (controller) {
     controller.current = {

@@ -80,7 +80,8 @@ test('an empty Kotlin store is all defaults', () => {
   expect(loadUserData('{}')).toEqual(EMPTY_USER_DATA);
   expect(readUserData('{"settings":{}}')!.settings).toEqual(DEFAULT_SETTINGS);
   expect(DEFAULT_SETTINGS).toEqual({
-    theme: 'SYSTEM', walkSpeed: 'NORMAL', maxWalkMinutes: 20, modes: ['BUS', 'TRAIN', 'LIGHT_RAIL', 'METRO', 'CABLE_CAR', 'FERRY'],
+    // language is new (the Kotlin app was English only): upgraders follow the phone.
+    theme: 'SYSTEM', language: 'SYSTEM', walkSpeed: 'NORMAL', maxWalkMinutes: 20, modes: ['BUS', 'TRAIN', 'LIGHT_RAIL', 'METRO', 'CABLE_CAR', 'FERRY'],
     wheelchair: false, railPreference: 'NONE', reminderMinutes: 5, rides: false, onBoard: false,
   });
 });
