@@ -51,8 +51,9 @@ export function brightenDark(style: StyleSpecification): StyleSpecification {
   const layers = style.layers.map((l) => {
     const extra: Paint | undefined = l.id.startsWith('place_') ? { 'text-color': '#D5DAE0', 'text-halo-color': '#1E232B' } : OVERRIDES[l.id];
     if (!extra) return l;
-    const prefix = `${l.type}-`;
-    const allowed = Object.fromEntries(Object.entries(extra).filter(([k]) => k.startsWith(prefix)));
+    // Paint keys are named after the layer type, except labels: a symbol layer paints text-* and icon-*.
+    const prefixes = l.type === 'symbol' ? ['text-', 'icon-'] : [`${l.type}-`];
+    const allowed = Object.fromEntries(Object.entries(extra).filter(([k]) => prefixes.some((p) => k.startsWith(p))));
     return { ...l, paint: { ...('paint' in l ? l.paint : {}), ...allowed } } as typeof l;
   });
   return { ...style, layers };
