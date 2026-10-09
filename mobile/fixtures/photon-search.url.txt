@@ -1,0 +1,2 @@
+https://photon.komoot.io/api/?q=%D7%93%D7%99%D7%96%D7%A0%D7%92%D7%95%D7%A3%20%D7%A1%D7%A0%D7%98%D7%A8&limit=8&bbox=34.2%2C29.4%2C35.95%2C33.4&lat=32.08&lon=34.78
+fetched 2026-10-09T11:33:13.994Z

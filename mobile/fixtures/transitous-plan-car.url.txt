@@ -1,0 +1,2 @@
+https://api.transitous.org/api/v6/plan?fromPlace=32.0853%2C34.7818&toPlace=32.794%2C34.9896&numItineraries=1&minTransferTime=2&additionalTransferTime=1&arriveBy=false&pedestrianSpeed=1.3&maxPreTransitTime=1200&maxPostTransitTime=1200&transitModes=WALK&directModes=CAR&maxDirectTime=21600
+fetched 2026-10-09T11:34:55.862Z

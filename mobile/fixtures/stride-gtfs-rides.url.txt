@@ -1,0 +1,2 @@
+https://open-bus-stride-api.hasadna.org.il/gtfs_rides/list?gtfs_route_id=9665801&limit=5
+fetched 2026-10-09T11:34:06.600Z

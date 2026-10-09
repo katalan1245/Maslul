@@ -1,0 +1,2 @@
+https://api.transitous.org/api/v6/stoptimes?stopId=il-Israel-MOT_52313&n=40&time=2026-10-09T11%3A09%3A57Z&window=2400
+fetched 2026-10-09T11:34:57.872Z

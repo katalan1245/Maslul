@@ -1,0 +1,2 @@
+https://nominatim.openstreetmap.org/search?q=%D7%93%D7%99%D7%96%D7%A0%D7%92%D7%95%D7%A3%2050%20%D7%AA%D7%9C%20%D7%90%D7%91%D7%99%D7%91&format=jsonv2&addressdetails=1&countrycodes=il%2Cps&limit=5
+fetched 2026-10-09T11:33:19.833Z

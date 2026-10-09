@@ -1,0 +1,2 @@
+https://open-bus-stride-api.hasadna.org.il/gtfs_ride_stops/list?gtfs_ride__gtfs_route_id=9706409&gtfs_stop_ids=49118587&arrival_time_from=2026-10-07T21%3A00%3A00Z&arrival_time_to=2026-10-09T03%3A00%3A00Z&limit=1000
+fetched 2026-10-09T11:34:42.305Z
