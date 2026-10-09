@@ -1,0 +1,17 @@
+appId: com.maslul.app
+name: Search shows a new top result as you keep typing
+---
+- launchApp
+- tapOn: "Where to?"
+- tapOn:
+    id: field_to
+- inputText: "ויצמן 5"
+- extendedWaitUntil:
+    visible: ".*ויצמן 5.*"
+    timeout: 20000
+- inputText: " כ"
+- extendedWaitUntil:
+    visible: ".*כפר סבא.*"
+    timeout: 20000
+# Shown without scrolling: the list went back to the top for the new results.
+- assertVisible: ".*כפר סבא.*"

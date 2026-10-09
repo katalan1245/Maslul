@@ -13,7 +13,7 @@ jest.mock('@maplibre/maplibre-react-native', () => {
   const box = (name) => {
     const C = React.forwardRef((props, ref) => {
       React.useImperativeHandle(ref, () => ({ easeTo: jest.fn(), jumpTo: jest.fn(), flyTo: jest.fn(), fitBounds: jest.fn(), getBounds: jest.fn(async () => [0, 0, 0, 0]) }));
-      return React.createElement(View, { testID: props.testID ?? name }, props.children);
+      return React.createElement(View, { ...props, testID: props.testID ?? name }, props.children);
     });
     C.displayName = name;
     return C;

@@ -1,0 +1,13 @@
+appId: com.maslul.app
+---
+- assertVisible: "Where to?"
+- tapOn:
+    id: settings_button
+- scrollUntilVisible:
+    element:
+      id: my_shuttles
+- tapOn:
+    id: my_shuttles
+- tapOn:
+    id: add_shuttle
+- assertVisible: New shuttle

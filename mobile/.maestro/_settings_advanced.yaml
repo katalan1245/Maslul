@@ -1,0 +1,21 @@
+# Shared: set the two Advanced switches from Settings. Pass RIDES and ON_BOARD as "on"/"off".
+appId: com.maslul.app
+---
+- tapOn:
+    id: settings_button
+- scrollUntilVisible:
+    element:
+      id: on_board_switch
+- runFlow:
+    when:
+      true: ${RIDES == 'on'}
+    commands:
+      - tapOn:
+          id: rides_switch
+- runFlow:
+    when:
+      true: ${ON_BOARD == 'on'}
+    commands:
+      - tapOn:
+          id: on_board_switch
+- back

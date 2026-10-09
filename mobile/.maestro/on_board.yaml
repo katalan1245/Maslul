@@ -1,0 +1,17 @@
+appId: com.maslul.app
+name: On a bus lists the rides around
+---
+- launchApp:
+    clearState: true
+- runFlow:
+    file: _settings_advanced.yaml
+    env:
+      RIDES: "off"
+      ON_BOARD: "on"
+- tapOn:
+    id: on_board
+- assertVisible: Which ride are you on?
+# Rides around, or (late at night) the message saying there are none.
+- extendedWaitUntil:
+    visible: "(No rides found around you|.*Live · .*|.*no live data.*)"
+    timeout: 60000

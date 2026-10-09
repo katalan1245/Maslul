@@ -1,0 +1,21 @@
+appId: com.maslul.app
+name: Advanced tools stay out of the way until switched on
+---
+# A fresh install has both switches off.
+- launchApp:
+    clearState: true
+- assertNotVisible:
+    id: on_board
+- runFlow: _plan_to_dizengoff.yaml
+- assertNotVisible:
+    id: ride_chip
+- back
+- runFlow:
+    file: _settings_advanced.yaml
+    env:
+      RIDES: "on"
+      ON_BOARD: "off"
+- runFlow: _plan_to_dizengoff.yaml
+- tapOn:
+    id: ride_chip
+- assertVisible: "Getting a ride (טרמפ)?"
