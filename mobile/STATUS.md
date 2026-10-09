@@ -1,13 +1,13 @@
 # Maslul React Native rewrite: status
 
-Branch `rewrite/react-native`, local commits only (never pushed). Development is complete, the Android app compiles, and two emulator rounds have run (below). Left: re-testing the fixes, Maestro and live buses on a device, and iOS on a Mac.
+Branch `rewrite/react-native` (the owner pushes it to their fork). Development is complete, the Android app compiles, and three emulator rounds have run (below). Left: re-testing round 3's fixes, live buses on a device, and iOS on a Mac.
 
 ## Verified here (in the container, without a device)
 
 | What | How |
 |---|---|
 | All Kotlin `data/` code ported to TypeScript | Strict `tsc` clean |
-| Kotlin unit tests (all 15 files) ported | `npm test`: 23 suites, 173 tests pass |
+| Kotlin unit tests (all 15 files) ported | `npm test`: 25 suites, 176 tests pass |
 | Old-store migration: every field and default, broken entries, once only, retry when unreadable | Unit tests plus a whole-app first-launch test |
 | Parsers on real service responses (15 recorded fixtures, incl. a 3.6 MB SIRI snapshot) | Offline tests |
 | Live services: Transitous plan/geocode/stop times, Stride, SIRI, Photon, Nominatim, ride and shuttle planning, on-board | `npm run test:live`: 18 pass. Time-dependent parts skip with a warning (Shabbat, night, Stride's day) |
@@ -30,11 +30,18 @@ A separate Claude session with mobile-mcp and adb ran `TESTING.md` on a Pixel 9 
 - Every tab opens and Back works, with no Maslul crash in `logcat -b crash`. Map tiles load in light and dark, with Hebrew and English names.
 - Trip planning, the trip notification with its progress bar and "End trip", the trip with the screen locked and after a swipe from Recents, the arrival alert firing once, and Share.
 - Shuttles: create, edit and delete persist. Dark theme on every screen.
-- **Reminders arrive, but late:** ~1 m 45 s (windowed alarms; see NOTES.md). The exact-alarm permission has been added since and is untested.
+- **Reminders:** without "Alarms & reminders" allowed (Android 14+ leaves it off) they are windowed: 52 s late in round 3, and allowed up to an hour for far-off trips. Once allowed they arrive on the second (round 3). The app now offers to open that setting; untested.
 
 - **Maestro** (first run, 9 Oct 23:27, build b0925a6): 4 of 11 flows passed. Five failures were flow bugs, now fixed. Picking a search result matched the typed text in the field (Maestro ignores case). The "Still needed" line was under the keyboard. The slider swipe stops at 115 min, not 120. With the selector fixed, the host's rerun passed plan_trip, options_keep_routes and advanced_tools. One failure was an app bug: home_sheet, where the expanded Home sheet covered the search card. `MapSheet` sized itself by the window instead of its container above the tab bar, which also put the Home buttons over the map attribution. ride_within (rides on Shabbat) is still to be re-run.
 
-Fixed after that round and not yet re-tested: the trip guide stuck on "Get off now", arrival not sticking, "Bus in 1208 min", dim dark-map labels, the Home buttons over the map attribution, shuttle delete confirmation and day ranges. The list is in NOTES.md, "Deliberate changes".
+- **Round 3** (10 Oct, Shabbat night, build 54cda38, 4 GB RAM): 13 pass, 3 fail. Passed: arrival sticking, times far away with their day, dark-map labels, the map attribution on Home, shuttle day ranges, edit after a cold start and the delete dialog, shuttle reminder text, the map after switching tabs (0.5 s). Maestro 9 of 11.
+
+Fixed after round 3 and not yet re-tested (NOTES.md, "Deliberate changes"):
+- The trip guide lagged ~100 m behind on real routes: stops counted late, "Get off now" never shown, stuck after getting off. Replaying the tester's GPS fixes on the same real itinerary now gives the expected steps.
+- The exact-alarm prompt.
+- Line search over a weekend (Stride's newest feed is Thursday's).
+- The day in the route details header.
+- ride_within: "Couldn't load routes" on the device, while the same request and ranking succeed here. Not understood; the error now names its cause and is logged, for the next round.
 
 ## Not verified yet
 

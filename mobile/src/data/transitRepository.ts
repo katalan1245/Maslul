@@ -805,15 +805,25 @@ export class TransitRepository {
     const s = TripIds.lineRef(routeId);
     if (s == null || !/^[+-]?\d+$/.test(s)) return null;
     const ref = Number(s);
+    return (await this.onFeedDay((day) => this.stride.routesByLineRef([ref], day)))[0] ?? null;
+  }
+
+  /**
+   * [get] on today's Stride feed, else yesterday's (today's loads shortly after midnight), else the
+   * newest Stride has: over a weekend that can be Thursday's.
+   */
+  private async onFeedDay<T>(get: (day: LocalDate) => Promise<T[]>): Promise<T[]> {
     const day = today();
-    return (await this.stride.routesByLineRef([ref], day))[0] ?? (await this.stride.routesByLineRef([ref], plusDays(day, -1)))[0] ?? null;
+    for (const d of [day, plusDays(day, -1)]) {
+      const r = await get(d);
+      if (r.length) return r;
+    }
+    const latest = await orNull(this.stride.latestDate());
+    return latest != null && latest < plusDays(day, -1) ? get(latest) : [];
   }
 
   async searchLines(query: string, mode: TransitMode | null): Promise<Line[]> {
-    const day = today();
-    let routes = await this.stride.searchRoutes(query, day, mode);
-    // Today's feed is loaded shortly after midnight; fall back to yesterday meanwhile.
-    if (routes.length === 0) routes = await this.stride.searchRoutes(query, plusDays(day, -1), mode);
+    let routes = await this.onFeedDay((day) => this.stride.searchRoutes(query, day, mode));
     if (mode != null) routes = routes.filter((r) => r.mode === mode);
     return groupLines(routes);
   }

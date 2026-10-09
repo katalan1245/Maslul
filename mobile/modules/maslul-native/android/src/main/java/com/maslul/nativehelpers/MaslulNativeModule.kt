@@ -1,5 +1,6 @@
 package com.maslul.nativehelpers
 
+import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -7,6 +8,8 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.Icon
 import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import android.util.JsonReader
 import android.util.JsonToken
 import expo.modules.kotlin.functions.Coroutine
@@ -29,6 +32,8 @@ import java.time.OffsetDateTime
  *   (a snapshot is ~3.6 MB of JSON), returning only the vehicles, in columns.
  * - updateTripNotification: puts the current step of live directions in the foreground
  *   service's notification (expo-location posts it; the text is ours), with "End trip".
+ * - canScheduleExactAlarms / openExactAlarmSettings: reminders come on time only with "Alarms &
+ *   reminders" allowed, which Android 14+ leaves off.
  */
 class MaslulNativeModule : Module() {
   private val context: Context
@@ -45,6 +50,18 @@ class MaslulNativeModule : Module() {
 
     AsyncFunction("fetchSiriVehicles") Coroutine { url: String, userAgent: String, snapshotEpochSec: Double ->
       withContext(Dispatchers.IO) { fetchSiri(url, userAgent, snapshotEpochSec.toLong()) }
+    }
+
+    Function("canScheduleExactAlarms") {
+      Build.VERSION.SDK_INT < Build.VERSION_CODES.S || context.getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
+    }
+
+    Function("openExactAlarmSettings") {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        context.startActivity(
+          Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:${context.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+        )
+      }
     }
 
     AsyncFunction("updateTripNotification") { taskName: String, title: String, text: String, progress: Double, endUrl: String ->

@@ -106,7 +106,7 @@ class LinesHomeModel extends Model {
 }
 
 type Row =
-  | { kind: 'message'; key: string; title: string; body: string; icon?: 'near-me' }
+  | { kind: 'message'; key: string; title: string; body: string; icon?: 'near-me' | 'search-off' }
   | { kind: 'loading'; key: string }
   | { kind: 'header'; key: string; text: string; refresh?: boolean }
   | { kind: 'line'; key: string; route: LineRoute; variants: number; favorite: boolean }
@@ -126,7 +126,7 @@ export function LinesHomeScreen() {
   if (model.showsResults) {
     if (model.error != null) rows.push({ kind: 'message', key: 'err', title: 'Something went wrong', body: model.error });
     else if (!model.loading && model.results.length === 0) {
-      rows.push({ kind: 'message', key: 'none', title: 'No lines found', body: 'Search by line number (e.g. 1, 480, 5א) or by a city or station name.' });
+      rows.push({ kind: 'message', key: 'none', title: 'No lines found', body: 'Search by line number (e.g. 1, 480, 5א) or by a city or station name.', icon: 'search-off' });
     }
     model.results.forEach((l) =>
       rows.push({ kind: 'line', key: `${l.routes[0].operatorRef}-${l.routes[0].mkt}-${l.routes[0].gtfsRouteId}`, route: l.routes[0], variants: l.routes.length, favorite: false }),

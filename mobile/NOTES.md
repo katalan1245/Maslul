@@ -50,7 +50,12 @@ Found by the emulator tests (`TESTING.md`); everything else follows Kotlin.
 - **Shuttle days** collapse runs of three or more into a range ("Sun–Fri", "Sun, Mon, Wed–Sat"); Kotlin did this only for Sun–Thu.
 - **Deleting a shuttle** asks first.
 - **Reminders** for one of your own shuttles name it without "Bus" in front.
-- **Exact alarms**: see Reminders above.
+- **Exact alarms**: see Reminders above. When a reminder is set and "Alarms & reminders" is off, the app offers to open that setting (`canScheduleExactAlarms`/`openExactAlarmSettings` in the native module).
+- **Position along a route** (`GeoMath.project`). Kotlin took, among all points within the snap radius, the one nearest the previous position, which on a finely drawn route lags the real position by up to that radius (~100 m on a real line 24 ride): stops were counted late and "Get off now" never came. It now takes the nearest point of the pass of the route closest to the previous position. That also places stops and vehicles more exactly.
+- **Get off now** is kept while within 40 m of the stop, for up to a minute, since there the position is already the walk's start. Waiting at the boarding stop before the bus stays on the walk's countdown.
+- **Line search** falls back from today's and yesterday's Stride feed to the newest one Stride has; over a weekend that's Thursday's. "No lines found" shows a search icon, not the no-connection cloud.
+- **A failed route search** says whether the planner answered with an error, took too long, or couldn't be reached, and logs the error (`console.warn`), instead of always "Check your connection".
+- **Route details** show the day in the header and the shared text when the trip isn't today.
 
 ## Map
 
