@@ -1,6 +1,8 @@
 # Maslul: emulator test instructions
 
-You are testing a new build of **Maslul**, an Israeli public-transport app (route planning, lines, stops, live buses on a map). It is a React Native rewrite of an older Kotlin app and replaces it as an update: same app id `com.maslul.app`. Nothing in this build has run on a device before, so expect bugs. Your job is to **find and report them, not fix them**. The code lives in another session.
+You are a Claude session with tools (an MCP) that control an Android emulator. You are testing a new build of **Maslul**, an Israeli public-transport app (route planning, lines, stops, live buses on a map). It is a React Native rewrite of an older Kotlin app and replaces it as an update: same app id `com.maslul.app`. Nothing in this build has run on a device before, so expect bugs. Your job is to **find and report them, not fix them**. The code lives in another Claude session, which will fix what you report and send a new build.
+
+**Do everything yourself. Never ask the human to tap, type, install or check anything.** Use your emulator tools to install APKs, tap, type, swipe, press Back, take screenshots, set the location and read logs. Where this file shows an `adb` or `maestro` command, run it if you have a shell that reaches the emulator; otherwise do the same thing with your MCP tools. Decide for yourself when the UI is ambiguous, and write down what you decided. Run the whole file in one go, from step 1 to the report.
 
 ## Files in this folder
 
@@ -17,8 +19,10 @@ Both APKs are signed with the same debug key, so the new one installs over the o
 ## Rules
 
 - Don't modify, rebuild or re-sign the APKs, and don't push anything anywhere.
+- Take a screenshot at every check, and name the files after the step (e.g. `2.5-home-work.png`).
 - Something that fails is a finding: write it down and go on to the next step. Don't stop at the first failure.
-- If a step is impossible (no network, Maestro missing…), say so in the report rather than skipping it silently.
+- If a step is impossible (no network, no tool for it), say so in the report rather than skipping it silently.
+- If you can't find an element by its text, dump the UI hierarchy (`adb shell uiautomator dump /sdcard/ui.xml && adb pull /sdcard/ui.xml`, or your tool's equivalent) and use the ids in it. The app's controls have ids such as `settings_button`, `rides_switch`, `on_board_switch`, `on_board`.
 - Separate what you **saw** from what you **guess** about the cause.
 
 ## Step 1: set up
@@ -54,7 +58,7 @@ This checks that people updating from the old app keep their data.
 
 ## Step 4: automated flows
 
-Install [Maestro](https://maestro.dev) if needed (needs Java 17+), then from this folder:
+If you have a shell that reaches the emulator, install [Maestro](https://maestro.dev) if needed (needs Java 17+), then run from this folder:
 
 ```bash
 maestro test maestro/ --format junit --output maestro-report.xml
@@ -64,10 +68,17 @@ maestro test maestro/ --format junit --output maestro-report.xml
 - The flows talk to the live services, so times and results vary.
 - The shuttle flows set a slider by swiping. If only that swipe fails, say so; it's a known weak spot of the flow, not necessarily an app bug.
 - For each failing flow, include the flow name, the failing step from the output, and the screenshot Maestro saves (`~/.maestro/tests/<run>/`).
+- **Without Maestro:** each `maestro/*.yaml` file is a readable script. Do its steps yourself with your tools, in order:
+  - `launchApp: clearState: true` means `adb shell pm clear com.maslul.app`, then open the app and allow every permission it asks for;
+  - `tapOn: "text"` or `id: x` means tap that element;
+  - `inputText` means type;
+  - `assertVisible` and `extendedWaitUntil` mean check that it's on screen, waiting up to the timeout;
+  - `runFlow: file: subflows/...` means run that file's steps with the `env` values given.
+  Report each flow as pass or fail the same way.
 
 ## Step 5: hand checks
 
-Do these by hand, after the flows. For each one, report **pass**, **fail** (with what you saw), or **couldn't test** (with why).
+Do these yourself with your tools, after the flows. For each one, report **pass**, **fail** (with what you saw), or **couldn't test** (with why).
 
 1. **Map.**
    - Tiles load in both light and dark theme (Settings).
@@ -94,7 +105,7 @@ Do these by hand, after the flows. For each one, report **pass**, **fail** (with
 
 ## Report
 
-Write `report.md` in this folder and put the logs next to it (`logcat.txt`, `maestro-report.xml`, screenshots). Use this format:
+End your session with the report's Summary section as your final message. Write `report.md` in this folder and put the logs next to it (`logcat.txt`, `maestro-report.xml`, screenshots). Use this format:
 
 ```
 # Maslul test report
