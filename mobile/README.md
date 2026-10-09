@@ -1,6 +1,6 @@
 # Maslul (React Native)
 
-The Maslul transit app for Israel, rewritten in React Native + Expo + TypeScript for Android and iOS. It replaces the Kotlin app in [`../app`](../app), which it was ported from screen by screen and which stays the reference for behaviour.
+The Maslul transit app for Israel, rewritten in React Native + Expo + TypeScript for Android and iOS, in English and Hebrew. It replaces the Kotlin app in [`../app`](../app), which it was ported from screen by screen and which stays the reference for behaviour.
 
 It keeps the Android identity, so it installs as an update over the Kotlin app:
 - package `com.maslul.app`;
@@ -66,6 +66,7 @@ src/
   state/              user store and its migration, location, the shared repository instance
   live/               live directions (foreground location service), trip guide, notifications
   ui/                 theme, navigation, components, the map, and screens/
+  i18n/               app text in English and Hebrew, language choice and right-to-left switch
   native.ts           JS side of the native module
 modules/maslul-native Kotlin + Swift: old-store read, SIRI brotli decode and parse, trip notification
 plugins/              config plugin for release signing

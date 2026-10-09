@@ -28,6 +28,7 @@ Run the typecheck and `npm test` before calling a task done.
 - **Generated native projects.** `android/` and `ios/` are generated from `app.config.ts` and config plugins (`plugins/`), so never edit them by hand. Native code of our own lives in `modules/maslul-native`.
 - **Development builds only.** The app has a native module, so Expo Go won't run it; use `npm run android` or `npm run ios`.
 - **Keep the port's shape.** `src/data/` mirrors `../app/src/main/java/com/maslul/app/data` file for file. Behaviour follows the Kotlin app unless a change is deliberate and written up in NOTES.md.
-- **Keep the licence and credits:** AGPL-3.0, the data-source credits in Settings → About (`ABOUT` in `src/ui/screens/Settings.tsx`), and the OpenStreetMap/OpenFreeMap attribution on the map.
+- **Keep the licence and credits:** AGPL-3.0, the data-source credits in Settings → About (`settings.credits` in `src/i18n/en.ts` and `he.ts`), and the OpenStreetMap/OpenFreeMap attribution on the map.
 - **Time.** Instants are epoch seconds and times are Israel time via `src/data/time.ts`; never use the device's time zone.
+- **Text.** Every user-visible string lives in `src/i18n/en.ts` with its Hebrew in `he.ts`; read it as `S.…` at render time. See NOTES.md, Languages.
 - **Navigation** uses React Navigation (native stack over bottom tabs, in `src/App.tsx` and `src/ui/nav.ts`), not Expo Router.

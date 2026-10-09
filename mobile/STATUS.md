@@ -22,6 +22,17 @@ Branch `rewrite/react-native` (the owner pushes it to their fork). Development i
 | Upgrade test is possible: debug builds of both apps share the machine's debug key | `apksigner` shows the same certificate on the Kotlin app's and this app's debug APKs |
 | Built APKs: `com.maslul.app`, versionCode 5, arm64-v8a + x86_64; release has no debug-only permissions | `aapt2 dump badging`/`permissions`, `apksigner verify` on both APKs |
 
+### Hebrew (branch `feature/hebrew`)
+
+| What | How |
+|---|---|
+| Every string has a Hebrew version | `he.ts` is typed against `en.ts`: `tsc` clean |
+| No English left on the main screens in Hebrew: Home, Settings, search, routes, Options, route details, Lines, a line and its timetable, Stations | `__tests__/hebrew.test.tsx`; 25 suites, 179 tests pass |
+| First launch in Hebrew turns on right-to-left and reloads once | Same test, with the reload mocked |
+| Plurals, gender and day names | Unit checks in the same test |
+
+Not verified: anything on a device. That covers the right-to-left layout itself (the test renderer can't flip it), the alignment of mixed Hebrew and numbers, the reload on a release build, the Hebrew "End trip" action (native change, needs a rebuild), and iOS. The device checks are in `TESTING-hebrew.md`. The Hebrew wording is waiting for the owner's review.
+
 ## Verified on the Android emulator
 
 A separate Claude session with mobile-mcp and adb ran `TESTING.md` on a Pixel 9 AVD (API 37, 2 GB RAM), on release build b0925a6 and earlier. Its report is `/share/maslul-test/report.md`.
