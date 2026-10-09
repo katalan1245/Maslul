@@ -1,132 +1,163 @@
 # Maslul: emulator test instructions
 
-You are a Claude session with tools (an MCP) that control an Android emulator. You are testing a new build of **Maslul**, an Israeli public-transport app (route planning, lines, stops, live buses on a map). It is a React Native rewrite of an older Kotlin app and replaces it as an update: same app id `com.maslul.app`. Nothing in this build has run on a device before, so expect bugs. Your job is to **find and report them, not fix them**. The code lives in another Claude session, which will fix what you report and send a new build.
+You are a Claude session with tools (an MCP) that control an Android emulator. You are testing a new build of **Maslul**, an Israeli public-transport app (route planning, lines, stops, live buses on a map). It is a React Native rewrite of an older Kotlin app and replaces it as an update: same app id `com.maslul.app`. Your job is to **find and report bugs, not fix them**. The code lives in another Claude session, which fixes what you report and sends new builds.
 
-**Do everything yourself. Never ask the human to tap, type, install or check anything.** Use your emulator tools to install APKs, tap, type, swipe, press Back, take screenshots, set the location and read logs. Where this file shows an `adb` or `maestro` command, run it if you have a shell that reaches the emulator; otherwise do the same thing with your MCP tools. Decide for yourself when the UI is ambiguous, and write down what you decided. Run the whole file in one go, from step 1 to the report.
+**Do everything yourself. Never ask the human to tap, type, install or check anything.** Decide for yourself when the UI is ambiguous, write down what you decided, and keep going. Run this file from top to bottom in one go and finish with the report.
 
 ## Files in this folder
 
 | File | What it is |
 |---|---|
-| `maslul-latest.apk` | The new app: versionCode 5, standalone release build (JS bundled, no Metro needed) |
-| `maslul-kotlin-v4.apk` | The **old** Kotlin app (versionCode 4), only for the upgrade test in step 2 |
+| `maslul-latest.apk` | The new app: versionCode 5, standalone release build (no Metro needed) |
+| `maslul-kotlin-v4.apk` | The **old** Kotlin app (versionCode 4), for the upgrade test only |
 | `build-info.txt` | Commit and build details. Quote the commit line at the top of your report |
-| `maestro/` | Automated UI flows (Maestro) |
+| `maestro/` | Automated UI flows (Maestro), also readable as step-by-step scripts |
 | `TESTING.md` | This file |
 
-Both APKs are signed with the same debug key, so the new one installs over the old one as an update.
+Both APKs are signed with the same key, so the new one installs over the old one as an update.
 
 ## Rules
 
 - Don't modify, rebuild or re-sign the APKs, and don't push anything anywhere.
-- Take a screenshot at every check, and name the files after the step (e.g. `2.5-home-work.png`).
-- Something that fails is a finding: write it down and go on to the next step. Don't stop at the first failure.
-- If a step is impossible (no network, no tool for it), say so in the report rather than skipping it silently.
-- If you can't find an element by its text, dump the UI hierarchy (`adb shell uiautomator dump /sdcard/ui.xml && adb pull /sdcard/ui.xml`, or your tool's equivalent) and use the ids in it. The app's controls have ids such as `settings_button`, `rides_switch`, `on_board_switch`, `on_board`.
-- Separate what you **saw** from what you **guess** about the cause.
+- Take a screenshot at every check, named after the check (e.g. `R1-home-work.png`), and keep it in `evidence/`.
+- A failure is a finding: record it and go on. Don't stop at the first failure.
+- If a check is impossible, mark it **couldn't test** with the exact reason. Never skip silently.
+- Keep what you **saw** separate from what you **guess** about the cause.
+- The emulator was unstable last round: the launcher restarted, Play services crashed, and Android soft-restarted. If something odd happens right after one of those, repeat the check once before you report it, and say in the report whether it happened again.
 
-## Step 1: set up
+## Tools: how to do what mobile-mcp can't
 
-- An emulator with a **Google APIs** image, **x86_64, API 34 or newer**, with internet access. The app uses live services: api.transitous.org, open-bus-siri-requester.hasadna.org.il, open-bus-stride-api.hasadna.org.il, photon.komoot.io, nominatim.openstreetmap.org, tiles.openfreemap.org.
-- Put the device in Tel Aviv: `adb emu geo fix 34.7818 32.0853` (longitude first).
-- Start from a clean slate: `adb uninstall com.maslul.app` (it's fine if it says it isn't installed).
-- Leave a crash log running for the whole session, and attach anything relevant from it to the report: `adb logcat -c && adb logcat -v time AndroidRuntime:E ReactNativeJS:V ReactNative:V Expo:V '*:F' > logcat.txt &`
+Use `adb` from a shell if you have one. If a command isn't available to you, mark the check **couldn't test** and give the reason.
 
-## Step 2: upgrade migration (most important, do it first)
+| Need | How |
+|---|---|
+| Crash log | After each section, dump it: `adb logcat -b crash -d`, and the app's JS log with `adb logcat -d -t 3000 ReactNativeJS:V AndroidRuntime:E '*:S'` (save both to `evidence/`) |
+| Lock / unlock the screen | `adb shell input keyevent KEYCODE_SLEEP`, then `adb shell input keyevent KEYCODE_WAKEUP` and swipe up |
+| Recents | `adb shell input keyevent KEYCODE_APP_SWITCH`, then swipe Maslul's card up |
+| Move the location | `adb emu geo fix <longitude> <latitude>`, repeated every few seconds along the route |
+| Find an element with no visible text | `adb shell uiautomator dump /sdcard/ui.xml && adb pull /sdcard/ui.xml`. Ids include `settings_button`, `my_shuttles`, `add_shuttle`, `rides_switch`, `on_board_switch`, `on_board` |
 
-This checks that people updating from the old app keep their data.
+## Set up
 
-1. `adb install maslul-kotlin-v4.apk` and open it. Grant location and notifications.
-2. In the **old** app, create data. Write down exactly what you entered, since you'll compare it later:
-   - set **Home** and **Work** (any two addresses);
-   - add **two favourite places**;
-   - one **favourite line** (from the Lines tab), one **favourite stop** (from Stations);
-   - a **saved trip** if the UI offers it;
-   - a **shuttle** (Settings → shuttles);
-   - in Settings, change the **theme** (e.g. dark), the **walking speed** and the **rail preference**, and turn **both Advanced switches** on.
-3. `adb shell am force-stop com.maslul.app`
-4. Install the new app **over** it, without uninstalling: `adb install -r maslul-latest.apk`. It must succeed. If it fails with `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, report that and do steps 3 onwards after `adb uninstall com.maslul.app && adb install maslul-latest.apk`.
-5. Open it. Check that **every item from step 2** is there with the same values. Screenshot each screen you check.
-6. Kill it and reopen: everything is still there.
-7. Change one setting, kill, reopen: the change stayed (the old data must not be read again over it).
+1. Set the emulator's **time zone to Israel**: Settings → System → Date & time → turn off automatic time zone → choose Jerusalem/Israel.
+   - Last round it was UTC, which caused the time bugs below.
+   - Write the time zone and the Israel time at the top of your report.
+2. Location in Tel Aviv: `adb emu geo fix 34.7818 32.0853`.
+3. **Buses don't run on Shabbat** (Friday evening to Saturday evening, about 19:00 Israel time) or at night. Mark the checks that need running buses **couldn't test (Shabbat)** if that's the case; don't count them as failures.
 
-## Step 3: first launch and crashes
+## Already reported: don't re-test these
 
-- The app opens to the map with a bottom sheet ("Where to?"). No red error screen, no crash dialog.
-- Visit every tab (Navigate, Lines, Stations) and Settings → About. **About** must show the data-source credits and AGPL-3.0 license.
-- Check `logcat.txt` for `FATAL EXCEPTION` and for `ReactNativeJS` errors.
+These are being fixed. Don't spend time on them. If you happen to see one behave differently (worse, or with a crash), add a note.
 
-## Step 4: automated flows
+1. Times are mixed between the device's time zone and Israel time when the device isn't on Israel time (arrival times, time picker, "Bus in 1276 min").
+2. A second trip started right after one ends says "You've arrived" at once and fires the arrival alert again.
+3. Trip steps don't advance: "Walk to…" stays until it jumps to "arrived".
+4. The line timetable shows yesterday's date.
+5. "Leave now" lists routes that already left as Best/Fastest.
+6. The map is blank for up to 30 s after switching back to Navigate.
+7. The notification permission is only asked on the first trip Start, which delayed that trip's notification.
+8. Seen once each, not reproduced: the Home sheet vanished with the map buttons behind the tab bar; Maslul left the screen right after granting location.
 
-If you have a shell that reaches the emulator, install [Maestro](https://maestro.dev) if needed (needs Java 17+), then run from this folder:
+## Already passed: no need to repeat
 
-```bash
-maestro test maestro/ --format junit --output maestro-report.xml
-```
+- About credits and licence.
+- Every tab opens without a crash.
+- Back button.
+- Theme, walking speed and rail preference persist (new app).
+- Trip planning to "Dizengoff Center".
+- Map tiles in light and dark, the location dot, Hebrew and English street names.
+- Line 480's screen.
+- Trip notification with progress bar and "End trip".
+- Trip survives going to the background.
+- Arrival alert fires once.
+- Share route.
 
-- It runs 11 flows. Each one clears the app's data and grants permissions itself.
-- The flows talk to the live services, so times and results vary.
-- The shuttle flows set a slider by swiping. If only that swipe fails, say so; it's a known weak spot of the flow, not necessarily an app bug.
-- For each failing flow, include the flow name, the failing step from the output, and the screenshot Maestro saves (`~/.maestro/tests/<run>/`).
-- **Without Maestro:** each `maestro/*.yaml` file is a readable script. Do its steps yourself with your tools, in order:
-  - `launchApp: clearState: true` means `adb shell pm clear com.maslul.app`, then open the app and allow every permission it asks for;
-  - `tapOn: "text"` or `id: x` means tap that element;
+## What to test now, in this order
+
+Number your findings and checks R1, R2… as below.
+
+**R1. Upgrade migration (most important).** This checks that people updating from the old app keep their data. If `maslul-kotlin-v4.apk` isn't in the folder, stop and report that; it should be there now.
+1. `adb uninstall com.maslul.app`, then `adb install maslul-kotlin-v4.apk`. Open it and grant location and notifications.
+2. In the **old** app, enter this data and write down exactly what you entered:
+   - **Home** and **Work** (two different addresses);
+   - **two favourite places**;
+   - a **favourite line** (Lines tab) and a **favourite stop** (Stations tab);
+   - a **shuttle**: Settings → My shuttles → add;
+   - **theme** dark;
+   - **walking speed** and **rail preference** changed (they're under Route options);
+   - **both Advanced switches** on in Settings.
+3. `adb shell am force-stop com.maslul.app`, then `adb install -r maslul-latest.apk`. It must install **without uninstalling**. If it fails, quote the error.
+4. Open the new app. Check **every item** from step 2, one screenshot each.
+5. Kill it (`adb shell am force-stop com.maslul.app`) and reopen: everything is still there.
+6. Change the theme back to light, kill, reopen: it stays light (the old data must not be read again over it).
+
+**R2. Shuttles** (new app): Settings → My shuttles. Create a shuttle, edit it (change its name or time), then delete it. Each change shows up at once and survives a kill and reopen.
+
+**R3. Stops and lines:**
+- Stations tab: open a stop near you. Arrival times are listed, and during service hours some turn **green** (live).
+- Lines tab: search line **1** and open it.
+- During service hours, on line 1 or 480, bus icons appear on the map within about 30 s and move.
+
+**R4. Map:**
+- Rotate the map with two fingers: a compass appears, and tapping it turns north up.
+- Tap the **(i)** at the bottom-left: the credit "© OpenStreetMap contributors" / OpenFreeMap appears. The (i) button is the intended design, the same as the old app.
+
+**R5. Trip with the screen locked.**
+1. Plan a trip to "Dizengoff Center" and start it.
+2. Lock the screen (see Tools).
+3. Move the location along the route for a minute or two.
+4. Unlock: the notification kept updating, and the app shows the new position.
+
+**R6. Trip after a swipe from Recents.** Start a trip, open Recents, swipe Maslul away, wait 20 s, reopen. The trip should still be running, and the notification should still be there.
+
+**R7. Reminder arrives.**
+1. On a route leaving in about 5 minutes, tap "Remind me" and note the time it says.
+2. Stay on the home screen and wait.
+3. Record when the notification arrives and how far off it was.
+4. If the emulator restarts before then, say so and try once more.
+
+**R8. Dark theme and Hebrew on the remaining screens.** Turn on dark theme and check for unreadable text, wrong colours and garbled Hebrew on:
+- the Lines tab and a line screen;
+- the Stations tab and a stop screen;
+- the trip screen;
+- My shuttles and the shuttle editor;
+- pick on map (in the "Where to?" search);
+- on a bus (Settings → turn on the On-board switch, then the on-board button).
+
+**R9. Automated flows, if time allows.**
+- With a shell: install [Maestro](https://maestro.dev) (needs Java 17+) and run `maestro test maestro/ --format junit --output maestro-report.xml`.
+- Without Maestro: pick 3 flows (`search_line.yaml`, `shuttle_save.yaml`, `on_board.yaml`) and do their steps yourself:
+  - `launchApp: clearState: true` means `adb shell pm clear com.maslul.app`, then open the app and allow every permission;
+  - `tapOn` means tap;
   - `inputText` means type;
-  - `assertVisible` and `extendedWaitUntil` mean check that it's on screen, waiting up to the timeout;
-  - `runFlow: file: subflows/...` means run that file's steps with the `env` values given.
-  Report each flow as pass or fail the same way.
-
-## Step 5: hand checks
-
-Do these yourself with your tools, after the flows. For each one, report **pass**, **fail** (with what you saw), or **couldn't test** (with why).
-
-1. **Map.**
-   - Tiles load in both light and dark theme (Settings).
-   - The OpenStreetMap/OpenFreeMap attribution is visible at the bottom-left.
-   - Rotate with two fingers: a compass appears, and tapping it turns north up.
-   - The blue location dot is shown.
-2. **Live buses.**
-   - Open a busy line, e.g. search line **1** or **480** in Lines. Bus icons should appear on the map within about 30 seconds and move between updates.
-   - On a stop screen, some arrival times turn **green** (live).
-   - This only works when buses are running: not on Shabbat (Friday evening to Saturday evening) or late at night. Note the local Israel time you tested at.
-3. **Live directions** (the in-trip guidance):
-   - Plan a trip (e.g. to "Dizengoff Center") and start it from a route's detail screen.
-   - A notification should appear with the current step and a **progress bar**.
-   - Move the emulator along the route: Extended controls → Location → Routes, or repeated `adb emu geo fix` calls. Steps should advance, and each alert should fire **once**.
-   - **Lock the screen** while moving: the notification keeps updating.
-   - **"End trip"** in the notification stops it.
-   - Start another trip, then swipe the app away from recents and reopen it: the trip should still be running.
-4. **Reminders.** On a route leaving in a few minutes, tap "Remind me". The notification should arrive at the right time. Note how many seconds off it was.
-5. **Back button.**
-   - From any screen, Back returns to the previous one.
-   - On the Lines or Stations tab, Back goes to Navigate, and Back again leaves the app.
-6. **Dark theme.** Switch it on and look over every screen for unreadable text or wrong colours.
-7. **Hebrew/RTL text** (street and stop names) displays correctly, not garbled or mirrored oddly.
+  - `assertVisible` and `extendedWaitUntil` mean it must be on screen;
+  - `runFlow` means do that file's steps with its `env` values.
 
 ## Report
 
-End your session with the report's Summary section as your final message. Write `report.md` in this folder and put the logs next to it (`logcat.txt`, `maestro-report.xml`, screenshots). Use this format:
+Write `report.md` in this folder, with `evidence/` next to it. End your session with the Summary as your final message.
 
 ```
 # Maslul test report
 build: <commit line from build-info.txt>
-emulator: <image, API level>   tested at: <date, Israel time>
+emulator: <image, API level>   time zone: <...>   tested at: <date, Israel time>
 
 ## Summary
 <n> pass, <n> fail, <n> couldn't test. Worst problem: <one line>
 
 ## Findings (most serious first)
 ### <short title>
-- step: <e.g. Step 2.5 / flow plan_trip.yaml / hand check 3>
+- check: <e.g. R1.4>
 - expected: ...
 - actual: ...
 - reproduce: <exact taps or commands>
-- evidence: <screenshot file, logcat excerpt with the stack trace>
+- evidence: <screenshot file, crash-log excerpt>
+- happened again on retry: yes / no / not retried
 - guess at cause (optional): ...
 
 ## All checks
 | check | result | note |
 |---|---|---|
-| 2 upgrade: home/work | pass | |
+| R1.4 home/work | pass | |
 ...
 ```
