@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
-import { Platform, Pressable, Share, StyleSheet, View } from 'react-native';
+import { Alert, Platform, Pressable, Share, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Combine } from '../../data/combine';
 import type { LiveApproach, LiveCall } from '../../data/eta';
@@ -28,6 +28,7 @@ import { type Instant, nowSec } from '../../data/time';
 import { WALK_SPEEDS } from '../../data/userStore';
 import { activeTrip, useActiveTrip } from '../../live/liveTrip';
 import { canNotify, scheduleReminder } from '../../live/notifications';
+import MaslulNative from '../../../modules/maslul-native/src/MaslulNativeModule';
 import { location, useLastLocation } from '../../state/location';
 import { repo } from '../../state/services';
 import { store } from '../../state/store';
@@ -195,11 +196,18 @@ class RouteDetailModel extends Model {
       : `Leave at ${Fmt.time(leaveAt)}`;
     const ok = await scheduleReminder(at, `Time to go to ${this.to.name}`, text).catch(() => false);
     showToast(ok ? `Reminder set for ${Fmt.when(at, nowSec())} (${minutes} min before leaving)` : 'That departure is too soon for a reminder');
+    // Without "Alarms & reminders" Android may hold a reminder back by minutes, up to an hour.
+    if (ok && MaslulNative?.canScheduleExactAlarms() === false) {
+      Alert.alert('Get reminders on time?', 'Android may send this reminder late. Allow Maslul under "Alarms & reminders" so reminders come on time.', [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'Allow', onPress: () => MaslulNative?.openExactAlarmSettings() },
+      ]);
+    }
   }
 
   share() {
     const e = this.expected();
-    const lines = [`My trip to ${this.to.name}: ${Fmt.time(e.start)} → ${Fmt.time(e.end)} (${Fmt.duration(e.end - e.start)})`];
+    const lines = [`My trip to ${this.to.name}: ${Fmt.when(e.start, nowSec())} → ${Fmt.time(e.end)} (${Fmt.duration(e.end - e.start)})`];
     for (const l of this.itinerary.legs) {
       if (l.mode === 'WALK') {
         if (legDurationSec(l) >= 60) lines.push(`• Walk ${Fmt.duration(legDurationSec(l))} to ${l.to.name.trim() || this.to.name}`);
@@ -419,7 +427,7 @@ function DetailHeader({ itin, active, onStart, onRemind, onShare }: { itin: Itin
   return (
     <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 8 }}>
       <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
-        <Txt v="headlineSmall" num>{`${Fmt.time(itin.start)} → ${Fmt.time(itin.end)}`}</Txt>
+        <Txt v="headlineSmall" num>{`${Fmt.when(itin.start, nowSec())} → ${Fmt.time(itin.end)}`}</Txt>
         <Txt v="titleMedium" color={t.x.subtle} style={{ marginLeft: 10, marginBottom: 2 }}>
           {Fmt.duration(itin.end - itin.start)}
         </Txt>

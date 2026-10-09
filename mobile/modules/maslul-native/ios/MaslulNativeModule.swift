@@ -15,6 +15,14 @@ public class MaslulNativeModule: Module {
       nil
     }
 
+    // iOS delivers scheduled notifications on time; there's no setting to ask for.
+    Function("canScheduleExactAlarms") { () -> Bool in
+      true
+    }
+
+    Function("openExactAlarmSettings") { () -> Void in
+    }
+
     // iOS has no ongoing notification to update (live directions show in the app and alert by notification).
     AsyncFunction("updateTripNotification") { (taskName: String, title: String, text: String, progress: Double, endUrl: String) -> Bool in
       false

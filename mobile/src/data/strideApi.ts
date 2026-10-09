@@ -148,6 +148,12 @@ export class StrideApi {
     return (await Http.getJson<RouteDto[]>(buildUrl(this.base, 'gtfs_routes/list', params))).map(routeToDomain);
   }
 
+  /** The newest day Stride has a feed for: over a weekend it can be days behind (Thursday's on Saturday). */
+  async latestDate(): Promise<LocalDate | null> {
+    const rows = await Http.getJson<RouteDto[]>(buildUrl(this.base, 'gtfs_routes/list', [['limit', '1'], ['order_by', 'date desc']]));
+    return rows[0]?.date ?? null;
+  }
+
   async routesByLineRef(lineRefs: number[], date: LocalDate): Promise<LineRoute[]> {
     if (lineRefs.length === 0) return [];
     const url = buildUrl(this.base, 'gtfs_routes/list', [

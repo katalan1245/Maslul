@@ -23,7 +23,7 @@ Both APKs are signed with the same key, so the new one installs over the old one
 - Don't modify, rebuild or re-sign the APKs, and don't push anything anywhere.
 - Take a screenshot at every check, named after the check (e.g. `R1-home-work.png`), and keep it in `evidence/`.
 - A failure is a finding: record it and go on. Don't stop at the first failure.
-- A missing file or tool only blocks the checks that need it. Only R9 needs `maestro/`; this round no check needs `maslul-kotlin-v4.apk`. Mark those **couldn't test** and do every other check. Never end the run because one thing is missing.
+- A missing file or tool only blocks the checks that need it. Only R6 needs `maestro/`; this round no check needs `maslul-kotlin-v4.apk`. Mark those **couldn't test** and do every other check. Never end the run because one thing is missing.
 - If a check is impossible, mark it **couldn't test** with the exact reason. Never skip silently.
 - Keep what you **saw** separate from what you **guess** about the cause.
 - The emulator was unstable last round: the launcher restarted, Play services crashed, and Android soft-restarted. If something odd happens right after one of those, repeat the check once before you report it, and say in the report whether it happened again.
@@ -50,69 +50,52 @@ Use `adb` from a shell if you have one. If a command isn't available to you, mar
 
 ## Known and not being changed (don't report again)
 
-1. The line timetable shows yesterday's date early in the day, while Stride hasn't loaded today's feed yet. The old app does the same.
-2. "Leave now" late in the evening lists tomorrow's routes, because tonight's buses are over. The old app does the same; the new one now puts the day in front of the time.
+1. The line timetable shows yesterday's date early in the day, while Stride hasn't loaded today's feed yet. The old app does the same. Over a weekend it can be Thursday's.
+2. "Leave now" late in the evening lists tomorrow's routes, because tonight's buses are over. The old app does the same; the new one puts the day in front of the time.
 3. The notification permission is asked on the first trip Start, as in the old app.
 4. Line search "1" lists lines from all over the country in Stride's order, as in the old app.
 5. On the stop screen, the Directions button covers a row until you scroll to the end; the list leaves room below its last row.
 6. The low-memory killer on a 2 GB emulator closes Maslul (and Maestro). That's the environment, not the app.
+7. The map's credits dialog (from the (i)) is MapLibre's own and stays light in the dark theme.
+8. Right after a cold start, a tap on a shuttle in My shuttles can be missed once (1 in 4 last round); the second tap works.
 
 ## Already passed: no need to repeat
 
-- Upgrade from the old app (all of R1 last round) and everything listed in the last report as pass: tabs, Back, theme and settings persistence, planning, line 480, trip notification and "End trip", trip with the screen locked and after Recents, arrival alert once, Share, shuttles saved/edited/deleted, About credits, dark theme on every screen, Hebrew text.
+- Everything that passed in rounds 1–3: the upgrade from the old app, tabs, Back, settings, planning, line 480 (on a weekday), the trip notification and "End trip", trips with the screen locked and after Recents, arrival sticking, Share, shuttles (Sun–Fri label, edit after a cold start, delete dialog), About credits, dark theme and dark map labels, the map attribution on Home, times far away carrying their day, the exact reminder once allowed, shuttle reminder text, the map after switching tabs (4 GB), and Hebrew text.
 
 ## What to test now, in this order
 
-Round 3 re-tests what was fixed after round 2. Number checks R1, R2… as below. If it's Shabbat or night, mark the checks that need running buses **couldn't test (Shabbat)**.
+Round 4 re-tests what was fixed after round 3. This build has **native changes**, so install it fresh over the old one: `adb install -r maslul-latest.apk`. Use 4 GB RAM again. If it's Shabbat or night, mark the checks that need running buses **couldn't test (Shabbat)**; a simulated ride by `geo fix`, as you did in R1 last time, works at any hour.
 
-**Before you start:** if the emulator can be restarted with more RAM (4 GB), do that and say so in the report. Install the new build over whatever is there: `adb install -r maslul-latest.apk`.
+**R1. Trip guide on the bus** (was finding 1 and the stop-count lag). Same trip as last round: plan to "Dizengoff Center", take the line 24 route (or any bus route), Start, and step through the same `geo fix` points along the route (your `R1-R6-observed-text.txt` list works).
+1. At the stop one before the last (Kaplan on line 24): "Get off at the next stop".
+2. At the last stop: **"Get off now"**, with its alert.
+3. 150 m off to the side, away from the walking path: within one or two fixes, "Walk to Dizengoff Center · N m to go".
+4. Also: stay at the last stop for over a minute: it moves on to the walk by itself.
+5. Waiting at the boarding stop before the bus is due shows "Walk to <stop>" with "Bus N in M min" (or "at <time>"), not the bus step.
+Write down each fix and what the app and notification showed, as last time.
 
-**R1. Trip guide after getting off** (was finding 2 and 3).
-1. Plan a trip to "Dizengoff Center" that includes a bus, and start it.
-2. Move the location along the route (`adb emu geo fix`, every few seconds) through the walk and the bus ride.
-3. At the last bus stop the step is "Get off now". Then move **about 150 m away from that stop in a direction off the planned walking path**: within one or two updates the step becomes "Walk to Dizengoff Center · N m to go".
-4. Walk on to the destination: "You've arrived". Then move 200 m away: it must **stay** "You've arrived".
-Screenshot each step, the app and the notification.
+**R2. Reminders without the exact-alarm grant** (was finding 2). Reset it first: `adb shell appops set com.maslul.app SCHEDULE_EXACT_ALARM default`.
+1. Set a reminder ("Remind me" on a route or a shuttle a few minutes out). After the "Reminder set" toast, a dialog asks "Get reminders on time?".
+2. "Not now" closes it; the reminder is still set (`dumpsys alarm`: windowed, as before).
+3. Set another and tap "Allow": Android's "Alarms & reminders" page for Maslul opens. Switch it on and go back. `appops get` says allow, and `dumpsys alarm` shows the new reminder (set again after allowing) exact, `window=0`.
+4. With it allowed, setting a reminder shows no dialog.
 
-**R2. Times far away carry their day** (was finding 4). Late in the evening or on Shabbat, when the next bus is tomorrow:
-- the trip's first step says "Bus N at <Day> HH:MM", not "Bus N in 1208 min";
-- route cards show the leave time with its day, e.g. "Sat 18:13 – 18:52";
-- "Remind me" says "Reminder set for Sat 18:03 (...)".
-If the next bus is today and within the hour it's still "in N min", which is right. Say which case you saw.
+**R3. Line search over a weekend** (was finding 4). Lines tab, search 480 and 1: lines are listed, even on Saturday when Stride has no feed for today or yesterday; opening 480 shows its stops. Search "zzzz": "No lines found" with a search icon, not the crossed-out cloud.
 
-**R3. Dark map labels** (was finding 5). Dark theme, Navigate tab, zoom into Tel Aviv: street and place labels are bright and easy to read. Compare with your round-2 screenshot.
+**R4. Ride within 15 min** (was finding 3). As the ride_within flow: Settings → Advanced → rides on; to "Haifa Center HaShemona"; ride chip → 15 min → within.
+- If routes say "Get dropped off …": pass.
+- If not, the message now names the cause. Quote it exactly, and save `adb logcat -d -t 3000 ReactNativeJS:V '*:S'` right after: the app logs "Route search failed" with the error.
 
-**R4. Map attribution on Home** (was finding 6). Expand the map (the full-screen button). The (i) at the bottom-left is fully visible, and tapping it opens the credit dialog, not "Which ride are you on?". Turn on the On-board switch first (Settings → Advanced) so the "On a bus?" button is shown.
+**R5. Route details on another day** (was finding 6). Late in the evening or on Shabbat, open a route whose bus is tomorrow: the header says "Sun 00:49 → 01:04". Share it: the first line has the day too.
 
-**R5. Shuttles** (was finding 7 and 8).
-1. Create a shuttle running Sun, Mon, Tue, Wed, Thu, Fri: the list shows "Sun–Fri".
-2. Kill the app, reopen, go to My shuttles and tap the shuttle **at once**. Do this 3 times: it opens "Edit shuttle" each time, never a blank "New shuttle". If it ever opens a blank form, say where exactly you tapped (`uiautomator dump` right before helps).
-3. Delete: a dialog asks "Delete <name>?". Cancel keeps it; Delete removes it.
+**R6. Automated flows (Maestro).** As last round: stop mobile-mcp's agent (`adb shell pkill -f com.mobilenext`), put the location back in Tel Aviv (`adb emu geo fix 34.7818 32.0853`) **before** the run (last round two flows failed only because R1 left it at Dizengoff Center), then `maestro --device emulator-5554 test maestro/ --format junit --output maestro-report.xml`. All 11 should pass; search_line and ride_within were the two app failures (R3, R4).
 
-**R6. Reminders on time** (was finding 1). The app now declares the exact-alarm permission.
-1. `adb shell appops get com.maslul.app SCHEDULE_EXACT_ALARM`: write down what it says.
-2. With it as it is, set a reminder (Settings → reminders 2 min, on a route ~5 min out; a shuttle works on Shabbat). `adb shell dumpsys alarm | grep -A3 com.maslul.app`: is it exact or windowed? When does the notification arrive?
-3. `adb shell appops set com.maslul.app SCHEDULE_EXACT_ALARM allow`, set another reminder, and repeat: now it should be exact and arrive within a few seconds.
-4. The notification for a shuttle says "Leave at … · <shuttle name> from …", without "Bus" in front.
-
-**R7. Blank map after switching tabs** (old known bug 6). Lines tab, wait 10 s, back to Navigate: how long until the map tiles show? Do it 3 times and give the times. Say how much RAM the emulator has.
-
-**R8. Live buses**, only outside Shabbat and night: on a stop screen some times turn green, and on line 1 or 480 bus icons appear on the map within about 30 s and move. Rotate the map if you can (compass appears; tap it turns north up).
-
-**R9. Automated flows (Maestro).** Maestro needs the UI-automation slot that mobile-mcp's on-device agent holds, and enough memory.
-1. Stop mobile-mcp's agent: `adb shell pkill -f com.mobilenext` (and don't use mobile-mcp tools until the run ends).
-2. `maestro --device emulator-5554 test maestro/ --format junit --output maestro-report.xml`.
-3. Last run's failures, and what changed:
-   - plan_trip, options_keep_routes, advanced_tools and shuttle_save: the result tap matched the search box (your diagnosis). The flows now tap inside the results list. shuttle_save also accepts 100–120 min from the slider swipe.
-   - shuttle_missing: "departure times like 07:30" is in the "Still needed" line below the form, which the keyboard hid. The flow now hides the keyboard first.
-   - home_sheet (your finding 10) was an app bug: the sheet was sized by the window, not the space above the tab bar. Fixed in this build.
-   - ride_within: "Couldn't load routes" was most likely the emulator's network. The same request succeeded from the build machine on Shabbat. If it happens again, retry it once, and check the network with `adb shell ping -c 3 api.transitous.org`.
-   All 11 should pass.
-4. If the driver still doesn't start, quote the error and the `lowmemorykiller` lines, and mark it **couldn't test**.
+**R7. Live buses**, only outside Shabbat and night (not seen in any round yet): on a stop screen some times turn green, and on line 1 or 480 bus icons appear on the map within about 30 s and move.
 
 ## Report
 
-Last round's report and evidence are kept as `report-round2.md` and `evidence-round2/` (with `maestro-report-round2.xml`). Write this round's results into the empty `report.md`, with screenshots in `evidence/`. End your session with the Summary as your final message.
+Earlier rounds' reports and evidence are kept as `report-round2.md`, `report-round3.md` and `evidence-round2/`, `evidence-round3/` (with their `maestro-report-*.xml`). Write this round's results into the empty `report.md`, with screenshots in `evidence/`. End your session with the Summary as your final message.
 
 ```
 # Maslul test report

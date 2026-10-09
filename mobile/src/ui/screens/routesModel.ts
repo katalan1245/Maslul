@@ -16,6 +16,7 @@ import {
   scheduledTime,
   transitLegs,
 } from '../../data/models';
+import { HttpException } from '../../data/http';
 import type { OnBoardStart } from '../../data/onBoard';
 import { Ranking, type Transfer } from '../../data/ranking';
 import type { RideOffer } from '../../data/rides';
@@ -284,7 +285,18 @@ export class RoutesModel extends Model {
       if (found.length === 0 && this.walkOnly == null) this.error = 'No routes found for this time.';
     } catch (e) {
       if (stale()) return;
-      this.error = e instanceof NoDriveException ? e.message : "Couldn't load routes. Check your connection.";
+      // Said apart, so a failure reported from a device names its cause.
+      console.warn('Route search failed', e);
+      this.error =
+        e instanceof NoDriveException
+          ? e.message
+          : e instanceof HttpException
+            ? `The route planner answered with an error (${e.code}). Try again in a moment.`
+            : (e as Error)?.name === 'AbortError'
+              ? 'The route planner took too long to answer. Try again.'
+              : e instanceof TypeError && /network/i.test(e.message)
+                ? "Couldn't load routes. Check your connection."
+                : `Couldn't show the routes found (${(e as Error)?.message ?? e}).`;
     }
     this.loading = false;
     this.changed();
