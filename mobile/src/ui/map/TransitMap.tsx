@@ -140,7 +140,11 @@ function userFc(user: GeoPoint | null, heading: number | null): GeoJSON.FeatureC
 }
 
 /** Vehicles glide from where they're drawn to their refreshed position. */
-function useGlidingVehicles(vehicles: MapVehicle[]): MapVehicle[] {
+function useGlidingVehicles(given: MapVehicle[]): MapVehicle[] {
+  // Screens build the list on every render: only a change in what it holds starts a glide.
+  const key = JSON.stringify(given);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const vehicles = useMemo(() => given, [key]);
   const drawn = useRef(new globalThis.Map<string, GeoPoint>());
   const [frame, setFrame] = useState(vehicles);
   useEffect(() => {

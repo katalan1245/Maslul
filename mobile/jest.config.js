@@ -7,6 +7,8 @@ module.exports = {
       testMatch: ['<rootDir>/__tests__/**/*.test.ts?(x)'],
       testPathIgnorePatterns: ['/node_modules/', '<rootDir>/__tests__/live/'],
       setupFiles: ['<rootDir>/jest.setup.js'],
+      // Metro picks the @3x map icons by density; Jest needs the file named.
+      moduleNameMapper: { '/assets/map/([a-z-]+)\\.png$': '<rootDir>/assets/map/$1@3x.png' },
     },
     {
       displayName: 'live',
