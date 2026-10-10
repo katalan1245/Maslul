@@ -1,6 +1,6 @@
 # Maslul React Native rewrite: status
 
-Branch `rewrite/react-native` (the owner pushes it to their fork). Development is complete, the Android app compiles, and three emulator rounds have run (below). Left: re-testing round 3's fixes, live buses on a device, and iOS on a Mac.
+Branch `rewrite/react-native`. Development is complete, the Android app compiles, and three emulator rounds have run (below). Left: re-testing round 3's fixes, live buses on a device, and iOS on a Mac.
 
 ## Verified here (in the container, without a device)
 
@@ -31,7 +31,7 @@ Branch `rewrite/react-native` (the owner pushes it to their fork). Development i
 | First launch in Hebrew turns on right-to-left and reloads once | Same test, with the reload mocked |
 | Plurals, gender and day names | Unit checks in the same test |
 
-On the emulator (round 5, build 851a0b3): switching to Hebrew and back takes one reload; every screen, the map labels, a whole trip and its notification, the reminder toast and Share are Hebrew; right to left holds on every screen. The owner approved the Hebrew wording, with one change: Saturday reads יום שבת.
+On the emulator (round 5, build 851a0b3): switching to Hebrew and back takes one reload; every screen, the map labels, a whole trip and its notification, the reminder toast and Share are Hebrew; right to left holds on every screen. The Hebrew wording is reviewed; Saturday reads יום שבת.
 
 Fixed after round 5 and not yet re-tested (round 6 in `TESTING.md`):
 - Place search in English: it asked the geocoders for English names, so a Hebrew town after the street stopped matching and names changed (2 Maestro flows failed). Search now sends no language, as in round 4.
@@ -85,7 +85,7 @@ cd android && ./gradlew assembleDebug                         # app/build/output
 cd mobile/ios && pod install && cd .. && npm run ios          # on the Mac
 ```
 
-For the emulator session: `npm run build:test-apk` builds the standalone APK and publishes it to the host handoff folder `/share/maslul-test` (Windows: `C:\Users\Raz\Desktop\CS\Claude\shared\maslul\maslul-test`). It goes there as `maslul-latest.apk`, with `TESTING.md`, the Maestro flows, the old Kotlin app (`maslul-kotlin-v4.apk`, signed with the same debug key) and `build-info.txt` (commit, configuration, checksums; written last). The tester writes `report.md` and `evidence/` there. `npm run publish:test` re-publishes the last build without rebuilding.
+For the emulator session: `npm run build:test-apk` builds the standalone APK and publishes it to the host handoff folder `/share/maslul-test`. It goes there as `maslul-latest.apk`, with `TESTING.md`, the Maestro flows, the old Kotlin app (`maslul-kotlin-v4.apk`, signed with the same debug key) and `build-info.txt` (commit, configuration, checksums; written last). The tester writes `report.md` and `evidence/` there. `npm run publish:test` re-publishes the last build without rebuilding.
 
 Or by hand: `adb install -r android/app/build/outputs/apk/debug/app-debug.apk`, then `npm start` for Metro (the debug build loads its JS from Metro). The release APK runs on its own.
 
@@ -124,7 +124,7 @@ Both builds must be signed with the same key. Two debug builds built on the same
 
 ### After that
 
-Fix what the devices find. Then the owner signs a release build with `keystore.properties` (see README).
+Fix what the devices find. Then a release build is signed with `keystore.properties` (see README).
 
 ## History of this work
 

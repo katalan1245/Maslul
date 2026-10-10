@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# Publishes the last test build to the host handoff folder for the emulator session: /share/maslul-test
-# (on Windows C:\Users\Raz\Desktop\CS\Claude\shared\maslul\maslul-test). It sends the APK, TESTING.md, the
-# Maestro flows and the old Kotlin APK. Each is copied under a .tmp name and renamed when complete, and
+# Publishes the last test build to the host handoff folder for the emulator session: /share/maslul-test.
+# It sends the APK, TESTING.md, the Maestro flows and the old Kotlin APK. Each is copied under a .tmp name and renamed when complete, and
 # build-info.txt (build details, file list, checksums) is written last. The tester's report.md and evidence/
 # there are left alone. Usage: npm run publish:test (build:test-apk runs it after a successful build).
 set -euo pipefail

@@ -24,7 +24,7 @@ Run the typecheck and `npm test` before calling a task done.
 ## Rules
 
 - **Never push, publish or deploy:** no `git push`, `eas build`/`submit`/`update`, or store uploads. Local commits on `rewrite/react-native` are fine.
-- **Release signing** reads `../keystore.properties`. It stays out of the repo, and the owner signs releases.
+- **Release signing** reads `../keystore.properties`. It stays out of the repo; release builds are signed outside the container.
 - **Generated native projects.** `android/` and `ios/` are generated from `app.config.ts` and config plugins (`plugins/`), so never edit them by hand. Native code of our own lives in `modules/maslul-native`.
 - **Development builds only.** The app has a native module, so Expo Go won't run it; use `npm run android` or `npm run ios`.
 - **Keep the port's shape.** `src/data/` mirrors `../app/src/main/java/com/maslul/app/data` file for file. Behaviour follows the Kotlin app unless a change is deliberate and written up in NOTES.md.

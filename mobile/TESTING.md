@@ -6,7 +6,7 @@ You are a Claude session with tools (an MCP) that control an Android emulator. Y
 
 ## Files in this folder
 
-The folder is `C:\Users\Raz\Desktop\CS\Claude\shared\maslul\maslul-test` on the Windows host. Inside the build container it's `/share/maslul-test`. Write your report and evidence here too.
+The folder is `shared\maslul\maslul-test` in the host's handoff folder. Inside the build container it's `/share/maslul-test`. Write your report and evidence here too.
 
 | File | What it is |
 |---|---|
