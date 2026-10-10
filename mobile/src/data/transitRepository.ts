@@ -125,7 +125,7 @@ class Lru<V> {
 }
 
 /** Runs at most [n] tasks at once. */
-function limiter(n: number) {
+export function limiter(n: number) {
   let running = 0;
   const waiting: (() => void)[] = [];
   return async <T>(task: () => Promise<T>): Promise<T> => {

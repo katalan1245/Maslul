@@ -1,4 +1,4 @@
-import type { TransitMode } from '../data/models';
+import type { Leg, TransitMode } from '../data/models';
 import { type Instant, type LocalDate, dayOfWeek, localDate, localParts, plusDays, today } from '../data/time';
 import { fixed } from '../data/util';
 
@@ -75,4 +75,10 @@ export function modeName(mode: TransitMode): string {
     default:
       return 'Transit';
   }
+}
+
+/** "Bus 61"; just "Train" for a ride with no line number. */
+export function rideName(l: Leg): string {
+  const n = l.routeShortName?.trim();
+  return n && n !== 'NaN' ? `${modeName(l.mode)} ${n}` : modeName(l.mode);
 }

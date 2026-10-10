@@ -34,6 +34,10 @@ export const Http = {
     const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS);
     try {
       return await fetch(url, { headers: { 'User-Agent': USER_AGENT }, signal: ctl.signal });
+    } catch (e) {
+      // Expo's fetch reports both as a plain Error ("fetch failed: …"); callers tell them apart.
+      const why = (e as Error)?.message ?? String(e);
+      throw ctl.signal.aborted ? Object.assign(new Error(`Timed out: ${why}`), { name: 'AbortError' }) : new TypeError(`Network request failed: ${why}`);
     } finally {
       clearTimeout(timer);
     }
