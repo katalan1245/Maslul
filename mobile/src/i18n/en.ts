@@ -63,6 +63,8 @@ export const en = {
     best: 'Best',
     fastest: 'Fastest',
     leastWalking: 'Least walking',
+    lastTag: 'Last today',
+    lastToday: (time: string, stop: string) => `The last one today leaves at ${time} from ${stop}`,
     finding: 'Finding routes…',
     noRoutes: 'No routes',
     tryAgain: 'Try again',
