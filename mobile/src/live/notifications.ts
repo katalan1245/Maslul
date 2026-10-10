@@ -89,3 +89,16 @@ export async function scheduleReminder(at: Instant, title: string, text: string)
   });
   return true;
 }
+
+/**
+ * Sets every pending reminder again: once "Alarms & reminders" is allowed that makes them exact.
+ * Set before it was, Android kept them inexact (up to an hour late).
+ */
+export async function rescheduleReminders() {
+  const all = await Notifications.getAllScheduledNotificationsAsync().catch(() => []);
+  for (const n of all) {
+    const at = Number(n.identifier.replace(/^reminder-/, ''));
+    if (!n.identifier.startsWith('reminder-') || !Number.isFinite(at)) continue;
+    await scheduleReminder(at, n.content.title ?? '', n.content.body ?? '').catch(() => false);
+  }
+}

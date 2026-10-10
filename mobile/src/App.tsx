@@ -6,12 +6,13 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import { Fragment, useEffect, useState } from 'react';
-import { Linking, LogBox, Pressable, StyleSheet, View, useColorScheme, useWindowDimensions } from 'react-native';
+import { AppState, Linking, LogBox, Pressable, StyleSheet, View, useColorScheme, useWindowDimensions } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Place } from './data/models';
 import { END_TRIP_URL, activeTrip, useActiveTrip } from './live/liveTrip';
-import { setUpNotifications } from './live/notifications';
+import { rescheduleReminders, setUpNotifications } from './live/notifications';
+import MaslulNative from '../modules/maslul-native/src/MaslulNativeModule';
 import { readLegacyStore } from './native';
 import { navMemory } from './ui/navMemory';
 import { S, lang } from './i18n';
@@ -186,6 +187,17 @@ export default function App() {
       setReady(true);
       await SplashScreen.hideAsync().catch(() => {});
     })();
+  }, []);
+  // Reminders set before "Alarms & reminders" was allowed stay inexact: set them again once it is.
+  useEffect(() => {
+    let exact = MaslulNative?.canScheduleExactAlarms?.() ?? true;
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+      const now = MaslulNative?.canScheduleExactAlarms?.() ?? true;
+      if (now && !exact) void rescheduleReminders();
+      exact = now;
+    });
+    return () => sub.remove();
   }, []);
   // The live-directions notification's "End trip".
   useEffect(() => {

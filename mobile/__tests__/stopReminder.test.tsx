@@ -73,3 +73,17 @@ it("sets a reminder from a starred stop's departure on Home", async () => {
     await act(() => store.toggleFavoriteStop(STOP));
   }
 });
+
+test('reminders set before exact alarms were allowed are set again (R1)', async () => {
+  const Notifications = require('expo-notifications') as { getAllScheduledNotificationsAsync: jest.Mock; scheduleNotificationAsync: jest.Mock };
+  const { rescheduleReminders } = require('../src/live/notifications') as typeof import('../src/live/notifications');
+  const at = Math.floor(Date.now() / 1000) + 3600;
+  Notifications.getAllScheduledNotificationsAsync.mockResolvedValueOnce([
+    { identifier: `reminder-${at}`, content: { title: 'Time to go', body: 'Leave at 10:05' }, trigger: null },
+    { identifier: 'trip-alert', content: { title: 'Get off now', body: '' }, trigger: null },
+  ]);
+  Notifications.scheduleNotificationAsync.mockClear();
+  await rescheduleReminders();
+  expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
+  expect(Notifications.scheduleNotificationAsync.mock.calls[0][0]).toMatchObject({ identifier: `reminder-${at}`, content: { title: 'Time to go', body: 'Leave at 10:05' }, trigger: { date: at * 1000 } });
+});
