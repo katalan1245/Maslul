@@ -188,3 +188,30 @@ it('picks a destination on the map', async () => {
   await fireEvent.press(screen.getByTestId('choose_location'));
   await screen.findByTestId('routes_list');
 });
+
+it('says how many stops away a live bus is on the stop screen, but not for an old position or a far-off count', async () => {
+  const board = fake.stopBoard;
+  const row = (trip: string, line: string, stopsAway: number, ageSec: number) => {
+    const t = Math.floor(Date.now() / 1000);
+    const stop = { stopId: 'il-Israel-MOT_21437', name: 'Arlozorov/Ibn Gabirol', code: null, lat: 32.0866, lon: 34.7818, scheduledArrival: t + 300, scheduledDeparture: t + 300 };
+    const vehicle = { lineRef: '1', journeyRef: null, originDeparture: t - 600, lat: 32.08, lon: 34.78, bearing: null, velocityKmh: null, recordedAt: t - ageSec, distanceFromStart: null, nextStopCode: null, vehicleRef: trip };
+    return {
+      departure: { tripId: trip, routeId: null, mode: 'BUS' as const, lineLabel: line, headsign: `To ${line}`, agency: 'Dan', routeColor: null, scheduled: t + 300, stop },
+      live: { status: 'LIVE' as const, scheduled: t + 300, expected: t + 240, delaySec: -60, stopsAway, vehicle, alightExpected: null, progress: null },
+    };
+  };
+  fake.stopBoard = async () => [row('a', '5', 3, 10), row('b', '61', 45, 10), row('c', '72', 2, 900)] as never;
+  try {
+    await start();
+    await fireEvent.press(screen.getByTestId('tab_stations'));
+    await fireEvent.press(await screen.findByText('Arlozorov/Ibn Gabirol'));
+    await screen.findByTestId('stop_screen');
+    expect(await screen.findByText('3 stops away')).toBeTruthy();
+    // 45 stops is a bus still far off, and a 15-minute-old position counts nothing: those keep their usual labels.
+    expect(screen.queryByText('45 stops away')).toBeNull();
+    expect(screen.queryByText('2 stops away')).toBeNull();
+    expect(screen.getByText('live')).toBeTruthy();
+  } finally {
+    fake.stopBoard = board;
+  }
+});

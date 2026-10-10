@@ -1,5 +1,6 @@
 import type { LiveCall } from '../src/data/eta';
 import { type GeoPoint, type Itinerary, type StopCall, makeLeg } from '../src/data/models';
+import { setLanguage } from '../src/i18n';
 import { TripGuide } from '../src/live/tripGuide';
 import { instant } from './helpers';
 
@@ -137,4 +138,28 @@ test('waiting for a live bus: stops away in the text, and the boarding alert two
   expect(close.text).toBe('Bus 5 in 8 min · 2 stops away (live)');
   expect(close.alert).toBe('BOARD_SOON');
   expect(close.alertKey).toBe('board-1');
+});
+
+test('no stops count or early alert without a live, near bus', () => {
+  const at = (status: LiveCall['status'], stopsAway: number | null) =>
+    new Map<number, LiveCall>([[1, { status, scheduled: t0 + 300, expected: status === 'LIVE' ? t0 + 600 : null, delaySec: 0, stopsAway, vehicle: null, alightExpected: null, progress: null }]]);
+  // Timetable only, or a bus that stopped reporting: the time alone, and no alert 10 minutes out.
+  for (const s of [at('SCHEDULED', null), at('UNTRACKED', null)]) {
+    const g = new TripGuide(itin, 'Home').update(pt(-0.3), t0 - 300, s);
+    expect(g.text).toBe('Bus 5 in 10 min');
+    expect(g.alert).toBeNull();
+  }
+  // Three stops out isn't "soon" yet; more than 40 is a count nobody needs.
+  expect(new TripGuide(itin, 'Home').update(pt(-0.3), t0, at('LIVE', 3)).alert).toBeNull();
+  expect(new TripGuide(itin, 'Home').update(pt(-0.3), t0, at('LIVE', 41)).text).toBe('Bus 5 in 10 min (live)');
+});
+
+test('stops away in Hebrew', () => {
+  setLanguage('he');
+  try {
+    const live = new Map<number, LiveCall>([[1, { status: 'LIVE', scheduled: t0 + 300, expected: t0 + 600, delaySec: 0, stopsAway: 1, vehicle: null, alightExpected: null, progress: null }]]);
+    expect(new TripGuide(itin, 'Home').update(pt(-0.3), t0, live).text).toBe('אוטובוס 5 בעוד 10 דק׳ · עוד תחנה אחת (בזמן אמת)');
+  } finally {
+    setLanguage('en');
+  }
 });
