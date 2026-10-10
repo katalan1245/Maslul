@@ -6,6 +6,7 @@ import * as TaskManager from 'expo-task-manager';
 import { type Itinerary, makeLeg } from '../src/data/models';
 import { nowSec } from '../src/data/time';
 import { TRIP_TASK, activeTrip } from '../src/live/liveTrip';
+import { CH_TRIP } from '../src/live/notifications';
 import { call } from './helpers';
 
 jest.mock('../src/state/services', () => ({ repo: { legLive: async () => null } }));
@@ -41,6 +42,10 @@ test('starting follows location with a foreground service and saves the session'
   expect(name).toBe(TRIP_TASK);
   expect(opts.foregroundService.notificationBody).toBe('Savidor');
   expect(await AsyncStorage.getItem('live_trip_v1')).not.toBeNull();
+});
+
+test("live directions post on expo-location's channel, which ensureChannels names before the trip starts", () => {
+  expect(CH_TRIP).toBe(`com.maslul.app:${TRIP_TASK}`);
 });
 
 test('an alert fires once, not on every update', async () => {

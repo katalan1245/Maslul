@@ -9,6 +9,7 @@ import { reloadAppAsync } from 'expo';
 import { I18nManager } from 'react-native';
 import App from '../src/App';
 import { S } from '../src/i18n';
+import { deviceLang } from '../src/i18n/device';
 import { en } from '../src/i18n/en';
 import { he } from '../src/i18n/he';
 import { MIGRATED_KEY, STORE_KEY } from '../src/state/persist';
@@ -121,4 +122,13 @@ it('words Hebrew counts and days naturally', () => {
   // Sunday first, as the week goes in Israel.
   expect(he.shuttles.days[7]).toBe('א׳');
   expect(en.cards.transfers(1)).toBe('1 transfer');
+});
+
+it('takes Hebrew from the phone however the platform writes it', () => {
+  const ids = (id: string) => {
+    jest.spyOn(I18nManager, 'getConstants').mockReturnValue({ ...I18nManager.getConstants(), localeIdentifier: id });
+    return deviceLang();
+  };
+  expect(['he_IL', 'iw_IL', 'he-IL', 'he'].map(ids)).toEqual(['he', 'he', 'he', 'he']);
+  expect(['en_US', 'hello'].map(ids)).toEqual(['en', 'en']);
 });

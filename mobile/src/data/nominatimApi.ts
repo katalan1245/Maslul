@@ -36,10 +36,9 @@ export class NominatimApi {
 
   constructor(private readonly base = 'https://nominatim.openstreetmap.org') {}
 
-  search(text: string, language: string | null = null): Promise<Place[]> {
+  search(text: string): Promise<Place[]> {
     const url = buildUrl(this.base, 'search', [
       ['q', text],
-      ['accept-language', language],
       ['format', 'jsonv2'],
       ['addressdetails', '1'],
       ['countrycodes', 'il,ps'],

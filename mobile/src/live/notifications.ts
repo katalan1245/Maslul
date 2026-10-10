@@ -4,7 +4,11 @@ import { Platform } from 'react-native';
 import { type Instant, nowSec } from '../data/time';
 
 /** Notification channels, as in the Kotlin app (live/Notifications.kt). */
-export const CH_TRIP = 'live_trip';
+// The channel expo-location posts live directions on ("<package>:<task>", TRIP_TASK). It names it
+// "Maslul" only when it doesn't exist yet, so creating it first gives it our name, in the app's language.
+export const CH_TRIP = 'com.maslul.app:maslul-live-trip';
+/** The Kotlin app's live-directions channel; nothing posts on it now. */
+const OLD_TRIP = 'live_trip';
 export const CH_ALERT = 'trip_alerts';
 export const CH_REMIND = 'reminders';
 
@@ -13,6 +17,7 @@ let channelsReady: Promise<void> | null = null;
 export function ensureChannels(): Promise<void> {
   if (Platform.OS !== 'android') return Promise.resolve();
   channelsReady ??= Promise.all([
+    Notifications.deleteNotificationChannelAsync(OLD_TRIP).catch(() => {}),
     Notifications.setNotificationChannelAsync(CH_TRIP, {
       name: S.notify.liveDirections,
       importance: Notifications.AndroidImportance.LOW,

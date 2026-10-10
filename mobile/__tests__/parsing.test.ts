@@ -136,3 +136,13 @@ test('a car drop-off ends when its padding is taken back', () => {
   expect(legDurationSec(itin.legs[1])).toBe(0);
   expect(itin.legs[0].end).toBe(itin.legs[1].start);
 });
+
+test("a train's number isn't taken for where it goes", () => {
+  const itin = itineraryToDomain(
+    JSON.parse(`{"legs":[
+      {"mode":"RAIL","startTime":"2026-10-11T09:56:00Z","endTime":"2026-10-11T11:00:00Z","from":{"name":"A"},"to":{"name":"B"},"tripId":"t","headsign":"114"},
+      {"mode":"BUS","startTime":"2026-10-11T11:05:00Z","endTime":"2026-10-11T11:20:00Z","from":{"name":"B"},"to":{"name":"C"},"tripId":"u","headsign":"חיפה_בת גלים"}
+    ]}`),
+  );
+  expect(itin.legs.map((l) => l.headsign)).toEqual([null, 'בת גלים, חיפה']);
+});
