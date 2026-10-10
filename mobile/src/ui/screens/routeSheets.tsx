@@ -92,13 +92,18 @@ export function TimeSheet({
  */
 export function RideSheet({
   current,
+  when,
   onDismiss,
   onPickDestination,
+  onPickTime,
   onApply,
 }: {
   current: RideOffer | null;
+  /** The trip's time, which is when the driver leaves (or, for arrive-by, when you must be there). */
+  when: string;
   onDismiss: () => void;
   onPickDestination: () => void;
+  onPickTime: () => void;
   onApply: (r: RideOffer | null) => void;
 }) {
   const t = useTheme();
@@ -124,6 +129,17 @@ export function RideSheet({
         </View>
         <Icon name="chevron-right" color={t.x.subtle} />
       </Pressable>
+      {current?.kind === 'toPlace' && (
+        <View style={{ marginHorizontal: -20 }}>
+          <SettingSwitch
+            title={S.sheets.onlyAtDest}
+            subtitle={S.sheets.onlyAtDestHint}
+            value={current.only === true}
+            onChange={(only) => onApply({ ...current, only })}
+            testID="ride_only_dest"
+          />
+        </View>
+      )}
       <View style={[styles.option, { flexDirection: 'column', alignItems: 'stretch', backgroundColor: current?.kind === 'within' ? t.c.primaryContainer : t.c.surfaceVariant, marginTop: 12 }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Icon name="schedule" color={t.c.primary} />
@@ -141,6 +157,21 @@ export function RideSheet({
         </View>
         <Button text={S.sheets.findDropOff} onPress={() => onApply({ kind: 'within', minutes })} testID="ride_within" />
       </View>
+      <Pressable
+        onPress={onPickTime}
+        style={[styles.option, { backgroundColor: t.c.surfaceVariant, marginTop: 12 }]}
+        testID="ride_time"
+        accessibilityRole="button"
+      >
+        <Icon name="schedule" color={t.c.primary} />
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          <Txt v="titleSmall">{S.sheets.rideWhen}</Txt>
+          <Txt v="bodySmall" color={t.x.subtle}>
+            {when}
+          </Txt>
+        </View>
+        <Icon name="chevron-right" color={t.x.subtle} />
+      </Pressable>
       {current != null && (
         <View style={{ alignItems: 'center', marginTop: 8 }}>
           <TextButton text={S.sheets.noRide} onPress={() => onApply(null)} />

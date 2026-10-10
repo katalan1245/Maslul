@@ -344,35 +344,45 @@ export class TransitRepository {
 
   /**
    * Options for a lift with a driver heading to [driverDest]: get out at the drop-off along the
-   * way that gets you to [req]'s destination best, then continue by transit. [score] ranks.
-   * [progress] gets the options found so far, each time a drop-off is done.
+   * way that gets you to [req]'s destination best (or only at [driverDest] with [only]), then
+   * continue by transit. [score] ranks. [progress] gets the options found so far, each time a
+   * drop-off is done. Arrive-by works back: transit is planned to arrive in time from each
+   * drop-off, and the driver leaves so as to get you there for it.
    */
   async rideAlong(
     req: PlanRequest,
     driverDest: GeoPoint,
     score: (i: Itinerary) => number,
     progress: (l: Itinerary[]) => void = () => {},
+    only = false,
   ): Promise<Itinerary[]> {
     const r0 = planDefaults(req);
-    const leave = Math.floor(r0.time ?? nowSec());
-    const route = await this.carRoute(r0.from, driverDest, leave);
+    const now = nowSec();
+    const at = Math.floor(r0.time ?? now);
+    const route = await this.carRoute(r0.from, driverDest, at);
     if (route == null) throw new NoDriveException();
     const found = new Found(score, progress);
     const gate = limiter(FAN_OUT);
+    const all = RidePlanner.dropOffs(route, r0.to);
     // The likeliest drop-offs first (by where you're going, and the driver's end), so they show soonest.
     const drops = sortedBy(
-      RidePlanner.dropOffs(route, r0.to).map((d, i) => ({ d, i })),
+      all.map((d, i) => ({ d, i })).filter(({ i }) => !only || i === all.length - 1),
       ({ d }) => GeoMath.distance(d.point, r0.to),
     );
     await Promise.all(
       drops.map(({ d, i }) =>
         gate(async () => {
-          const car = RidePlanner.carLeg(route, d, leave);
-          const r = await this.onward({ ...req, from: d.point, fromStopId: null, time: car.end + RidePlanner.STOP_SEC });
+          const toDrop = d.atSec + RidePlanner.STOP_SEC;
+          const r = await this.onward({ ...req, from: d.point, fromStopId: null, time: r0.arriveBy ? at : at + toDrop }, 3, r0.arriveBy);
           if (r == null) return;
-          const walk = r.walkOnly != null && itinDurationSec(r.walkOnly) <= r0.maxWalkMinutes * 60 ? r.walkOnly : null;
-          const best = sortedBy(r.itineraries, score).slice(0, 3);
-          found.add([...best, ...(walk ? [walk] : [])].map((it) => RidePlanner.compose(car, it, `ride${i}:${it.id}`)));
+          const fits = r.walkOnly != null && itinDurationSec(r.walkOnly) <= r0.maxWalkMinutes * 60;
+          const walk = fits ? (r0.arriveBy ? shifted(r.walkOnly!, at - r.walkOnly!.end) : r.walkOnly) : null;
+          const rest = [...sortedBy(r.itineraries, score).slice(0, 3), ...(walk ? [walk] : [])];
+          const options = rest
+            .map((it) => ({ it, leave: r0.arriveBy ? it.start - toDrop : at }))
+            // Working back can ask the driver to have left already.
+            .filter(({ it, leave }) => !(r0.arriveBy && (leave < now - 60 || it.end > at)));
+          found.add(options.map(({ it, leave }) => RidePlanner.compose(RidePlanner.carLeg(route, d, leave), it, `ride${i}:${it.id}`)));
         }),
       ),
     );
@@ -440,9 +450,9 @@ export class TransitRepository {
    * (drop-offs, stops to get off at). Transitous serves a client's requests one at a time, so
    * these go FAN_OUT at once and are kept small; one that stalls is given up on.
    */
-  private onward(req: PlanRequest, count = 3): Promise<PlanResult | null> {
+  private onward(req: PlanRequest, count = 3, arriveBy = false): Promise<PlanResult | null> {
     return withTimeout(
-      this.plan({ ...req, arriveBy: false, pageCursor: null, numItineraries: count, searchWindowSec: 20 * 60 }),
+      this.plan({ ...req, arriveBy, pageCursor: null, numItineraries: count, searchWindowSec: 20 * 60 }),
       ONWARD_TIMEOUT_MS,
     );
   }

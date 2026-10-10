@@ -16,10 +16,10 @@ import { groupBy, minBy, sortedBy } from './util';
 
 /**
  * Someone driving you part of the way; the rest is by transit. Either the driver is going to
- * [dest] (get out wherever on the way suits you best), or takes you wherever you like, up to
- * [minutes] of driving.
+ * [dest] (get out wherever on the way suits you best, or with [only] at [dest] alone, when they
+ * can't stop on the way), or takes you wherever you like, up to [minutes] of driving.
  */
-export type RideOffer = { kind: 'toPlace'; dest: Place } | { kind: 'within'; minutes: number };
+export type RideOffer = { kind: 'toPlace'; dest: Place; only?: boolean } | { kind: 'within'; minutes: number };
 
 export const RIDE_MINUTES = [5, 10, 15, 20, 30, 45];
 

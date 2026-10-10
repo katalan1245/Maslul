@@ -221,6 +221,11 @@ export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Route
       {showRide && (
         <RideSheet
           current={model.ride}
+          when={timeLabel(model.timeMode, model.time)}
+          onPickTime={() => {
+            setShowRide(false);
+            setShowTime(true);
+          }}
           onDismiss={() => setShowRide(false)}
           onPickDestination={() => {
             setShowRide(false);

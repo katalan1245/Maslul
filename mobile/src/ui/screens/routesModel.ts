@@ -259,8 +259,7 @@ export class RoutesModel extends Model {
       to: t,
       // On board: from the next stop, when the timetable has the bus there.
       time: board != null ? (scheduledTime(board) ?? nowSec()) - 60 : this.timeMode === 'NOW' ? null : this.time,
-      // A driver heading somewhere leaves at the time given, whichever way it was set.
-      arriveBy: board == null && this.ride?.kind !== 'toPlace' && this.timeMode === 'ARRIVE',
+      arriveBy: board == null && this.timeMode === 'ARRIVE',
       modes: s.modes,
       walkSpeedMps: WALK_SPEEDS[s.walkSpeed].mps,
       maxWalkMinutes: s.maxWalkMinutes,
@@ -456,10 +455,10 @@ export class RoutesModel extends Model {
    */
   private async planWithRail(gen: number): Promise<PlanResult> {
     const req = this.request()!;
-    const score = (i: Itinerary) => Ranking.score(i, false, this.walkMps, this.rail, this.sort);
+    const score = (i: Itinerary) => Ranking.score(i, req.arriveBy ?? false, this.walkMps, this.rail, this.sort);
     const ride = this.ride;
     if (ride?.kind === 'toPlace') {
-      const options = await this.refined(gen, (show) => repo.rideAlong(req, placePoint(ride.dest), score, show));
+      const options = await this.refined(gen, (show) => repo.rideAlong(req, placePoint(ride.dest), score, show, ride.only));
       return { itineraries: options, walkOnly: null, nextCursor: null, previousCursor: null };
     }
     const start = this.onBoardTripId != null ? this.boardStart : null;

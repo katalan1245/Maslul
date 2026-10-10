@@ -30,6 +30,26 @@ test("finds where to get out along the driver's way", async () => {
   expect(options.every((o) => o.legs.every((l, i) => i === 0 || !(l.start < o.legs[i - 1].start)))).toBe(true);
 });
 
+test("a driver who can't stop on the way drops you only at their destination", async () => {
+  const options = await repo.rideAlong({ from: telAviv, to: { lat: 32.317, lon: 34.9354 } }, haifa, score, () => {}, true);
+  expect(options.length).toBeGreaterThan(0);
+  const car = options[0].legs[0];
+  expect(Math.hypot(car.to.lat - haifa.lat, car.to.lon - haifa.lon)).toBeLessThan(0.01);
+});
+
+test('arrive-by with a driver heading somewhere works back from the arrival (BUGS 1)', async () => {
+  // Tomorrow 09:00 Israel time (06:00 UTC), to be there by.
+  const by = Math.floor(Date.now() / 86_400_000 + 1) * 86_400 + 6 * 3600;
+  const options = await repo.rideAlong({ from: telAviv, to: { lat: 32.317, lon: 34.9354 }, time: by, arriveBy: true }, haifa, score);
+  options.slice(0, 3).forEach((o) => console.log(`arrive-by ride: ${describe_(o)}`));
+  expect(options.length).toBeGreaterThan(0);
+  for (const o of options) {
+    expect(o.end).toBeLessThanOrEqual(by);
+    // The drop-off comes before the onward trip starts.
+    expect(o.legs[0].end).toBeLessThanOrEqual(o.legs[1].start);
+  }
+});
+
 test('plans a lift within a few minutes', async () => {
   const r = await repo.plan({
     from: telAviv, to: { lat: 31.2518, lon: 34.7913 }, preTransitModes: 'CAR_DROPOFF', maxPreTransitMinutes: 15, directModes: 'WALK,CAR', maxDirectMinutes: 15,
