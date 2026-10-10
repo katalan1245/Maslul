@@ -3,7 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import { AppState, FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Combine } from '../../data/combine';
+import { WiderWalk } from '../../data/grace';
 import { type Itinerary, type Leg, type Place, itinDurationSec, placeKey, rideKey, walkSec } from '../../data/models';
+import { localDate, today } from '../../data/time';
 import { DEFAULT_MAX_WALK_MINUTES, type Settings, favoriteFor } from '../../data/userStore';
 import { S } from '../../i18n';
 import { useUserData } from '../../state/store';
@@ -20,7 +22,7 @@ import { ItineraryCard, WalkOnlyCard, rideLabel, timeLabel } from './routeCards'
 import { OptionsSheet, RideSheet, TimeSheet } from './routeSheets';
 import { RoutesModel } from './routesModel';
 
-type Item = { kind: 'saved'; at: number } | { kind: 'last'; ride: Leg } | { kind: 'earlier' } | { kind: 'walk'; itin: Itinerary } | { kind: 'itin'; itin: Itinerary } | { kind: 'later' } | { kind: 'credit' };
+type Item = { kind: 'saved'; at: number } | { kind: 'last'; ride: Leg } | { kind: 'earlier' } | { kind: 'wider' } | { kind: 'walk'; itin: Itinerary } | { kind: 'itin'; itin: Itinerary } | { kind: 'later' } | { kind: 'credit' };
 
 export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Routes'>) {
   const t = useTheme();
@@ -52,6 +54,8 @@ export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Route
   const leastWalk = itineraries.length > 2 ? itineraries.reduce((a, b) => (walkSec(b) < walkSec(a) ? b : a)).id : null;
 
   const s = data.settings;
+  const todayDate = today();
+  const askedDay = model.timeMode !== 'NOW' && model.time != null ? localDate(model.time) : todayDate;
   const custom =
     s.modes.length < 6 || s.maxWalkMinutes !== DEFAULT_MAX_WALK_MINUTES || s.wheelchair || s.walkSpeed !== 'NORMAL' || s.railPreference !== 'NONE';
 
@@ -60,6 +64,7 @@ export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Route
     // Said up top once it's close: a card further down could be missed.
     ...(model.last != null && model.last.ride.start - now < 3600 ? [{ kind: 'last', ride: model.last.ride } as const] : []),
     ...(model.canPage ? [{ kind: 'earlier' } as const] : []),
+    ...(model.widerWalk.size > 0 ? [{ kind: 'wider' } as const] : []),
     ...(model.walkOnly ? [{ kind: 'walk', itin: model.walkOnly } as const] : []),
     ...itineraries.map((itin) => ({ kind: 'itin', itin }) as const),
     ...(model.canPage ? [{ kind: 'later' } as const] : []),
@@ -93,6 +98,16 @@ export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Route
             <TextButton text={S.routes.earlier} onPress={() => model.more(false)} disabled={model.loadingMore} />
           </View>
         );
+      case 'wider':
+        // Why some options walk further than the options sheet allows: nothing leaves soon within it.
+        return (
+          <View style={[styles.wider, { backgroundColor: t.c.primaryContainer }]} testID="wider_walk_note">
+            <Icon name="directions-walk" size={18} color={t.c.onPrimaryContainer} />
+            <Txt v="bodySmall" color={t.c.onPrimaryContainer} style={{ flex: 1, marginStart: 10 }}>
+              {S.routes.widerWalkNote(s.maxWalkMinutes, WiderWalk.MINUTES)}
+            </Txt>
+          </View>
+        );
       case 'walk':
         return <WalkOnlyCard itin={item.itin} now={now} onPress={() => model.open(item.itin)} />;
       case 'later':
@@ -117,6 +132,11 @@ export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Route
         if (itin.id === fastest) tags.push(S.routes.fastest);
         if (itin.id === leastWalk && itin.id !== fastest) tags.push(S.routes.leastWalking);
         if (itin.id === model.last?.itinId) tags.push(S.routes.lastTag);
+        if (model.widerWalk.has(itin.id) || model.overWalk(itin)) tags.push(S.routes.longerWalk);
+        if (model.overLift(itin)) tags.push(S.routes.longerRide);
+        // Late at night or on Shabbat the options can be tomorrow's: say so, not just the time.
+        const day = localDate(itin.start);
+        if (day !== askedDay) tags.push(Fmt.day(day, todayDate));
         // Transfer slack as the rides are expected to run, late ones included.
         const risk = model.riskiest(expectedOf(itin));
         return (
@@ -277,6 +297,7 @@ function EndpointRow({ text, hollow, onPress, testID }: { text: string; hollow?:
 const styles = StyleSheet.create({
   saved: { flexDirection: 'row', alignItems: 'center', paddingStart: 20, paddingEnd: 8, paddingVertical: 4 },
   last: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 8 },
+  wider: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 12, marginVertical: 5, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 },
   header: { paddingBottom: 10, elevation: 2, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } },
   headerRow: { flexDirection: 'row', alignItems: 'center', paddingRight: 4 },
   endpoints: { flex: 1, borderRadius: 14, paddingVertical: 4 },

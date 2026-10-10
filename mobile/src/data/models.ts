@@ -17,16 +17,16 @@ export type TransitMode = (typeof TRANSIT_MODES)[number];
 
 export const isTransit = (m: TransitMode) => m !== 'WALK' && m !== 'CAR';
 
-/** The kind of vehicle riders call this mode by: a light rail is a "train". */
+/** The kind of vehicle riders call this mode by: a metro is a "train"; a light rail too, except in Russian ("трамвай"). */
 export function vehicleKind(m: TransitMode): VehicleKind {
   switch (m) {
     case 'BUS':
     case 'CABLE_CAR':
     case 'FERRY':
     case 'CAR':
+    case 'LIGHT_RAIL':
       return m;
     case 'TRAIN':
-    case 'LIGHT_RAIL':
     case 'METRO':
       return 'TRAIN';
     default:

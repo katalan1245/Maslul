@@ -1,7 +1,7 @@
 /** One vehicle of a kind, as riders say it: "train is close". */
-const vehicle = { BUS: 'bus', TRAIN: 'train', CABLE_CAR: 'cable car', FERRY: 'ferry', CAR: 'car', RIDE: 'ride' };
+const vehicle = { BUS: 'bus', TRAIN: 'train', LIGHT_RAIL: 'train', CABLE_CAR: 'cable car', FERRY: 'ferry', CAR: 'car', RIDE: 'ride' };
 export type VehicleKind = keyof typeof vehicle;
-const vehicles: Record<VehicleKind, string> = { BUS: 'buses', TRAIN: 'trains', CABLE_CAR: 'cable cars', FERRY: 'ferries', CAR: 'cars', RIDE: 'rides' };
+const vehicles: Record<VehicleKind, string> = { BUS: 'buses', TRAIN: 'trains', LIGHT_RAIL: 'trains', CABLE_CAR: 'cable cars', FERRY: 'ferries', CAR: 'cars', RIDE: 'rides' };
 const stops = (n: number) => (n === 1 ? '1 stop' : `${n} stops`);
 const transfers = (n: number) => (n === 1 ? '1 transfer' : `${n} transfers`);
 
@@ -64,6 +64,10 @@ export const en = {
     fastest: 'Fastest',
     leastWalking: 'Least walking',
     lastTag: 'Last today',
+    longerWalk: 'Longer walk',
+    longerRide: 'Longer ride',
+    widerWalkNote: (usual: number, wider: number) =>
+      `Nothing leaves soon within a ${usual} min walk, so routes with walks of up to ${wider} min are included.`,
     lastToday: (time: string, stop: string) => `The last one today leaves at ${time} from ${stop}`,
     finding: 'Finding routes…',
     noRoutes: 'No routes',
@@ -113,7 +117,11 @@ export const en = {
     from: (what: string, stop: string) => `${what} from ${stop}`,
     tightTransfer: (min: number, line: string) => `Tight transfer · ${min < 1 ? 'under 1 min' : `${min} min`} to catch ${line}`,
     afterWalk: (distance: string) => ` after a ${distance} walk`,
-    ifMissed: (line: string, time: string, wait: string) => `If missed, next ${line} at ${time} (+${wait})`,
+    ifMissed: (next: string, time: string, wait: string) => `If missed, ${next} at ${time} (+${wait})`,
+    /** A ride without a line number, mid-sentence: "the train". */
+    theVehicle: (k: VehicleKind) => `the ${vehicle[k === 'CAR' ? 'RIDE' : k]}`,
+    theNextVehicle: (k: VehicleKind) => `the next ${vehicle[k === 'CAR' ? 'RIDE' : k]}`,
+    nextLine: (line: string) => `next ${line}`,
     hurry: 'Hurry',
     isClose: (k: VehicleKind) => `${vehicle[k]} is close`,
     goNow: 'Go now',
@@ -154,6 +162,8 @@ export const en = {
     transport: 'Transport',
     maxWalk: 'Max walk to/from stops',
     maxWalkA11y: 'Max walk to or from stops',
+    maxWalkHint: (wider: number) =>
+      `A few minutes more if that gets you there much sooner. When nothing leaves soon, walks of up to ${wider} min are shown too.`,
     walkSpeed: 'Walking speed',
     walkSpeeds: { SLOW: 'Relaxed', NORMAL: 'Normal', FAST: 'Brisk' },
     preferRail: 'Prefer trains & light rail',
@@ -193,6 +203,7 @@ export const en = {
     stayOn: (k: VehicleKind) => `You're on this ${vehicle[k]}: stay on`,
     rideFor: (duration: string) => `Ride ${duration}`,
     rideStops: (n: number, duration: string) => `Ride ${stops(n)} · ${duration}`,
+    missChecking: 'If you miss it: checking the next rides…',
     missNone: 'If you miss it: no other ride within the hour',
     missNext: 'If you miss it, next:',
     goThisWay: (n: number, k: VehicleKind) => `${n} ${vehicles[k]} go this way`,

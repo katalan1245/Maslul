@@ -298,3 +298,36 @@ it('looks for no last bus in the daytime', async () => {
     jest.restoreAllMocks();
   }
 });
+
+it('walks further when nothing leaves soon, and says so (upstream 1.2.1)', async () => {
+  const { zoned } = require('../src/data/time') as typeof import('../src/data/time');
+  const { makeLeg } = require('../src/data/models') as typeof import('../src/data/models');
+  const { call, itinOf } = require('./helpers') as typeof import('./helpers');
+  const route = (id: string, t: number) => {
+    const a = call('s1', 'Arlozorov/Ibn Gabirol', 32.0866, 34.7818, t, t);
+    const b = call('s2', 'Dizengoff Center', 32.0756, 34.775, t + 600, t + 600);
+    return itinOf(id, makeLeg({ mode: 'WALK', from: call(null, 'Start', 32.0853, 34.7818), to: a, start: t - 240, end: t }), makeLeg({ mode: 'BUS', from: a, to: b, start: t, end: t + 600, routeShortName: '5', tripId: `trip-${id}` }));
+  };
+  // Friday 16:00: the buses nearby have stopped until Saturday evening; one a long walk away still runs.
+  const friday = zoned('2026-10-09', 16);
+  jest.spyOn(Date, 'now').mockReturnValue(friday * 1000);
+  const plan = fake.plan;
+  fake.plan = async (req: unknown) => {
+    fake.planCalls.push(req);
+    const wide = (req as { maxWalkMinutes?: number }).maxWalkMinutes === 50;
+    return { itineraries: [wide ? route('far', friday + 40 * 60) : route('saturday', zoned('2026-10-10', 19))], walkOnly: null, nextCursor: null, previousCursor: null };
+  };
+  try {
+    await planToDizengoff();
+    await screen.findByTestId('wider_walk_note');
+    expect(screen.getAllByTestId('route_card')).toHaveLength(2);
+    expect(screen.getByText('Longer walk', { exact: false })).toBeTruthy();
+    // Saturday's bus says it's tomorrow, not just its time.
+    expect(screen.getByText('Tomorrow', { exact: false })).toBeTruthy();
+    // The usual search, the one a few minutes over the limit, then the wider one.
+    expect(fake.planCalls.map((r) => (r as { maxWalkMinutes?: number }).maxWalkMinutes)).toEqual([20, 23, 50]);
+  } finally {
+    fake.plan = plan;
+    jest.restoreAllMocks();
+  }
+});

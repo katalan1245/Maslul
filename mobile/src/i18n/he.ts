@@ -1,10 +1,10 @@
 import type { Strings } from '.';
 import type { VehicleKind } from './en';
 
-const vehicle: Record<VehicleKind, string> = { BUS: 'אוטובוס', TRAIN: 'רכבת', CABLE_CAR: 'רכבל', FERRY: 'מעבורת', CAR: 'רכב', RIDE: 'נסיעה' };
-const vehicles: Record<VehicleKind, string> = { BUS: 'אוטובוסים', TRAIN: 'רכבות', CABLE_CAR: 'רכבלים', FERRY: 'מעבורות', CAR: 'רכבים', RIDE: 'נסיעות' };
+const vehicle: Record<VehicleKind, string> = { BUS: 'אוטובוס', TRAIN: 'רכבת', LIGHT_RAIL: 'רכבת', CABLE_CAR: 'רכבל', FERRY: 'מעבורת', CAR: 'רכב', RIDE: 'נסיעה' };
+const vehicles: Record<VehicleKind, string> = { BUS: 'אוטובוסים', TRAIN: 'רכבות', LIGHT_RAIL: 'רכבות', CABLE_CAR: 'רכבלים', FERRY: 'מעבורות', CAR: 'רכבים', RIDE: 'נסיעות' };
 /** Adjectives and verbs agree with the vehicle's gender. */
-const fem = (k: VehicleKind) => k === 'TRAIN' || k === 'FERRY' || k === 'RIDE';
+const fem = (k: VehicleKind) => k === 'TRAIN' || k === 'LIGHT_RAIL' || k === 'FERRY' || k === 'RIDE';
 const stops = (n: number) => (n === 1 ? 'תחנה אחת' : `${n} תחנות`);
 const transfers = (n: number) => (n === 1 ? 'החלפה אחת' : `${n} החלפות`);
 /** Right-to-left mark: keeps a line that starts with digits or Latin text laid out right to left. */
@@ -60,6 +60,9 @@ export const he: Strings = {
     fastest: 'הכי מהיר',
     leastWalking: 'הכי מעט הליכה',
     lastTag: 'אחרון להיום',
+    longerWalk: 'הליכה ארוכה',
+    longerRide: 'טרמפ ארוך יותר',
+    widerWalkNote: (usual, wider) => `אין יציאה בקרוב במרחק הליכה של ${usual} דק׳, אז נכללים גם מסלולים עם הליכה של עד ${wider} דק׳.`,
     lastToday: (time, stop) => `האחרון להיום יוצא ב-${time} מהתחנה ${stop}`,
     finding: 'מחפשים מסלולים…',
     noRoutes: 'אין מסלולים',
@@ -109,7 +112,10 @@ export const he: Strings = {
     from: (what, stop) => `${what} מ${stop}`,
     tightTransfer: (min, line) => `החלפה צפופה · ${min < 1 ? 'פחות מדקה' : `${min} דק׳`} כדי להספיק את ${line}`,
     afterWalk: (distance) => ` אחרי ${distance} הליכה`,
-    ifMissed: (line, time, wait) => `אם מפספסים: ${line} ב-${time} (+${wait})`,
+    ifMissed: (next, time, wait) => `אם מפספסים: ${next} ב-${time} (+${wait})`,
+    theVehicle: (k) => `ה${vehicle[k === 'CAR' ? 'RIDE' : k]}`,
+    theNextVehicle: (k) => `ה${vehicle[k === 'CAR' ? 'RIDE' : k]} ${fem(k === 'CAR' ? 'RIDE' : k) ? 'הבאה' : 'הבא'}`,
+    nextLine: (line) => `ה־${line} הבא`,
     hurry: 'צריך למהר',
     isClose: (k) => `ה${vehicle[k]} ${fem(k) ? 'קרובה' : 'קרוב'}`,
     goNow: 'לצאת עכשיו',
@@ -150,6 +156,7 @@ export const he: Strings = {
     transport: 'אמצעי תחבורה',
     maxWalk: 'הליכה מרבית אל התחנות וממנן',
     maxWalkA11y: 'הליכה מרבית אל התחנות וממנן',
+    maxWalkHint: (wider) => `עוד כמה דקות אם זה מקצר הרבה את הדרך. כשאין יציאה בקרוב, מוצגים גם מסלולים עם הליכה של עד ${wider} דק׳.`,
     walkSpeed: 'קצב הליכה',
     walkSpeeds: { SLOW: 'רגוע', NORMAL: 'רגיל', FAST: 'מהיר' },
     preferRail: 'העדפת רכבת ורכבת קלה',
@@ -189,6 +196,7 @@ export const he: Strings = {
     stayOn: (k) => `אתם ב${vehicle[k]} ${fem(k) ? 'הזו' : 'הזה'}: להמשיך בנסיעה`,
     rideFor: (duration) => `נסיעה ${duration}`,
     rideStops: (n, duration) => `נסיעה של ${stops(n)} · ${duration}`,
+    missChecking: 'אם מפספסים: בודקים את הנסיעות הבאות…',
     missNone: 'אם מפספסים: אין נסיעה אחרת בשעה הקרובה',
     missNext: 'אם מפספסים, הבאים:',
     goThisWay: (n, k) => `${n} ${vehicles[k]} בדרך הזו`,

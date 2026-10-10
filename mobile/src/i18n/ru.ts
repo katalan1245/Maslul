@@ -1,8 +1,8 @@
 import type { Strings } from '.';
 import type { VehicleKind } from './en';
 
-const vehicle: Record<VehicleKind, string> = { BUS: 'автобус', TRAIN: 'поезд', CABLE_CAR: 'канатная дорога', FERRY: 'паром', CAR: 'машина', RIDE: 'рейс' };
-const vehicles: Record<VehicleKind, string> = { BUS: 'автобусы', TRAIN: 'поезда', CABLE_CAR: 'кабинки', FERRY: 'паромы', CAR: 'машины', RIDE: 'рейсы' };
+const vehicle: Record<VehicleKind, string> = { BUS: 'автобус', TRAIN: 'поезд', LIGHT_RAIL: 'трамвай', CABLE_CAR: 'канатная дорога', FERRY: 'паром', CAR: 'машина', RIDE: 'рейс' };
+const vehicles: Record<VehicleKind, string> = { BUS: 'автобусы', TRAIN: 'поезда', LIGHT_RAIL: 'трамваи', CABLE_CAR: 'кабинки', FERRY: 'паромы', CAR: 'машины', RIDE: 'рейсы' };
 
 /** Russian plural forms: 1 остановка, 3 остановки, 5 остановок (and 21 остановка, 11 остановок). */
 export function plural(n: number, one: string, few: string, many: string): string {
@@ -17,21 +17,22 @@ const stops = (n: number) => count(n, 'остановка', 'остановки'
 const transfers = (n: number) => count(n, 'пересадка', 'пересадки', 'пересадок');
 /** "Ближайшие автобусы". */
 const nextOf: Record<VehicleKind, string> = {
-  BUS: 'Ближайшие автобусы', TRAIN: 'Ближайшие поезда', CABLE_CAR: 'Ближайшие кабинки', FERRY: 'Ближайшие паромы', CAR: 'Ближайшие машины', RIDE: 'Ближайшие рейсы',
+  BUS: 'Ближайшие автобусы', TRAIN: 'Ближайшие поезда', LIGHT_RAIL: 'Ближайшие трамваи', CABLE_CAR: 'Ближайшие кабинки', FERRY: 'Ближайшие паромы', CAR: 'Ближайшие машины', RIDE: 'Ближайшие рейсы',
 };
 /** "Вы в этом автобусе". */
 const onThis: Record<VehicleKind, string> = {
-  BUS: 'Вы в этом автобусе', TRAIN: 'Вы в этом поезде', CABLE_CAR: 'Вы в этой кабинке', FERRY: 'Вы на этом пароме', CAR: 'Вы в этой машине', RIDE: 'Вы уже едете',
+  BUS: 'Вы в этом автобусе', TRAIN: 'Вы в этом поезде', LIGHT_RAIL: 'Вы в этом трамвае', CABLE_CAR: 'Вы в этой кабинке', FERRY: 'Вы на этом пароме', CAR: 'Вы в этой машине', RIDE: 'Вы уже едете',
 };
 /** "В автобусе". */
-const onA: Record<VehicleKind, string> = { BUS: 'В автобусе', TRAIN: 'В поезде', CABLE_CAR: 'В кабинке', FERRY: 'На пароме', CAR: 'В машине', RIDE: 'В пути' };
+const onA: Record<VehicleKind, string> = { BUS: 'В автобусе', TRAIN: 'В поезде', LIGHT_RAIL: 'В трамвае', CABLE_CAR: 'В кабинке', FERRY: 'На пароме', CAR: 'В машине', RIDE: 'В пути' };
 /** Verbs agree with the vehicle's gender: "подъезжает" fits all, "близко" needs none. */
 const close: Record<VehicleKind, string> = {
-  BUS: 'Автобус близко', TRAIN: 'Поезд близко', CABLE_CAR: 'Кабинка близко', FERRY: 'Паром близко', CAR: 'Машина близко', RIDE: 'Транспорт близко',
+  BUS: 'Автобус близко', TRAIN: 'Поезд близко', LIGHT_RAIL: 'Трамвай близко', CABLE_CAR: 'Кабинка близко', FERRY: 'Паром близко', CAR: 'Машина близко', RIDE: 'Транспорт близко',
 };
 const goThisWay: Record<VehicleKind, [string, string, string]> = {
   BUS: ['автобус', 'автобуса', 'автобусов'],
   TRAIN: ['поезд', 'поезда', 'поездов'],
+  LIGHT_RAIL: ['трамвай', 'трамвая', 'трамваев'],
   CABLE_CAR: ['кабинка', 'кабинки', 'кабинок'],
   FERRY: ['паром', 'парома', 'паромов'],
   CAR: ['машина', 'машины', 'машин'],
@@ -87,6 +88,10 @@ export const ru: Strings = {
     fastest: 'Самый быстрый',
     leastWalking: 'Меньше пешком',
     lastTag: 'Последний сегодня',
+    longerWalk: 'Дольше пешком',
+    longerRide: 'Дольше на машине',
+    widerWalkNote: (usual, wider) =>
+      `В пределах ${usual} мин пешком в ближайшее время ничего не отправляется, поэтому показаны и маршруты, где идти до ${wider} мин.`,
     lastToday: (time, stop) => `Последний сегодня отправляется в ${time} от ${stop}`,
     finding: 'Ищем маршруты…',
     noRoutes: 'Маршрутов нет',
@@ -136,7 +141,15 @@ export const ru: Strings = {
     from: (what, stop) => `${what} от ${stop}`,
     tightTransfer: (min, line) => `Короткая пересадка · ${min < 1 ? 'меньше минуты' : `${min} мин`}, чтобы успеть на ${line}`,
     afterWalk: (distance) => ` после ${distance} пешком`,
-    ifMissed: (line, time, wait) => `Если опоздаете, следующий ${line} в ${time} (+${wait})`,
+    ifMissed: (next, time, wait) => `Если опоздаете, ${next} в ${time} (+${wait})`,
+    theVehicle: (k) =>
+      ({ BUS: 'автобус', TRAIN: 'поезд', LIGHT_RAIL: 'трамвай', CABLE_CAR: 'канатную дорогу', FERRY: 'паром', CAR: 'рейс', RIDE: 'рейс' })[k],
+    theNextVehicle: (k) =>
+      ({
+        BUS: 'следующий автобус', TRAIN: 'следующий поезд', LIGHT_RAIL: 'следующий трамвай', CABLE_CAR: 'следующая кабинка',
+        FERRY: 'следующий паром', CAR: 'следующий рейс', RIDE: 'следующий рейс',
+      })[k],
+    nextLine: (line) => `следующий ${line}`,
     hurry: 'Спешите',
     isClose: (k) => close[k],
     goNow: 'Выходите',
@@ -177,6 +190,8 @@ export const ru: Strings = {
     transport: 'Транспорт',
     maxWalk: 'Пешком до остановок и от них, не больше',
     maxWalkA11y: 'Сколько идти до остановок и от них, не больше',
+    maxWalkHint: (wider) =>
+      `На несколько минут больше, если так намного быстрее. Если рядом в ближайшее время ничего не отправляется, показываются и маршруты, где идти до ${wider} мин.`,
     walkSpeed: 'Скорость ходьбы',
     walkSpeeds: { SLOW: 'Медленно', NORMAL: 'Обычно', FAST: 'Быстро' },
     preferRail: 'Предпочитать поезда и трамвай',
@@ -216,6 +231,7 @@ export const ru: Strings = {
     stayOn: (k) => `${onThis[k]}: оставайтесь`,
     rideFor: (duration) => `В пути ${duration}`,
     rideStops: (n, duration) => `${stops(n)} · ${duration}`,
+    missChecking: 'Если опоздаете: ищем следующие рейсы…',
     missNone: 'Если опоздаете: других рейсов в ближайший час нет',
     missNext: 'Если опоздаете, следующие:',
     goThisWay: (n, k) => `${n} ${plural(n, ...goThisWay[k])} в эту сторону`,

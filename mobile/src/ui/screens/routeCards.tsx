@@ -354,6 +354,16 @@ export function RideOptions({
   );
 }
 
+/** Whether a ride goes by its mode's name ("Train"), having no line number of its own. */
+const unnumbered = (l: Leg) => {
+  const s = l.routeShortName?.trim();
+  return s == null || s === '' || s === 'NaN' || s.toLowerCase() === modeName(l.mode).toLowerCase();
+};
+/** The ride to catch, mid-sentence: "143", or "the train" for one without a line number. */
+const catchName = (l: Leg) => (unnumbered(l) ? S.cards.theVehicle(vehicleKind(l.mode)) : lineLabel(l));
+/** The ride after a missed one: "next 143", or "the next train". */
+const nextName = (l: Leg) => (unnumbered(l) ? S.cards.theNextVehicle(vehicleKind(l.mode)) : S.cards.nextLine(lineLabel(l)));
+
 /**
  * "⚠ Tight transfer · 2 min to 143" — the connection may be missed if a bus runs off schedule —
  * and, when known, the ride after it: "If missed, next 143 at 14:32 (+12 min)".
@@ -368,11 +378,11 @@ export function TransferWarning({ t: tr, missed }: { t: Transfer; missed?: Leg |
       </View>
       <View style={{ marginLeft: 6, flex: 1 }}>
         <Txt v="bodySmall" color={t.x.subtle}>
-          {S.cards.tightTransfer(min, lineLabel(tr.next)) + (isWalking(tr) ? S.cards.afterWalk(Fmt.distance(tr.walkM)) : '')}
+          {S.cards.tightTransfer(min, catchName(tr.next)) + (isWalking(tr) ? S.cards.afterWalk(Fmt.distance(tr.walkM)) : '')}
         </Txt>
         {missed != null && (
           <Txt v="bodySmall" color={t.x.subtle}>
-            {S.cards.ifMissed(lineLabel(missed), Fmt.time(missed.start), Fmt.duration(missed.start - tr.next.start))}
+            {S.cards.ifMissed(nextName(missed), Fmt.time(missed.start), Fmt.duration(missed.start - tr.next.start))}
           </Txt>
         )}
       </View>

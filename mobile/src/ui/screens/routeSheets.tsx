@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import type { TransitMode } from '../../data/models';
 import { RIDE_MINUTES, type RideOffer } from '../../data/rides';
+import { WiderWalk } from '../../data/grace';
 import { type Instant, localParts, nowSec, plusDays, today, zoned } from '../../data/time';
 import { RAIL_PREFERENCES, type RailPreference, WALK_SPEEDS, type WalkSpeed } from '../../data/userStore';
 import { store, useUserData } from '../../state/store';
@@ -198,6 +199,9 @@ export function OptionsSheet({ onDismiss }: { onDismiss: () => void }) {
         accessibilityLabel={S.sheets.maxWalkA11y}
         testID="max_walk"
       />
+      <Txt v="bodySmall" color={t.x.subtle}>
+        {S.sheets.maxWalkHint(WiderWalk.MINUTES)}
+      </Txt>
       <Txt v="titleSmall" style={{ marginTop: 8, marginBottom: 8 }}>
         {S.sheets.walkSpeed}
       </Txt>

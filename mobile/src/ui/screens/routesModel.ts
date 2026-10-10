@@ -16,6 +16,7 @@ import {
   scheduledTime,
   transitLegs,
 } from '../../data/models';
+import { Grace, WiderWalk } from '../../data/grace';
 import { HttpException } from '../../data/http';
 import { lastTonight, lateSearch, nightEnd } from '../../data/lastBus';
 import type { OnBoardStart } from '../../data/onBoard';
@@ -36,6 +37,8 @@ import { Model } from '../model';
 import { type SearchField, nav } from '../nav';
 
 export type TimeMode = 'NOW' | 'DEPART' | 'ARRIVE';
+/** Why a search came back empty, for screens that word the error their own way. */
+export type RouteError = 'LOCATION' | 'NO_ROUTES' | 'NETWORK';
 
 const sameSettings = (a: Settings, b: Settings) => JSON.stringify(a) === JSON.stringify(b);
 /** Lookups behind the shown options, shared by every routes screen (see lookup). */
@@ -49,6 +52,9 @@ export class RoutesModel extends Model {
   /** Options are showing but more are still being looked for (a lift's drop-offs, stops to get off at). */
   refining = false;
   error: string | null = null;
+  errorKind: RouteError | null = null;
+  /** Options found only by allowing a longer walk than usual, by id (see WiderWalk). */
+  widerWalk = new Set<string>();
   itineraries: Itinerary[] = [];
   walkOnly: Itinerary | null = null;
   loadingMore = false;
@@ -241,7 +247,8 @@ export class RoutesModel extends Model {
       wheelchair: s.wheelchair,
       pageCursor: cursor,
       fromStopId: board?.stopId ?? null,
-      preTransitModes: within ? 'CAR_DROPOFF' : null,
+      // Driven right to the stop: CAR_DROPOFF also lets the planner end the drive anywhere and walk on.
+      preTransitModes: within ? 'CAR' : null,
       maxPreTransitMinutes: within?.minutes ?? null,
       directModes: within ? 'WALK,CAR' : null,
       maxDirectMinutes: within?.minutes ?? null,
@@ -281,6 +288,8 @@ export class RoutesModel extends Model {
     this.scrollToTop();
     this.loading = true;
     this.error = null;
+    this.errorKind = null;
+    this.widerWalk = new Set();
     this.itineraries = [];
     this.walkOnly = null;
     this.raw = [];
@@ -302,6 +311,7 @@ export class RoutesModel extends Model {
         boardTrip != null
           ? S.routes.rideLost
           : S.routes.noLocation;
+      this.errorKind = 'LOCATION';
       this.loading = false;
       this.changed();
       return;
@@ -317,7 +327,7 @@ export class RoutesModel extends Model {
     try {
       const r = await this.planWithRail(gen);
       if (stale()) return;
-      const found = [...r.itineraries, ...(r.carOnly ? [r.carOnly] : [])];
+      const found = this.graced([...r.itineraries, ...(r.carOnly ? [r.carOnly] : [])]);
       const ids = new Set(found.map((i) => i.id));
       this.raw = [...found, ...keep.filter((i) => !ids.has(i.id))];
       this.itineraries = this.ranked(this.raw);
@@ -325,8 +335,10 @@ export class RoutesModel extends Model {
       this.nextCursor = r.nextCursor;
       this.prevCursor = r.previousCursor;
       this.canPage = this.nextCursor != null || this.prevCursor != null;
-      if (found.length === 0 && this.walkOnly == null) this.error = S.routes.noneFound;
-      else {
+      if (found.length === 0 && this.walkOnly == null) {
+        this.error = S.routes.noneFound;
+        this.errorKind = 'NO_ROUTES';
+      } else {
         if (boardTrip == null && this.ride == null && this.itineraries.length > 0) void SavedRoutes.save(this.savedQuery(), this.itineraries, nowSec());
         void this.findLast(gen);
       }
@@ -334,6 +346,7 @@ export class RoutesModel extends Model {
       if (stale()) return;
       // Said apart, so a failure reported from a device names its cause.
       console.warn('Route search failed', e);
+      this.errorKind = e instanceof NoDriveException ? 'NO_ROUTES' : 'NETWORK';
       this.error =
         e instanceof NoDriveException
           ? S.routes.noDrive
@@ -358,6 +371,9 @@ export class RoutesModel extends Model {
         }
       }
     }
+    // Nothing at all within the usual walk: look further before saying so.
+    if (this.errorKind === 'NO_ROUTES') await this.widenWalk(gen);
+    if (stale()) return;
     this.loading = false;
     this.changed();
     const extra = shuttleOptions ? await shuttleOptions : [];
@@ -368,10 +384,49 @@ export class RoutesModel extends Model {
       this.itineraries = this.ranked(this.raw);
       this.changed();
     }
+    // Only rides far off: what's showing stays while a longer walk is looked into.
+    if (this.errorKind == null && this.savedAt == null && this.widerWalk.size === 0) await this.widenWalk(gen);
+    if (stale()) return;
     await this.refreshLive();
     await this.findAlternatives(gen);
     await this.refreshLive();
     await this.findRidesAfter(gen);
+  }
+
+  /** Walks further to or from a stop than the options allow (by up to Grace.MINUTES). */
+  overWalk = (itin: Itinerary) => Grace.overWalk(itin, this.settings.maxWalkMinutes);
+
+  /** Drives longer than the driver offered (by up to Grace.MINUTES). */
+  overLift = (itin: Itinerary) => Grace.overLift(itin, this.ride?.kind === 'within' ? this.ride.minutes : null);
+
+  /** Drops the options that stretch a limit without getting there clearly sooner. */
+  private graced(options: Itinerary[]): Itinerary[] {
+    return Grace.filter(options, this.request()?.arriveBy === true, (i) => this.overWalk(i) || this.overLift(i));
+  }
+
+  /**
+   * When nothing leaves soon within the usual walk (late at night, on Shabbat), looks again
+   * allowing walks of up to WiderWalk.MINUTES, and adds the options that get there clearly
+   * sooner: a bus a long walk away beats waiting for tomorrow's.
+   */
+  private async widenWalk(gen: number) {
+    if (this.ride != null || this.onBoardTripId != null || this.walkOnly != null) return;
+    const req = this.request();
+    const arriveBy = req?.arriveBy === true;
+    if (req == null || !WiderWalk.needed(this.raw, req.time ?? this.searchedAt, arriveBy, this.settings.maxWalkMinutes)) return;
+    const wide = await repo.plan({ ...req, maxWalkMinutes: WiderWalk.MINUTES }).catch(() => null);
+    if (wide == null || gen !== this.gen || this.disposed) return;
+    const extra = WiderWalk.better(wide.itineraries, this.raw, arriveBy);
+    if (extra.length === 0) return;
+    const atTop = this.loading || this.atTop();
+    this.widerWalk = new Set(extra.map((i) => i.id));
+    this.raw = [...this.raw, ...extra];
+    this.itineraries = this.ranked(this.raw);
+    this.error = null;
+    this.errorKind = null;
+    this.changed();
+    // Sooner options come in above the ones showing: bring them into view (after the new list is laid out).
+    if (atTop) setTimeout(() => this.scrollToTop(), 150);
   }
 
   /**
@@ -395,10 +450,25 @@ export class RoutesModel extends Model {
     const railModes = modes.filter((m) => m !== 'BUS');
     const railOnly =
       this.rail !== 'NONE' && modes.includes('BUS') && railModes.length > 0 ? repo.plan({ ...req, modes: railModes }).catch(() => null) : null;
-    const main = await repo.plan(req);
-    const extra = (await railOnly)?.itineraries ?? [];
+    // Alongside, a few minutes over the limits (see Grace). Asked separately: with the limits
+    // raised the planner often returns only options over them, leaving nothing to weigh them against.
+    const within = ride?.kind === 'within' ? ride : null;
+    // Sent after the main request: Transitous may answer one at a time, and the main one matters most.
+    const planned = repo.plan(req);
+    const stretched = repo
+      .plan({
+        ...req,
+        maxWalkMinutes: this.settings.maxWalkMinutes + Grace.MINUTES,
+        maxPreTransitMinutes: within ? within.minutes + Grace.MINUTES : null,
+        maxDirectMinutes: within ? within.minutes + Grace.MINUTES : null,
+      })
+      .catch(() => null);
+    const main = await planned;
+    const more = await stretched;
+    const extra = [...((await railOnly)?.itineraries ?? []), ...(more?.itineraries ?? [])];
     const known = new Set(main.itineraries.map((i) => i.id));
-    return { ...main, itineraries: [...main.itineraries, ...extra.filter((i) => !known.has(i.id))] };
+    const fresh = extra.filter((i, n) => !known.has(i.id) && extra.findIndex((x) => x.id === i.id) === n);
+    return { ...main, itineraries: [...main.itineraries, ...fresh], carOnly: main.carOnly ?? more?.carOnly ?? null };
   }
 
   async more(later: boolean) {
@@ -411,7 +481,7 @@ export class RoutesModel extends Model {
       const r = await repo.plan(this.request(cursor)!);
       if (gen !== this.gen) return;
       const known = new Set(this.raw.map((i) => i.id));
-      const fresh = r.itineraries.filter((i) => !known.has(i.id));
+      const fresh = this.graced([...this.raw, ...r.itineraries]).filter((i) => !known.has(i.id));
       this.raw = later ? [...this.raw, ...fresh] : [...fresh, ...this.raw];
       this.itineraries = this.ranked(this.raw);
       if (later) this.nextCursor = r.nextCursor;

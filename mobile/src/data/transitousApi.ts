@@ -148,6 +148,15 @@ export function parseColor(hex: string | null | undefined): number | null {
 
 export const instant = parseInstant;
 
+/**
+ * Where a ride is heading, as riders read it. Israel Railways puts the train number in the
+ * headsign ("726"), so a train goes by where its trip ends ([tripTo]) instead, or by nothing.
+ */
+export function headsignOf(headsign: string, tripTo: string | null | undefined): string | null {
+  if (!/^\d+$/.test(headsign.trim())) return cleanHeadsign(headsign);
+  return tripTo?.trim() ? tripTo.trim() : null;
+}
+
 /** MOT headsigns are "City_Destination"; show "Destination, City". */
 export function cleanHeadsign(h: string): string {
   const i = h.indexOf('_');
@@ -205,6 +214,8 @@ export interface LegDto {
   scheduledEndTime?: string | null;
   distance?: number | null;
   headsign?: string | null;
+  /** Where the trip ends, which for trains is what the headsign (a train number) doesn't say. */
+  tripTo?: PlaceDto | null;
   routeId?: string | null;
   routeColor?: string | null;
   routeTextColor?: string | null;
@@ -247,8 +258,7 @@ export function legToDomain(d: LegDto): Leg {
     // A walk after a car drop-off can come back a few seconds "shorter than nothing".
     end: !isTransit(mode) && end < start ? start : end,
     distanceM: d.distance ?? (cum ? cum[cum.length - 1] : null),
-    // A train's headsign is only its number ("114"), which says nothing about where it goes.
-    headsign: d.headsign != null && !/^\d+$/.test(d.headsign.trim()) ? cleanHeadsign(d.headsign) : null,
+    headsign: d.headsign != null ? headsignOf(d.headsign, d.tripTo?.name) : null,
     routeShortName: d.routeShortName ?? d.displayName ?? null,
     routeLongName: d.routeLongName ?? null,
     routeColor: parseColor(d.routeColor),
@@ -334,6 +344,7 @@ interface StopTimeDto {
   place?: PlaceDto;
   mode?: string;
   headsign?: string;
+  tripTo?: PlaceDto | null;
   tripId?: string;
   routeId?: string | null;
   routeShortName?: string | null;
@@ -358,7 +369,7 @@ export function stopTimeToDomain(d: StopTimeDto): Departure | null {
     routeId: d.routeId ?? null,
     mode,
     lineLabel: label,
-    headsign: cleanHeadsign(d.headsign ?? ''),
+    headsign: headsignOf(d.headsign ?? '', d.tripTo?.name) ?? cleanHeadsign(d.headsign ?? ''),
     agency: d.agencyName ?? null,
     routeColor: parseColor(d.routeColor),
     scheduled: time,
@@ -407,7 +418,10 @@ export class TransitousApi {
     const walk = direct.find((i) => (i.legs ?? []).every((l) => (l.mode ?? 'WALK') === 'WALK'));
     const car = direct.find((i) => (i.legs ?? []).some((l) => l.mode === 'CAR'));
     return {
-      itineraries: (dto.itineraries ?? []).map(itineraryToDomain).filter((i) => i.legs.some((l) => isTransit(l.mode))),
+      itineraries: (dto.itineraries ?? [])
+        .map(itineraryToDomain)
+        // A lift is one drive: a car again after walking would need the car to be waiting there.
+        .filter((i) => i.legs.some((l) => isTransit(l.mode)) && i.legs.filter((l) => l.mode === 'CAR').length <= 1),
       walkOnly: walk ? itineraryToDomain(walk) : null,
       nextCursor: dto.nextPageCursor ?? null,
       previousCursor: dto.previousPageCursor ?? null,

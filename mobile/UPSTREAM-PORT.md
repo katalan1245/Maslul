@@ -42,7 +42,7 @@ Status: **Done**, **To do**, **Different** (deliberately not the same; the reaso
 | C4 | A Russian phone gets Russian | `AppLanguage.forLocale` | `device.ts` `deviceLang` | Done |
 | C5 | Russian is left to right | `AppLanguage.rtl` | `device.ts` `applyLanguage` | Done |
 | C6 | Notification channels, the trip notification and the guide speak the language | `Notifications.kt`, `LiveTripService.kt`, `TripGuide.kt` | Already from `S` (the Hebrew work) | Done |
-| C7 | Light rail is "трамвай" in Russian ("трамвай близко", "Ближайшие трамваи") | `StringsRu.kt` | `ru.ts` has one word for trains and light rail | To do |
+| C7 | Light rail is "трамвай" in Russian ("трамвай близко", "Ближайшие трамваи") | `StringsRu.kt` | `models.ts` `vehicleKind`: LIGHT_RAIL is its own kind; "train" in English and Hebrew, "трамвай" in Russian | Done |
 | C8 | Text: the rest of the app's strings moved to i18n | all screens | Done in the Hebrew work; Hebrew and Russian leak tests | Done |
 | C9 | Place names: Simple Maslul asks the geocoder in its language; the full app doesn't (English ranks matches worse) | `MaslulApp.kt` | The whole app asks in its language (`App.tsx` `repo.language`), as decided for Hebrew. Stop names come back in Hebrew either way | Different |
 | C10 | Map labels | — (upstream shows the map's default labels) | `darkStyle.ts`: the app's language, Russian falling back to the local name | Different |
@@ -52,19 +52,19 @@ Status: **Done**, **To do**, **Different** (deliberately not the same; the reaso
 
 | # | Upstream change | Where upstream | Where here | Status |
 |---|---|---|---|---|
-| D1 | A lift is one drive: an itinerary with more than one car leg is dropped | `TransitousApi.kt` plan filter | `transitousApi.ts` | To do |
-| D2 | "The driver can take me up to…" plans with `preTransitModes = CAR` (driven right to the stop), not `CAR_DROPOFF` | `Rides.kt` `WITHIN_MODES`, `Routes.kt` | `routesModel.ts` / `rides.ts` | To do |
-| D3 | Grace: up to 3 min over the walk limit, or over the lift's minutes; kept only when 10 min sooner (arriving by: leaving 10 min later), or when nothing is within the limits | `Grace.kt` | new `src/data/grace.ts` | To do |
-| D4 | Grace needs a second plan call with the limits raised by 3 min, merged with the main results | `Routes.kt` `fetch` | `routesModel.ts` | To do |
-| D5 | Later/earlier pages are graced too | `Routes.kt` `more` | `routesModel.ts` | To do |
-| D6 | Cards over a limit are tagged "Longer walk" or "Longer ride" | `Routes.kt` tags | `Routes.tsx` | To do |
-| D7 | WiderWalk: when nothing leaves within 2 h (or, arriving by, arrives within 2 h before), plan again with a 50-min walk and add what gets there 20 min sooner. Not for lifts, on-board or walk-only | `WiderWalk.kt`, `Routes.kt` `widenWalk` | new `src/data/widerWalk.ts`, `routesModel.ts` | To do |
-| D8 | A note above the cards explains the longer walks | `Routes.kt` `WiderWalkNote` | `Routes.tsx` | To do |
-| D9 | The options sheet's walk slider explains the grace and the wider walk | `Routes.kt` options sheet | `TimeSheet`/options sheet | To do |
-| D10 | Cards leaving on another day than the one asked say which ("Tomorrow", "Sat, 10 Oct") | `Routes.kt` tags | `Routes.tsx` | To do |
-| D11 | Error kinds (location, no routes, network) for screens that word errors their own way | `Routes.kt` `RouteError` | `routesModel.ts` | To do |
-| D12 | Trains: a headsign that is only a train number is replaced by where the trip ends (`tripTo`) | `TransitousApi.kt` `headsignOf` | `transitousApi.ts` | To do |
-| D13 | A ride without a number reads as "the train": "3 min to catch the train", "If missed, the next train at …" | `Strings` `theVehicle`, `theNextVehicle`, `nextLine` | `routeCards.tsx` `TransferWarning`, `en/he/ru.ts` | To do |
+| D1 | A lift is one drive: an itinerary with more than one car leg is dropped | `TransitousApi.kt` plan filter | `transitousApi.ts` plan filter; `parsing.test.ts` | Done |
+| D2 | "The driver can take me up to…" plans with `preTransitModes = CAR` (driven right to the stop), not `CAR_DROPOFF` | `Rides.kt` `WITHIN_MODES`, `Routes.kt` | `routesModel.ts` `request` | Done |
+| D3 | Grace: up to 3 min over the walk limit, or over the lift's minutes; kept only when 10 min sooner (arriving by: leaving 10 min later), or when nothing is within the limits | `Grace.kt` | `src/data/grace.ts` `Grace`; `grace.test.ts` | Done |
+| D4 | Grace needs a second plan call with the limits raised by 3 min, merged with the main results | `Routes.kt` `fetch` | `routesModel.ts` `planWithRail` (the main request is sent first) | Done |
+| D5 | Later/earlier pages are graced too | `Routes.kt` `more` | `routesModel.ts` `more` | Done |
+| D6 | Cards over a limit are tagged "Longer walk" or "Longer ride" | `Routes.kt` tags | `Routes.tsx` | Done |
+| D7 | WiderWalk: when nothing leaves within 2 h (or, arriving by, arrives within 2 h before), plan again with a 50-min walk and add what gets there 20 min sooner. Not for lifts, on-board or walk-only | `WiderWalk.kt`, `Routes.kt` `widenWalk` | `src/data/grace.ts` `WiderWalk`, `routesModel.ts` `widenWalk`; `grace.test.ts`, `appFlow.test.tsx` | Done |
+| D8 | A note above the cards explains the longer walks | `Routes.kt` `WiderWalkNote` | `Routes.tsx` (`wider_walk_note`) | Done |
+| D9 | The options sheet's walk slider explains the grace and the wider walk | `Routes.kt` options sheet | `routeSheets.tsx` `OptionsSheet` | Done |
+| D10 | Cards leaving on another day than the one asked say which ("Tomorrow", "Sat, 10 Oct") | `Routes.kt` tags | `Routes.tsx`; `appFlow.test.tsx` | Done |
+| D11 | Error kinds (location, no routes, network) for screens that word errors their own way | `Routes.kt` `RouteError` | `routesModel.ts` `errorKind` | Done |
+| D12 | Trains: a headsign that is only a train number is replaced by where the trip ends (`tripTo`) | `TransitousApi.kt` `headsignOf` | `transitousApi.ts` `headsignOf`; `parsing.test.ts`. With no `tripTo`, upstream shows the bare number; the port already showed nothing there, and still does | Different |
+| D13 | A ride without a number reads as "the train": "3 min to catch the train", "If missed, the next train at …" | `Strings` `theVehicle`, `theNextVehicle`, `nextLine` | `routeCards.tsx` `TransferWarning`, `en/he/ru.ts`; `routeCards.test.tsx` | Done |
 
 ## 1.2.0: Simple Maslul
 
@@ -89,17 +89,17 @@ Status: **Done**, **To do**, **Different** (deliberately not the same; the reaso
 
 | # | What | Status |
 |---|---|---|
-| F1 | The Kotlin app (1.1.0 already) shows "If you miss it: checking the next rides…" while it looks up the rides after a transfer; the port shows nothing until they arrive | To do |
+| F1 | The Kotlin app (1.1.0 already) shows "If you miss it: checking the next rides…" while it looks up the rides after a transfer; the port shows nothing until they arrive | Was already there, but in English only: now in `S.detail.missChecking` | Done |
 
 ## Tests ported
 
 | Upstream test | Here |
 |---|---|
-| `RideOptionsTest` (3 badges, +N, expand and collapse) | To do |
-| `GraceTest` | To do |
-| `WiderWalkTest` | To do |
+| `RideOptionsTest` (3 badges, +N, expand and collapse) | `routeCards.test.tsx` |
+| `GraceTest` | `grace.test.ts` |
+| `WiderWalkTest` | `grace.test.ts`; on screen, `appFlow.test.tsx` |
 | `SimpleModeTest` | To do |
 | `LocalizationTest` (language carries over, plurals, current-location key) | `legacyMigration.test.ts`, `russian.test.tsx` |
-| `ParsingTest` (train headsigns) | To do |
-| `RideShuttleSmokeTest.aLiftIsOneDrive` (live) | To do |
+| `ParsingTest` (train headsigns) | `parsing.test.ts` |
+| `RideShuttleSmokeTest.aLiftIsOneDrive` (live) | Offline instead: `parsing.test.ts` feeds the plan filter a two-drive itinerary |
 | `AppFlowTest.switchingLanguageRedrawsTheApp` | The app reloads on a language change (by design); covered by `hebrew.test.tsx` and `russian.test.tsx` |

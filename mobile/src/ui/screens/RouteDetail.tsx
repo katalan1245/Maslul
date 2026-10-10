@@ -648,7 +648,7 @@ function TransitSegment({ model, index, leg, rail, live, now }: { model: RouteDe
       {(leg.tripId == null || leg.tripId !== model.from.tripId) && <LiveStatusChip live={live} leg={leg} now={now} onPress={follow} />}
       {model.lookingForRidesAfter(index) && (
         <Txt v="labelMedium" color={t.x.subtle} style={{ marginTop: 8 }} testID="missed_rides_loading">
-          If you miss it: checking the next rides…
+          {S.detail.missChecking}
         </Txt>
       )}
       {after != null && <MissedRides leg={leg} rides={after} />}

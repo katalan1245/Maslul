@@ -2,7 +2,7 @@ import { Polyline, TripIds, tripNumberOf } from '../src/data/geo';
 import { forTrip, parseSnapshotJson } from '../src/data/liveRepository';
 import { LongName, type Place, legDurationSec, modeFromGtfsRouteType, modeFromMotis } from '../src/data/models';
 import { TransitRepository } from '../src/data/transitRepository';
-import { cityFromDescription, cleanHeadsign, itineraryToDomain, motisModes } from '../src/data/transitousApi';
+import { TransitousApi, cityFromDescription, cleanHeadsign, headsignOf, itineraryToDomain, legToDomain, motisModes } from '../src/data/transitousApi';
 import { instant } from './helpers';
 
 const close = (a: number, b: number, eps = 1e-6) => expect(Math.abs(a - b)).toBeLessThanOrEqual(eps);
@@ -145,4 +145,38 @@ test("a train's number isn't taken for where it goes", () => {
     ]}`),
   );
   expect(itin.legs.map((l) => l.headsign)).toEqual([null, 'בת גלים, חיפה']);
+});
+
+test('trains go where their trip ends, not by number', () => {
+  // Israel Railways' headsign is the train number.
+  expect(headsignOf('108', 'נהריה')).toBe('נהריה');
+  // Upstream shows the bare number; the port showed nothing for it already, and still does.
+  expect(headsignOf('108', null)).toBeNull();
+  expect(headsignOf('חיפה_גרנד קניון', 'גרנד קניון/שמחה גולן')).toBe('גרנד קניון, חיפה');
+});
+
+test("reads a train's destination from the plan", () => {
+  const leg = legToDomain({
+    mode: 'REGIONAL_RAIL', from: { name: 'A', lat: 31.7, lon: 35.2 }, to: { name: 'B', lat: 32.1, lon: 34.8 },
+    startTime: '2026-10-12T06:09:00Z', endTime: '2026-10-12T06:55:00Z', headsign: '726', tripTo: { name: 'הרצליה', lat: 32.16, lon: 34.8 },
+    routeShortName: '', tripId: 't',
+  });
+  expect(leg.headsign).toBe('הרצליה');
+});
+
+test('a lift is one drive: a car again after walking is dropped', async () => {
+  const car = (from: string, to: string) => ({ mode: 'CAR', startTime: from, endTime: to, from: { name: 'A', lat: 32, lon: 34.8 }, to: { name: 'B', lat: 32, lon: 34.8 } });
+  const bus = { ...car('2026-10-12T06:20:00Z', '2026-10-12T06:40:00Z'), mode: 'BUS', tripId: 't', routeShortName: '18' };
+  const walk = { ...car('2026-10-12T06:10:00Z', '2026-10-12T06:20:00Z'), mode: 'WALK' };
+  const body = {
+    itineraries: [
+      { legs: [car('2026-10-12T06:00:00Z', '2026-10-12T06:10:00Z'), walk, bus] },
+      { legs: [car('2026-10-12T06:00:00Z', '2026-10-12T06:05:00Z'), { ...walk, startTime: '2026-10-12T06:05:00Z', endTime: '2026-10-12T06:08:00Z' }, car('2026-10-12T06:08:00Z', '2026-10-12T06:20:00Z'), bus] },
+    ],
+  };
+  const fetch = jest.spyOn(global, 'fetch').mockResolvedValue(new Response(JSON.stringify(body), { status: 200 }));
+  const r = await new TransitousApi().plan({ from: { lat: 32, lon: 34.8 }, to: { lat: 32.1, lon: 34.8 } });
+  fetch.mockRestore();
+  expect(r.itineraries).toHaveLength(1);
+  expect(r.itineraries[0].legs.filter((l) => l.mode === 'CAR')).toHaveLength(1);
 });
