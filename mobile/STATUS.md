@@ -36,14 +36,13 @@ A separate Claude session with mobile-mcp and adb ran `TESTING.md` on a Pixel 9 
 
 - **Round 3** (10 Oct, Shabbat night, build 54cda38, 4 GB RAM): 13 pass, 3 fail. Passed: arrival sticking, times far away with their day, dark-map labels, the map attribution on Home, shuttle day ranges, edit after a cold start and the delete dialog, shuttle reminder text, the map after switching tabs (0.5 s). Maestro 9 of 11.
 
-Fixed after round 3 and not yet re-tested (NOTES.md, "Deliberate changes"):
-- The trip guide lagged ~100 m behind on real routes: stops counted late, "Get off now" never shown, stuck after getting off. Replaying the tester's GPS fixes on the same real itinerary now gives the expected steps.
-- The exact-alarm prompt.
-- Line search over a weekend (Stride's newest feed is Thursday's).
-- The day in the route details header.
-- ride_within: "Couldn't load routes" on the device, while the same request and ranking succeed here. Not understood; the error now names its cause and is logged, for the next round.
+- **Round 4** (10 Oct, Shabbat, build 95c7ed3, 4 GB RAM): 25 pass, 3 fail, 1 couldn't test (live buses, Shabbat). Every round-3 fix passed: the trip guide on a simulated ride (stop countdown, "Get off now" at the stop with its alert, the walk after it, waiting at the boarding stop), the exact-alarm prompt with both answers and the exact alarm afterwards, line search on a weekend, ride within 15 min by hand, the day in the route header and in Share. Maestro 10 of 11.
 
-Found in round 4 (partial notes, build 95c7ed3) and fixed after it, not yet re-tested: ending a trip and starting another in the same session guided from where the last one ended ("Get off at the next stop" at the start, then stuck), and the "Get off now" alert stayed in the shade after End trip. The round-1 trip-guide fix itself passed.
+Fixed after round 4 and not yet re-tested:
+- Ending a trip and starting another in the same session guided from where the last one ended, until the app was force-stopped. The "Get off now" alert stayed in the shade after End trip.
+- ride_within failed in Maestro: "Fetch request has been canceled" 32 s into the search. The screen's lookups behind the shown routes (other lines on each hop, the ride after a tight transfer) all went to Transitous at once, and Transitous answers a client one request at a time. Here a ride search took 3 s alone and 18 s behind 16 others. With cold caches after clearState the queue passed the 30 s timeout. They now go two at a time, and are dropped once a newer search starts. A timeout now reads "took too long", not "Couldn't show the routes found".
+- Share and the reminder said "Train Train" for a train (no line number).
+- Not changed: the Options chip cut off at the edge when the time chip shows a day. The chip row scrolls sideways (Refresh stays fixed), and the cut-off chip is the sign of it.
 
 ## Not verified yet
 
