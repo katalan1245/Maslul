@@ -166,7 +166,7 @@ it('words the saved-routes banner and "all left" in Hebrew', async () => {
     expect(leaks()).toEqual([]);
     jest.spyOn(Date, 'now').mockReturnValue(Date.now() + 3600_000);
     await fireEvent.press(screen.getByTestId('refresh_chip'));
-    await screen.findByText(/המסלולים שנשמרו ב-\d\d:\d\d כבר יצאו\./);
+    await screen.findByText(/המסלולים שנשמרו ב-(.+ )?\d\d:\d\d כבר יצאו\./);
     expect(leaks()).toEqual([]);
   } finally {
     fake.plan = plan;

@@ -481,6 +481,8 @@ export class TransitousApi {
   ): Promise<Departure[]> {
     const url = buildUrl(this.base, 'api/v6/stoptimes', [
       ['stopId', stopId],
+      // Otherwise MOTIS adds every stop with the same name, e.g. the platform across the road.
+      ['exactRadius', 'true'],
       ['n', opts.count ?? 30],
       ['time', opts.time != null ? queryTime(opts.time) : null],
       ['window', opts.windowSec],

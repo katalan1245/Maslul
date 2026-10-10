@@ -180,3 +180,11 @@ test('a lift is one drive: a car again after walking is dropped', async () => {
   expect(r.itineraries).toHaveLength(1);
   expect(r.itineraries[0].legs.filter((l) => l.mode === 'CAR')).toHaveLength(1);
 });
+
+test("a stop's departures are its own, not those of a same-name stop across the road (L3)", async () => {
+  const fetch = jest.spyOn(global, 'fetch').mockResolvedValue(new Response(JSON.stringify({ stopTimes: [] }), { status: 200 }));
+  await new TransitousApi().stopTimes('il-Israel-MOT_45039');
+  const url = String(fetch.mock.calls[0][0]);
+  fetch.mockRestore();
+  expect(url).toContain('exactRadius=true');
+});
