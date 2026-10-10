@@ -22,7 +22,7 @@ import { Ranking, type Transfer } from '../../data/ranking';
 import type { RideOffer } from '../../data/rides';
 import { ShuttleSchedule } from '../../data/shuttles';
 import { type Instant, nowSec } from '../../data/time';
-import { NoDriveException, TransitRepository } from '../../data/transitRepository';
+import { NoDriveException, TransitRepository, limiter } from '../../data/transitRepository';
 import type { PlanRequest } from '../../data/transitousApi';
 import { DEFAULT_SETTINGS, type Settings, WALK_SPEEDS } from '../../data/userStore';
 import { location } from '../../state/location';
@@ -34,6 +34,8 @@ import { type SearchField, nav } from '../nav';
 export type TimeMode = 'NOW' | 'DEPART' | 'ARRIVE';
 
 const sameSettings = (a: Settings, b: Settings) => JSON.stringify(a) === JSON.stringify(b);
+/** Lookups behind the shown options, shared by every routes screen (see lookup). */
+const lookups = limiter(2);
 
 /** Route options between two places (RoutesModel in Kotlin). */
 export class RoutesModel extends Model {
@@ -121,6 +123,15 @@ export class RoutesModel extends Model {
     );
   }
 
+  /**
+   * A lookup behind the shown options. Transitous answers a client one request at a time, so these
+   * queue, and the ones a newer search made pointless are dropped: else that search waits behind
+   * them until it times out.
+   */
+  private lookup<T>(gen: number, task: () => Promise<T>): Promise<T> {
+    return lookups(() => (gen === this.gen && !this.disposed ? task() : Promise.reject(new Error('superseded'))));
+  }
+
   /** Looks up other lines riding the same hops as the top options, then re-combines. */
   private async findAlternatives(gen: number) {
     const modes = this.settings.modes;
@@ -132,7 +143,9 @@ export class RoutesModel extends Model {
       .filter((l) => !this.rides.has(TransitRepository.rideBucket(l)));
     if (legs.length === 0) return;
     const found = await Promise.all(
-      legs.map((l) => repo.rideAlternatives(l, modes).then((r) => [TransitRepository.rideBucket(l), r] as const, () => null)),
+      legs.map((l) =>
+        this.lookup(gen, () => repo.rideAlternatives(l, modes)).then((r) => [TransitRepository.rideBucket(l), r] as const, () => null),
+      ),
     );
     if (gen !== this.gen) return;
     const ok = found.filter((f) => f != null);
@@ -160,7 +173,7 @@ export class RoutesModel extends Model {
       next
         .filter((l) => l.shuttleId == null)
         .map((l) =>
-          repo.ridesAfter(l, modes).then(
+          this.lookup(gen, () => repo.ridesAfter(l, modes)).then(
             (r) => {
               if (gen === this.gen) this.after.set(rideKey(l), r);
             },

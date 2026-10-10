@@ -32,7 +32,7 @@ import MaslulNative from '../../../modules/maslul-native/src/MaslulNativeModule'
 import { location, useLastLocation } from '../../state/location';
 import { repo } from '../../state/services';
 import { store } from '../../state/store';
-import { Fmt, modeName } from '../fmt';
+import { Fmt, modeName, rideName } from '../fmt';
 import { Button, IconButton, LineBadge, Txt } from '../components/common';
 import { Icon, modeIcon } from '../components/icons';
 import { LiveLocationCard, LiveSignal, freshnessColor, useNow } from '../components/live';
@@ -192,7 +192,7 @@ class RouteDetailModel extends Model {
     const leaveAt = (call?.status === 'LIVE' && call.expected != null ? call.expected : (first?.start ?? itin.start)) - walkBefore;
     const at = leaveAt - minutes * 60;
     const text = first
-      ? `Leave at ${Fmt.time(leaveAt)} · ${first.shuttleId != null ? lineLabel(first) : `${modeName(first.mode)} ${lineLabel(first)}`} from ${first.from.name} at ${Fmt.time(first.start)}`
+      ? `Leave at ${Fmt.time(leaveAt)} · ${first.shuttleId != null ? lineLabel(first) : rideName(first)} from ${first.from.name} at ${Fmt.time(first.start)}`
       : `Leave at ${Fmt.time(leaveAt)}`;
     const ok = await scheduleReminder(at, `Time to go to ${this.to.name}`, text).catch(() => false);
     showToast(ok ? `Reminder set for ${Fmt.when(at, nowSec())} (${minutes} min before leaving)` : 'That departure is too soon for a reminder');
@@ -212,7 +212,7 @@ class RouteDetailModel extends Model {
       if (l.mode === 'WALK') {
         if (legDurationSec(l) >= 60) lines.push(`• Walk ${Fmt.duration(legDurationSec(l))} to ${l.to.name.trim() || this.to.name}`);
       } else {
-        lines.push(`• ${modeName(l.mode)} ${lineLabel(l)} from ${l.from.name} at ${Fmt.time(l.start)} → ${l.to.name} (${Fmt.time(l.end)})`);
+        lines.push(`• ${rideName(l)} from ${l.from.name} at ${Fmt.time(l.start)} → ${l.to.name} (${Fmt.time(l.end)})`);
       }
     }
     void Share.share({ message: lines.join('\n') + '\n', title: 'Share trip' });
