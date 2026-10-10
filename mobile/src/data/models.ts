@@ -126,7 +126,8 @@ export interface Place {
 export const placePoint = (p: Place): GeoPoint => ({ lat: p.lat, lon: p.lon });
 
 /** Identity used to dedupe suggestions and recents. */
-export const placeKey = (p: Place) => `${p.name.trim()}|${fixed(p.lat, 4)}|${fixed(p.lon, 4)}`;
+/** Identity used to dedupe suggestions and recents; "where I am" is the same place in any language. */
+export const placeKey = (p: Place) => (p.kind === 'CURRENT_LOCATION' ? 'current-location' : `${p.name.trim()}|${fixed(p.lat, 4)}|${fixed(p.lon, 4)}`);
 
 export interface StopCall {
   stopId: string | null;

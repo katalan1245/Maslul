@@ -65,7 +65,8 @@ export function brightenDark(style: StyleSpecification): StyleSpecification {
  * one, falling back to the default name where the map has no name in that language.
  */
 export function labelLanguage(style: StyleSpecification, l: Lang): StyleSpecification {
-  const field = l === 'he' ? ['coalesce', ['get', 'name:he'], ['get', 'name']] : ['coalesce', ['get', 'name:en'], ['get', 'name:latin'], ['get', 'name']];
+  // Russian falls back to the local (Hebrew) name, as the stop names in the app do.
+  const field = l === 'en' ? ['coalesce', ['get', 'name:en'], ['get', 'name:latin'], ['get', 'name']] : ['coalesce', ['get', `name:${l}`], ['get', 'name']];
   const layers = style.layers.map((layer) => {
     if (layer.type !== 'symbol' || !JSON.stringify(layer.layout?.['text-field'] ?? '').includes('name')) return layer;
     return { ...layer, layout: { ...layer.layout, 'text-field': field } } as typeof layer;

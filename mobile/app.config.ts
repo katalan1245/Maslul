@@ -24,12 +24,12 @@ const config: ExpoConfig = {
       // Only live directions use location in the background, while a trip is being followed.
       UIBackgroundModes: ['location'],
       ITSAppUsesNonExemptEncryption: false,
-      // Without Hebrew listed, iOS reports an English locale on a Hebrew phone and Language = System stays English.
-      CFBundleLocalizations: ['en', 'he'],
+      // Without a language listed, iOS reports an English locale on a phone in it, and Language = System stays English.
+      CFBundleLocalizations: ['en', 'he', 'ru'],
     },
   },
-  // iOS shows the app's own text in the location prompt; this is its Hebrew.
-  locales: { he: './locales/he.json' },
+  // iOS shows the app's own text in the location prompt; these are its Hebrew and Russian.
+  locales: { he: './locales/he.json', ru: './locales/ru.json' },
   android: {
     // Same id as the Kotlin app, so this installs as an update and keeps its data.
     package: 'com.maslul.app',

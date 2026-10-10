@@ -63,7 +63,8 @@ it('closing Options untouched keeps the routes; changing one searches again', as
   await screen.findAllByTestId('route_card');
 });
 
-it('keeps the advanced tools out of the way until switched on', async () => {
+it('offers the advanced tools by default, and hides them when switched off', async () => {
+  await act(() => store.updateSettings((s) => ({ ...s, rides: false })));
   await planToDizengoff();
   expect(screen.queryByTestId('ride_chip')).toBeNull();
   await act(() => store.updateSettings((s) => ({ ...s, rides: true })));
@@ -72,6 +73,7 @@ it('keeps the advanced tools out of the way until switched on', async () => {
 });
 
 it('shows the on-board button only when switched on, and lists the rides around', async () => {
+  await act(() => store.updateSettings((s) => ({ ...s, onBoard: false })));
   await start();
   expect(screen.queryByTestId('on_board')).toBeNull();
   await act(() => store.updateSettings((s) => ({ ...s, onBoard: true })));

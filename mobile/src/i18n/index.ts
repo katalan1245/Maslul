@@ -1,10 +1,11 @@
 import { en } from './en';
 import { he } from './he';
+import { ru } from './ru';
 
-export type Lang = 'en' | 'he';
+export type Lang = 'en' | 'he' | 'ru';
 export type Strings = typeof en;
 
-export const LANGUAGES = ['SYSTEM', 'HE', 'EN'] as const;
+export const LANGUAGES = ['SYSTEM', 'HE', 'EN', 'RU'] as const;
 export type LanguageSetting = (typeof LANGUAGES)[number];
 
 let current: Lang = 'en';
@@ -18,7 +19,7 @@ export let S: Strings = en;
 export function setLanguage(l: Lang) {
   current = l;
   set = true;
-  S = l === 'he' ? he : en;
+  S = l === 'he' ? he : l === 'ru' ? ru : en;
 }
 
 export const lang = (): Lang => current;

@@ -475,7 +475,7 @@ export const en = {
     themes: { SYSTEM: 'System', LIGHT: 'Light', DARK: 'Dark' },
     language: 'Language',
     /** Each language is named in itself, so it can be found whatever the app's language. */
-    languages: { SYSTEM: 'System', HE: 'עברית', EN: 'English' },
+    languages: { SYSTEM: 'System', HE: 'עברית', EN: 'English', RU: 'Русский' },
     reminders: 'Departure reminders',
     remindersHint: 'Notify me this long before I need to leave',
     advanced: 'Advanced',

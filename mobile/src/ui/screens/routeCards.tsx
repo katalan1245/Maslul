@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Combine } from '../../data/combine';
 import { type LiveCall, bestTime } from '../../data/eta';
@@ -250,13 +251,13 @@ function HintLine({ icon, title, detail }: { icon: IconName; title: string; deta
   );
 }
 
-/** "16 / 92 / 5": every line that makes a combined ride, soonest first. */
+/** "16 / 92 / 5 +2": the first few lines that make a combined ride, soonest first. */
 export function CombinedBadges({ rides }: { rides: Leg[] }) {
   const t = useTheme();
   const lines = rides.filter((r, i) => rides.findIndex((x) => lineLabel(x) === lineLabel(r)) === i);
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-      {lines.map((o, i) => (
+      {lines.slice(0, SHOWN_RIDES).map((o, i) => (
         <View key={lineLabel(o)} style={{ flexDirection: 'row', alignItems: 'center' }}>
           {i > 0 && (
             <Txt v="labelMedium" color={t.x.subtle}>
@@ -266,6 +267,11 @@ export function CombinedBadges({ rides }: { rides: Leg[] }) {
           <LineBadge label={lineLabel(o)} mode={o.mode} color={lineColor(o)} showIcon={i === 0} />
         </View>
       ))}
+      {lines.length > SHOWN_RIDES && (
+        <Txt v="labelLarge" color={t.x.subtle}>
+          {` +${lines.length - SHOWN_RIDES}`}
+        </Txt>
+      )}
     </View>
   );
 }
@@ -301,8 +307,9 @@ export function RideOptions({
       return n <= 2;
     });
   const lines = new Set(all.map(([o]) => Combine.lineKey(o))).size;
-  const options = all.slice(0, SHOWN_RIDES);
-  const more = all.length - options.length;
+  const [expanded, setExpanded] = useState(false);
+  const options = expanded ? all : all.slice(0, SHOWN_RIDES);
+  const more = all.length - SHOWN_RIDES;
   // The user's own shuttle reads as one, not as a bus.
   const what = lines > 1 ? S.cards.lines(lines) : options.every(([o]) => o.shuttleId != null) ? S.cards.nextShuttles : S.cards.next(kindOf(options.map(([o]) => o)));
   return (
@@ -336,9 +343,11 @@ export function RideOptions({
           );
         })}
         {more > 0 && (
-          <Txt v="labelLarge" color={t.x.subtle} testID="more_rides">
-            {S.cards.more(more)}
-          </Txt>
+          <Pressable onPress={() => setExpanded(!expanded)} hitSlop={8} accessibilityRole="button" testID="more_rides">
+            <Txt v="labelLarge" color={t.c.primary}>
+              {expanded ? S.detail.showFewer : S.cards.more(more)}
+            </Txt>
+          </Pressable>
         )}
       </View>
     </View>

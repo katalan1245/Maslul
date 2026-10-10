@@ -3,7 +3,7 @@
  * name, sets as arrays) must come across intact, with every default applied.
  */
 import { placeKey } from '../src/data/models';
-import { DEFAULT_SETTINGS, EMPTY_USER_DATA, WORK_WEEK, loadUserData, readUserData } from '../src/data/userStore';
+import { DEFAULT_SETTINGS, EMPTY_USER_DATA, WORK_WEEK, loadUserData, readUserData, simpleSlots } from '../src/data/userStore';
 import { type KeyValue, MIGRATED_KEY, STORE_KEY, loadData, saveData } from '../src/state/persist';
 
 /** A real-shaped store from the Kotlin app: only non-default fields are present. */
@@ -82,8 +82,39 @@ test('an empty Kotlin store is all defaults', () => {
   expect(DEFAULT_SETTINGS).toEqual({
     // language is new (the Kotlin app was English only): upgraders follow the phone.
     theme: 'SYSTEM', language: 'SYSTEM', walkSpeed: 'NORMAL', maxWalkMinutes: 20, modes: ['BUS', 'TRAIN', 'LIGHT_RAIL', 'METRO', 'CABLE_CAR', 'FERRY'],
-    wheelchair: false, railPreference: 'NONE', reminderMinutes: 5, rides: false, onBoard: false,
+    // rides and onBoard are on by default since the Kotlin app's 1.1.1: absent (never touched, or
+    // switched on in 1.1.0) reads as on, as it does there.
+    wheelchair: false, railPreference: 'NONE', reminderMinutes: 5, rides: true, onBoard: true, simpleMode: false,
   });
+  expect(EMPTY_USER_DATA.simpleButtons.map((b) => b.icon)).toEqual(['HOME', 'FAMILY', 'WORK', 'HEART', 'SHOPPING']);
+});
+
+test('reads the Kotlin 1.2.x fields: Simple Maslul, its buttons, the language and switched-off tools', () => {
+  const d = loadUserData(
+    JSON.stringify({
+      home: { name: 'Home st', lat: 32.0, lon: 34.8, kind: 'HOME' },
+      settings: { simpleMode: true, simpleLanguage: 'RU', rides: false, onBoard: false },
+      simpleButtons: [
+        { icon: 'HOME' },
+        { icon: 'FAMILY', label: 'Внуки', place: { name: 'Herzl 10', lat: 31.25, lon: 34.79 } },
+        { icon: 'UNICORN' },
+        { icon: 'SHOPPING', label: '' },
+      ],
+    }),
+  );
+  expect(d.settings).toMatchObject({ simpleMode: true, language: 'RU', rides: false, onBoard: false });
+  // An unknown picture drops that button, not the rest.
+  expect(d.simpleButtons).toEqual([
+    { icon: 'HOME', label: '', place: null },
+    { icon: 'FAMILY', label: 'Внуки', place: { name: 'Herzl 10', lat: 31.25, lon: 34.79, kind: 'POI' } },
+    { icon: 'SHOPPING', label: '', place: null },
+  ]);
+  // Home falls back to the full app's home.
+  expect(simpleSlots(d)[0].place?.name).toBe('Home st');
+  // This app's own key wins over the Kotlin one; absent both, the phone's language.
+  expect(readUserData('{"settings":{"language":"HE","simpleLanguage":"RU"}}')!.settings.language).toBe('HE');
+  expect(readUserData('{"settings":{"simpleLanguage":"EN"}}')!.settings.language).toBe('EN');
+  expect(readUserData('{"settings":{"simpleLanguage":"XX"}}')!.settings.language).toBe('SYSTEM');
 });
 
 test('nulls, unknown enums and unknown keys fall back like coerceInputValues', () => {

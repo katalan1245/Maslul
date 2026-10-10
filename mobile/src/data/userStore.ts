@@ -41,9 +41,28 @@ export const FAVORITE_ICONS = [
 /** Icon a user can pick for a favourite place. */
 export type FavoriteIcon = (typeof FAVORITE_ICONS)[number];
 
+/** Picture on a Simple Maslul button. */
+export const SIMPLE_ICONS = [
+  'HOME', 'FAMILY', 'HEART', 'FRIENDS', 'WORK', 'SCHOOL', 'SHOPPING', 'CAFE', 'RESTAURANT', 'HEALTH', 'PARK', 'POOL', 'GYM', 'SPORTS', 'STAR',
+] as const;
+export type SimpleIcon = (typeof SIMPLE_ICONS)[number];
+
+/** One of Simple Maslul's place buttons. A blank [label] shows the icon's name in the current language. */
+export interface SimpleButton {
+  icon: SimpleIcon;
+  label: string;
+  place: Place | null;
+}
+
+/** Home, the grandkids, work, the rest of the family and shopping, ready to be given addresses. */
+export const DEFAULT_SIMPLE_BUTTONS: SimpleButton[] = (['HOME', 'FAMILY', 'WORK', 'HEART', 'SHOPPING'] as const).map((icon) => ({ icon, label: '', place: null }));
+
 export interface Settings {
   theme: ThemeMode;
-  /** Not in the Kotlin app, which was English only. SYSTEM follows the phone. */
+  /**
+   * SYSTEM follows the phone. The Kotlin app (from 1.2.1) stored it as "simpleLanguage", absent
+   * meaning the phone's; this app stores it as "language" and reads either.
+   */
   language: LanguageSetting;
   walkSpeed: WalkSpeed;
   maxWalkMinutes: number;
@@ -55,6 +74,8 @@ export interface Settings {
   rides: boolean;
   /** Offers planning from the bus or train you're on. */
   onBoard: boolean;
+  /** Simple Maslul: a few big buttons and plain directions instead of the full app. */
+  simpleMode: boolean;
 }
 
 export const DEFAULT_MODES: TransitMode[] = ['BUS', 'TRAIN', 'LIGHT_RAIL', 'METRO', 'CABLE_CAR', 'FERRY'];
@@ -68,8 +89,10 @@ export const DEFAULT_SETTINGS: Settings = {
   wheelchair: false,
   railPreference: 'NONE',
   reminderMinutes: 5,
-  rides: false,
-  onBoard: false,
+  // On by default since the Kotlin app's 1.1.1.
+  rides: true,
+  onBoard: true,
+  simpleMode: false,
 };
 
 export interface SavedTrip {
@@ -118,6 +141,7 @@ export interface UserData {
   favoriteStops: Place[];
   shuttles: Shuttle[];
   settings: Settings;
+  simpleButtons: SimpleButton[];
 }
 
 export const EMPTY_USER_DATA: UserData = {
@@ -131,6 +155,7 @@ export const EMPTY_USER_DATA: UserData = {
   favoriteStops: [],
   shuttles: [],
   settings: DEFAULT_SETTINGS,
+  simpleButtons: DEFAULT_SIMPLE_BUTTONS,
 };
 
 // ---- Reading stored data ----------------------------------------------------------------
@@ -226,6 +251,12 @@ function readSavedTrip(v: unknown): SavedTrip | null {
   return label != null ? { from, to, label } : { from, to };
 }
 
+function readSimpleButton(v: unknown): SimpleButton | null {
+  if (!isObj(v)) return null;
+  const icon = oneOf(SIMPLE_ICONS, v.icon);
+  return icon == null ? null : { icon, label: str(v.label) ?? '', place: readPlace(v.place) };
+}
+
 function readShuttle(v: unknown): Shuttle | null {
   if (!isObj(v)) return null;
   const id = str(v.id);
@@ -249,7 +280,7 @@ export function readSettings(v: unknown): Settings {
   const d = DEFAULT_SETTINGS;
   return {
     theme: oneOf(THEME_MODES, v.theme) ?? d.theme,
-    language: oneOf(LANGUAGES, v.language) ?? d.language,
+    language: oneOf(LANGUAGES, v.language) ?? oneOf(LANGUAGES, v.simpleLanguage) ?? d.language,
     walkSpeed: oneOf(Object.keys(WALK_SPEEDS) as WalkSpeed[], v.walkSpeed) ?? d.walkSpeed,
     maxWalkMinutes: int(v.maxWalkMinutes) ?? d.maxWalkMinutes,
     modes: Array.isArray(v.modes) ? distinctBy(list(v.modes, (m) => oneOf(TRANSIT_MODES, m)), (m) => m) : d.modes,
@@ -258,6 +289,7 @@ export function readSettings(v: unknown): Settings {
     reminderMinutes: int(v.reminderMinutes) ?? d.reminderMinutes,
     rides: bool(v.rides) ?? d.rides,
     onBoard: bool(v.onBoard) ?? d.onBoard,
+    simpleMode: bool(v.simpleMode) ?? d.simpleMode,
   };
 }
 
@@ -281,6 +313,7 @@ export function readUserData(json: string): UserData | null {
     favoriteStops: list(v.favoriteStops, readPlace),
     shuttles: list(v.shuttles, readShuttle),
     settings: readSettings(v.settings),
+    simpleButtons: Array.isArray(v.simpleButtons) ? list(v.simpleButtons, readSimpleButton) : DEFAULT_SIMPLE_BUTTONS,
   };
 }
 
@@ -367,4 +400,10 @@ export const Edits = {
     return { ...d, shuttles: i < 0 ? [...d.shuttles, s] : d.shuttles.map((x, k) => (k === i ? s : x)) };
   },
   removeShuttle: (d: UserData, id: string): UserData => ({ ...d, shuttles: d.shuttles.filter((x) => x.id !== id) }),
+  setSimpleButton: (d: UserData, index: number, b: SimpleButton): UserData =>
+    index < 0 || index >= d.simpleButtons.length ? d : { ...d, simpleButtons: d.simpleButtons.map((x, i) => (i === index ? b : x)) },
 };
+
+/** Simple Maslul's buttons, with Home and Work falling back to the places saved in the full app. */
+export const simpleSlots = (d: UserData): SimpleButton[] =>
+  d.simpleButtons.map((b) => (b.place != null ? b : b.icon === 'HOME' ? { ...b, place: d.home } : b.icon === 'WORK' ? { ...b, place: d.work } : b));

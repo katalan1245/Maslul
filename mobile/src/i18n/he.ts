@@ -465,7 +465,7 @@ export const he: Strings = {
     appearance: 'תצוגה',
     themes: { SYSTEM: 'לפי המכשיר', LIGHT: 'בהיר', DARK: 'כהה' },
     language: 'שפה',
-    languages: { SYSTEM: 'לפי המכשיר', HE: 'עברית', EN: 'English' },
+    languages: { SYSTEM: 'לפי המכשיר', HE: 'עברית', EN: 'English', RU: 'Русский' },
     reminders: 'תזכורות יציאה',
     remindersHint: 'להזכיר לי כמה זמן לפני שצריך לצאת',
     advanced: 'מתקדם',

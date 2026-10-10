@@ -9,11 +9,12 @@ const RELOAD_KEY = 'direction_reload_v1';
 export function deviceLang(): Lang {
   // Android gives "he_IL" or "iw_IL"; "_" is a word character, so \b wouldn't end the code there.
   const id = I18nManager.getConstants().localeIdentifier ?? '';
-  return /^(he|iw)([-_]|$)/i.test(id) ? 'he' : 'en';
+  if (/^(he|iw)([-_]|$)/i.test(id)) return 'he';
+  return /^ru([-_]|$)/i.test(id) ? 'ru' : 'en';
 }
 
 export function resolveLang(setting: LanguageSetting): Lang {
-  return setting === 'HE' ? 'he' : setting === 'EN' ? 'en' : deviceLang();
+  return setting === 'HE' ? 'he' : setting === 'EN' ? 'en' : setting === 'RU' ? 'ru' : deviceLang();
 }
 
 /**
