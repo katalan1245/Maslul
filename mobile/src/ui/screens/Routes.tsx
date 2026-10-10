@@ -9,9 +9,10 @@ import { S } from '../../i18n';
 import { useUserData } from '../../state/store';
 import { Chip, IconButton, LoadingBox, MessageBox, ProgressBar, TextButton, Txt } from '../components/common';
 import { FAVORITE_GOLD, type FavoriteDraft, FavoriteDialogHost, draftFor } from '../components/favorites';
-import { FAVORITE_ICON_NAMES } from '../components/icons';
+import { FAVORITE_ICON_NAMES, Icon } from '../components/icons';
 import { useNow } from '../components/live';
 import { Menu } from '../components/overlays';
+import { Fmt } from '../fmt';
 import { useModel } from '../model';
 import { type RootStack, nav } from '../nav';
 import { useTheme } from '../theme';
@@ -19,7 +20,7 @@ import { ItineraryCard, WalkOnlyCard, rideLabel, timeLabel } from './routeCards'
 import { OptionsSheet, RideSheet, TimeSheet } from './routeSheets';
 import { RoutesModel } from './routesModel';
 
-type Item = { kind: 'earlier' } | { kind: 'walk'; itin: Itinerary } | { kind: 'itin'; itin: Itinerary } | { kind: 'later' } | { kind: 'credit' };
+type Item = { kind: 'saved'; at: number } | { kind: 'earlier' } | { kind: 'walk'; itin: Itinerary } | { kind: 'itin'; itin: Itinerary } | { kind: 'later' } | { kind: 'credit' };
 
 export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Routes'>) {
   const t = useTheme();
@@ -55,6 +56,7 @@ export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Route
     s.modes.length < 6 || s.maxWalkMinutes !== DEFAULT_MAX_WALK_MINUTES || s.wheelchair || s.walkSpeed !== 'NORMAL' || s.railPreference !== 'NONE';
 
   const items: Item[] = [
+    ...(model.savedAt != null ? [{ kind: 'saved', at: model.savedAt } as const] : []),
     ...(model.canPage ? [{ kind: 'earlier' } as const] : []),
     ...(model.walkOnly ? [{ kind: 'walk', itin: model.walkOnly } as const] : []),
     ...itineraries.map((itin) => ({ kind: 'itin', itin }) as const),
@@ -64,6 +66,16 @@ export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Route
 
   const renderItem = ({ item }: { item: Item }) => {
     switch (item.kind) {
+      case 'saved':
+        return (
+          <View style={styles.saved} testID="saved_routes_banner">
+            <Icon name="cloud-off" size={20} color={t.x.subtle} />
+            <Txt v="bodySmall" color={t.x.subtle} style={{ flex: 1, marginHorizontal: 10 }}>
+              {S.routes.savedShown(Fmt.when(item.at, now))}
+            </Txt>
+            <TextButton text={S.routes.tryAgain} onPress={() => model.search()} />
+          </View>
+        );
       case 'earlier':
         return (
           <View style={{ alignItems: 'flex-start', paddingLeft: 8 }}>
@@ -251,6 +263,7 @@ function EndpointRow({ text, hollow, onPress, testID }: { text: string; hollow?:
 }
 
 const styles = StyleSheet.create({
+  saved: { flexDirection: 'row', alignItems: 'center', paddingStart: 20, paddingEnd: 8, paddingVertical: 4 },
   header: { paddingBottom: 10, elevation: 2, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } },
   headerRow: { flexDirection: 'row', alignItems: 'center', paddingRight: 4 },
   endpoints: { flex: 1, borderRadius: 14, paddingVertical: 4 },

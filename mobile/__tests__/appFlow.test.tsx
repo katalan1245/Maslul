@@ -188,3 +188,28 @@ it('picks a destination on the map', async () => {
   await fireEvent.press(screen.getByTestId('choose_location'));
   await screen.findByTestId('routes_list');
 });
+
+it('shows the last routes for the trip when a search fails, and says when all of them have left', async () => {
+  await planToDizengoff();
+  const cards = screen.getAllByTestId('route_card').length;
+  await waitFor(async () => expect(await AsyncStorage.getItem('saved_routes_v1')).not.toBeNull());
+  const plan = fake.plan;
+  fake.plan = async () => {
+    throw new TypeError('Network request failed');
+  };
+  try {
+    await fireEvent.press(screen.getByTestId('refresh_chip'));
+    await screen.findByTestId('saved_routes_banner');
+    expect(screen.getByText(/No new routes, showing the ones saved at \d\d:\d\d/)).toBeTruthy();
+    expect(await screen.findAllByTestId('route_card')).toHaveLength(cards);
+    // The saved buses have left: say so instead of showing them.
+    const later = Date.now() + 3600_000;
+    jest.spyOn(Date, 'now').mockReturnValue(later);
+    await fireEvent.press(screen.getByTestId('refresh_chip'));
+    await screen.findByText(/The routes saved at .* have all left\./);
+    expect(screen.queryByTestId('saved_routes_banner')).toBeNull();
+  } finally {
+    fake.plan = plan;
+    jest.restoreAllMocks();
+  }
+});
