@@ -72,7 +72,7 @@ Screenshot each check (`xcrun simctl io booted screenshot <name>.png`) and name 
 4. *Last bus:* time sheet → Depart at 23:30 on the next Sunday–Thursday: if the list reaches into tomorrow morning, one card is tagged "Last today".
 5. *Stops away* (weekday daytime): a stop screen with live times shows "N stops away"; during a trip the waiting step says "· N stops away".
 
-**I12. Fixes from the last look.** In the search fields (From/To) the typed text and the placeholder sit vertically centred, level with the dot and the ✕, in English and in Hebrew. The same in the line search, the time sheet's hour and minute, the favourite name and the shuttle fields. With the Home map full screen, the sheet stays as a thin "PLACES" strip at the bottom with the two square buttons on its edge; tapping the strip brings the places back.
+**I12. Fixes from the last look.** In the search fields (From/To) the typed text and the placeholder sit vertically centred, level with the dot and the ✕, in English and in Hebrew. The same in the line search, the favourite name and the shuttle name. With the Home map full screen, the sheet stays as a thin "PLACES" strip at the bottom with the two square buttons on its edge; tapping the strip brings the places back.
 
 **I13. From the Kotlin app's 1.1.1–1.2.1.** In full detail as `TESTING.md` X1–X3 and X5–X7 (same app; skip X4, Android only). Briefly:
 1. *Simple Maslul:* Settings → Simple Maslul → Switch. Big buttons, no tab bar; the location prompt if not yet allowed. Set a button's address, plan to it, open an option: plain numbered steps. Simple Settings → Русский and עברית (right to left after one reload), edit a button, then "Switch to full Maslul": the tabs are back. Nothing hidden under the notch or the home indicator on these screens; big text fits on a small iPhone.
@@ -85,6 +85,14 @@ Screenshot each check (`xcrun simctl io booted screenshot <name>.png`) and name 
 - I8: with the app in English *and* in עברית, `ויצמן 5 כ` lists a "…כפר סבא" result, in Hebrew, in the top three.
 - I4: stop sending positions (or deny location), open Stations: "Allow location access" shows only when access is off; otherwise "Tap Refresh to try again".
 - I8: the time sheet's Depart at / Arrive by control is whole, with its edges, in Hebrew.
+
+**I15. New in this round** (in full detail as `TESTING.md` W1–W6; the same app). Briefly:
+1. *Fastest first:* routes are sorted by arrival; the first card says "Arrives first" ("Leaves last" with Arrive by), the shortest trip says "Shortest trip". Options → "Show first" → Easiest changes the order and the first card says "Easiest".
+2. *Lifts:* with rides on (Settings → Advanced), the ride sheet has "Only at their destination" (every route then gets out at the driver's destination) and "When does the driver leave?" (opens the time sheet). Arrive by with a driver heading somewhere: every route arrives by then, each with its own pickup time.
+3. *Search:* `20314` finds the stop with that code first (also in Stations' search); `הרצל` near Tel Aviv lists Tel Aviv-area stops before other towns'; a favourite with your own name ("Grandma's") comes first when you type that name.
+4. *Train stations:* a train station has a train icon in blue (Stations near Tel Aviv Savidor Center, search results, favourites) and a bigger blue ring on Home's map.
+5. *Time wheels:* the time sheet and the shuttle editor pick times on hour and minute wheels: they scroll and snap smoothly on iOS, inside the sheet, without moving the sheet itself; a tap on a row picks it; VoiceOver reads "Hour"/"Minute" with the value and swipes up/down step it; in Hebrew the hours stay on the left; with the largest text the rows aren't cut. No keyboard.
+6. *Repeating shuttles:* a new shuttle → Repeating → From 07:30 Until 19:00 Every 30 min → "Add 24 departures": one chip "Every 30 min, 07:30–19:00"; My shuttles shows it the same way; its ✕ removes the whole run.
 
 ## Report
 

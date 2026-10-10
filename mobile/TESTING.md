@@ -70,7 +70,7 @@ Use `adb` from a shell if you have one. If a command isn't available to you, mar
 
 ## What to test: a full pass over the whole app
 
-This round is a **complete re-test before release**: every area, from scratch, even what passed before. It covers the five new features (marked *new*), the Kotlin app's 1.1.1–1.2.1 brought over (section X), and the fixes since round 5 (section F). Do the sections in this order. Use 4 GB RAM. Screenshot every check; a layout finding needs its screenshot. Unless a check says otherwise, the app and the emulator are in English. If it's Shabbat or night, mark the checks that need running buses **couldn't test (Shabbat)**; don't count them as failures.
+This round is a **complete re-test before release**: every area, from scratch, even what passed before. It covers the features new in this round (section W, also marked *new* where they change an older check), the Kotlin app's 1.1.1–1.2.1 brought over (section X), and the fixes for every finding of the last round (section F). Do the sections in this order. Use 4 GB RAM. Screenshot every check; a layout finding needs its screenshot. Unless a check says otherwise, the app and the emulator are in English. If it's Shabbat or night, mark the checks that need running buses **couldn't test (Shabbat)**; don't count them as failures.
 
 ### U. Upgrade from the old app (most important; do it first)
 
@@ -89,7 +89,7 @@ This round is a **complete re-test before release**: every area, from scratch, e
 ### P. Planning a trip
 
 **P1.** Where to? → type `ויצמן 5`, then ` כ`: a "…כפר סבא" result comes to the top. Clear it and type `haifa center`: "Haifa Center HaShemona" is listed. Pick Dizengoff Center: routes are listed with times, line chips and "leave in".
-**P2.** Options: closing it untouched keeps the routes; changing walking speed searches again. Time: Leave now → Depart at a later time → Arrive by: the list updates each time. Routes whose bus is tomorrow carry the day ("Sun 00:49 → 01:04"). The chip row scrolls sideways and Options is reachable.
+**P2.** Options: closing it untouched keeps the routes; changing walking speed searches again. Time: Leave now → Depart at a later time → Arrive by: the list updates each time. The time is picked on two scrolling wheels (hour, minute), with no keyboard (*new*): scroll each, tap a row, and check the chosen time is the one the chip then shows. Routes whose bus is tomorrow carry the day ("Sun 00:49 → 01:04"). The chip row scrolls sideways and Options is reachable.
 **P3.** Open a route: the time range at the top is on one line, the route is on the map, the steps make sense. Share: the text lists the trip (with the day if it's not today); a route with a train says "Train from …", never "Train Train" or "to 114".
 **P4.** Pick on map (in Where to?): drag the map under the pin; the address under it updates; Choose sets it and plans.
 **P5. Last routes offline** (*new*). Plan to Dizengoff Center and wait for the routes. Airplane mode on (`adb shell cmd connectivity airplane-mode enable`), tap the refresh chip: the same routes come back under "No new routes, showing the ones saved at HH:MM", without any whose bus has left. Airplane mode off (`… disable`), tap the banner's Try again: fresh routes, no banner, nothing listed twice.
@@ -116,7 +116,7 @@ This round is a **complete re-test before release**: every area, from scratch, e
 
 ### S. Shuttles
 
-**S1.** Settings → My shuttles → add: Save with nothing filled lists what's missing ("a name, where it leaves from, …"); times like `soon` are refused, `07:30, 17:00` reads "2 departures a day". Fill it in, running Sun–Fri: the list shows "Sun–Fri".
+**S1.** Settings → My shuttles → add: Save with nothing filled lists what's missing ("a name, where it leaves from, …"). Times are added on wheels (*new*): "Add 07:30", then pick 17:30 on the wheels and add it: "2 departures a day", each time a chip; the chip's ✕ removes it. Fill it in, running Sun–Fri: the list shows "Sun–Fri".
 **S2.** Kill, reopen, tap the shuttle at once (3 times): "Edit shuttle" each time. Edit its name: shown at once. Delete asks first: Cancel keeps it, Delete removes it. Changes survive a kill.
 
 ### A. Advanced tools
@@ -146,13 +146,32 @@ This round is a **complete re-test before release**: every area, from scratch, e
 **X6. Lifts.** Advanced → Getting a ride → within N min: no route has two car legs; a route driving a little over N minutes says "Longer ride".
 **X7. Route cards.** At a busy stop, a combined ride shows at most 3 line badges and "+N"; "+N more" under the times opens all of them and "Show fewer" closes them. A train's direction is a city ("Towards Nahariya"), not a number. A tight transfer onto an unnumbered train says "to catch the train", and "If missed, the next train at …".
 
-### F. Fixes since round 5 (check each where it failed)
+### W. New in this round
 
-**F1.** App in English, emulator in English: `ויצמן 5 כ` lists a "…כפר סבא" result in the top three; `haifa center` lists "Haifa Center HaShemona". Maestro's search_top_result and ride_within (M1) cover the same.
-**F2.** Language → System with the emulator in Hebrew (as H4): Maslul is Hebrew and right to left.
-**F3.** Without a position: `adb emu geo fix` stopped and location left on, Stations and Lines say "Tap Refresh to try again", not "Allow location access". Turn location access off for Maslul (App info → Permissions): now they say to allow it. Turn it back on.
-**F4.** A train leg's direction is a city, not a number ("to 114"); the route details header is on one line in Hebrew; the exact-alarm dialog and the live-directions notification channel are in Hebrew with the app in Hebrew.
-**F5.** Settings → Display → Font size to the largest while the app is open on the Lines tab: back in the app, the line badges, times and chips are at the new size and not cut ("2.."), and the app is still on Lines.
+**W1. Fastest first.** Plan a trip with several options: by default they're sorted by arrival, and the first card says "Arrives first" (with Arrive by: "Leaves last"). The card with the shortest trip says "Shortest trip". Options → "Show first" → Easiest: the order may change (fewer changes and less walking first), the first card says "Easiest", and the Options chip is marked as changed. Set it back to Fastest.
+**W2. Lifts.** Advanced → rides on. Ride chip → "The driver is going somewhere" → Haifa Center HaShemona; your destination Netanya (or anywhere on the way). (a) The sheet now has "Only at their destination": switch it on: every route's car leg ends at the driver's destination, and transit goes on from there. Switch it off: drop-offs along the way again. (b) "When does the driver leave?" opens the time sheet; Depart at a time: the routes' first time (the pickup) is that time. (c) Time sheet → **Arrive by** a time with the same lift: every route arrives by then, and each one's pickup time is worked back from it (they differ by drop-off). If none can make it (the time is too soon), it says there are no routes, not routes that arrive late.
+**W3. Search.** In Where to?: type `20314` (the code on a stop's sign): "תחנת רכבת סבידור מרכז/גשר מודעי" (or its English name) comes first; the same in the Stations tab's search. Type `הרצל` with the position in Tel Aviv: stops and streets near Tel Aviv come before other towns' ones. Save a favourite place with your own name for it (e.g. "Grandma's"); type the start of that name: it comes first, above the search results. A recent destination that matches comes right after the favourites.
+**W4. Train stations look different.** Stations tab near Tel Aviv Savidor Center (`adb emu geo fix 34.7983 32.0837`): the station row has a train icon in train blue, the bus stops the bus icon. Search `תל אביב מרכז` (or `Tel Aviv Center`): the train station has the train icon. On Home's map, the station is a bigger blue ring among small grey dots. Star the station: Stations' favourites list shows it in blue. Dark theme: the icons are readable.
+**W5. Repeating shuttles.** In a new shuttle → "Repeating": From 07:30 Until 19:00 Every 30 min → "Add 24 departures": one chip "Every 30 min, 07:30–19:00" and "24 departures a day". Add a single 21:00 too. Save: My shuttles shows "Every 30 min, 07:30–19:00, 21:00 · Sun–Thu". Plan a trip that uses the shuttle (from its first stop to near its second): a shuttle route leaves at one of the run's times. Its ✕ removes the whole run.
+**W6. Time wheels.** In the time sheet and in the shuttle editor, with TalkBack on, each wheel reads "Hour"/"Minute" and its value, and swiping up/down steps it. In Hebrew, the hours stay on the left of the minutes (07:30, not 30:07). With the largest font size, the wheel rows aren't cut. No keyboard opens.
+**W7. Express "fast lane" shuttles.** The free fast-lane shuttles (lines 861–864 from the Rishon LeZion park-and-ride, Sun–Thu daytime) are in the timetable data as ordinary buses: Lines tab → `861` finds it; a trip from Rishon LeZion's park-and-ride (Ayalon fast lane) to Azrieli on a weekday morning may use it. Say whether they show; they're not a failure if Transitous's data doesn't have them yet (write what Lines showed).
+
+### F. Fixes for the last round's findings (check each where it failed)
+
+**F1.** (round 6 #1) Star #20700 and #20699 (both at Arlozorov/Ibn Gabirol): on Home each shows its own departures, and opening each from Stations shows its own rows and pin.
+**F2.** (#2) Tap a route card and open it: the details show the same bus(es) and times as the card; Share lists the same as the details, live times included.
+**F3.** (#3) Known limitation, no fix: "Last today" shows only when the app can see the last bus on the next page; when night buses keep running it stays off (see P6).
+**F4.** (#4, #13) As T1: after "You've arrived" it stays arrived (end and restart quickly a few times); the last walk's "N m to go" counts down smoothly to arrival, not stuck at 200 m.
+**F5.** (#5) During a trip, the step list shows the same bus as the guide, not a different one.
+**F6.** (#6) Language → System; while Maslul is open, change the emulator's language to Hebrew and back: Maslul follows each time.
+**F7.** (#7) On the Lines tab (and on a line screen), change the font size: the app stays where it was.
+**F8.** (#8) A route with a live train: its live row says "Train in N min", never "Train Train".
+**F9.** (#9) Home map full screen → Android Back: the places come back; a second Back leaves the app.
+**F10.** (#10) Settings → Русский and back to English, from a deep screen: no reload, and you stay on Settings.
+**F11.** (#11) The time sheet has wheels, nothing for a keyboard to cover (W6).
+**F12.** (#12) Reset the exact-alarm grant (as R1), set a reminder and tap "Not now"; then allow "Alarms & reminders" in Android settings and come back to Maslul: `adb shell dumpsys alarm | grep -A3 com.maslul.app` now shows that reminder exact, and it arrives on time.
+**F14.** (#14) Deny location, open Lines and Stations ("Allow location access"), allow it again in App info, come back: both show what's near without a restart.
+**F15.** (#15) TalkBack on the line screen's star and the stop screen's star reads whether it's on ("selected"); each favourite-stop row on Home reads its line, destination and time.
 
 ### M. Automated flows (Maestro)
 
