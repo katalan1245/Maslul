@@ -7,6 +7,7 @@ Read this first. A fresh session should be able to start from this file alone. T
 - `TESTING.md`: the full Android pass.
 - `TESTING-ios.md`: the iPhone pass.
 - `FEATURES.md`: what's new compared with the original app, in user-facing words.
+- `FEATURE-REQUESTS.md`: what the user wants next.
 
 ## The project
 
@@ -133,17 +134,9 @@ Upstream released 1.1.1, 1.2.0 (Simple Maslul) and 1.2.1 (the whole app in Russi
 - **Not covered by automated tests:** the location-permission prompt on Simple's home (E5), real layout on phones, iOS.
 - Not in `FEATURES.md`: these come from upstream.
 
-## Later ideas (not decided)
+## Feature requests and ideas
 
-- **"Get off soon" alert:** the recommended next feature.
-- A home-screen widget with the next departures, after release.
-- Service alerts: strikes, detours and closures. First find a reliable free source.
-- Share my trip live.
-- A commute shortcut by time of day.
-- The stop board on the lock screen.
-- Shabbat and holiday awareness. It needs a Hebrew calendar, which would also let the last bus cover holiday eves.
-- Crowding or reliability per line.
-- **Dropped by the user:** a screen-reader pass.
+In [FEATURE-REQUESTS.md](FEATURE-REQUESTS.md): wanted after the full test and the move into the original repo. Don't start them before then.
 
 ## Build and environment
 
