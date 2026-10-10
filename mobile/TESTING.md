@@ -98,6 +98,8 @@ Round 7 does two things: it re-tests what was fixed after round 5 (B1–B5, whic
 
 **C5. Last bus warning.** Plan a trip, open the time sheet and choose **Depart at** 23:30 on the next Sunday–Thursday. Results that include tomorrow-morning routes: the latest route before 04:00 has a "Last today" tag (only one card has it). Choose 10:00 the same day: no tag. If the session runs on a weekday evening after 22:30, also plan "Leave now" for a short trip: a banner "The last one today leaves at HH:MM from …" when the last bus is within the hour. No tag or banner is not a failure when the planner doesn't show any morning route (the app only claims a last bus when it can prove it); write down what the list showed.
 
+**C6. Places button with the map full screen.** On Home, tap the full-screen button (bottom right): a "Places" button appears on the same row as the two square buttons, at the same height, not floating above them. Repeat with Settings → "Already on a bus" on, so "On a bus?" is on the same row: nothing overlaps or gets cut off. Tap Places: the sheet comes back. Screenshot both, in English and in עברית.
+
 ## Report
 
 Earlier rounds' reports and evidence are kept as `report-round2.md` … `report-round5.md` and `evidence-round2/` … `evidence-round5/` (with their `maestro-report-*.xml`). Write this round's results into the empty `report.md`, with screenshots in `evidence/`. End your session with the Summary as your final message.
