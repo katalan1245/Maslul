@@ -12,7 +12,7 @@ import { IconButton, MessageBox, PlaceRow, ProgressBar, SectionHeader, Txt } fro
 import { type FavoriteDraft, FavoriteDialogHost, FavoriteStar, draftFor } from '../components/favorites';
 import { FAVORITE_ICON_NAMES, Icon, kindIcon } from '../components/icons';
 import { CURRENT_LOCATION, type RootStack, type SearchField, nav } from '../nav';
-import { ModeColors, type Theme, type, useTheme } from '../theme';
+import { ModeColors, type Theme, inputType, useTheme } from '../theme';
 
 /** A chosen place's name as field text; "Current location" isn't text to edit, so it leaves the field empty. */
 const fieldText = (p: Place | null) => (p != null && p.kind !== 'CURRENT_LOCATION' ? p.name : '');
@@ -292,7 +292,7 @@ function Field({
         placeholder={placeholder}
         placeholderTextColor={t.x.subtle}
         returnKeyType="search"
-        style={[type.bodyLarge, { flex: 1, marginLeft: 12, color: t.c.onSurface, paddingVertical: 0 }]}
+        style={[inputType('bodyLarge'), { flex: 1, marginLeft: 12, color: t.c.onSurface, paddingVertical: 0 }]}
         accessibilityLabel={placeholder}
         testID={testID}
       />

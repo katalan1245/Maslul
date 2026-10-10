@@ -156,21 +156,9 @@ export function NavHomeScreen() {
               bottomInset={insets.bottom}
               onBoardShown={data.settings.onBoard}
               onExpand={() => (c.mapOnly ? c.show() : c.hide())}
+              onShowPlaces={c.show}
               onMyLocation={myLocation}
             />
-            {c.mapOnly && (
-              <Pressable
-                onPress={c.show}
-                style={[styles.extendedFab, { backgroundColor: t.c.surface, bottom: insets.bottom + 76 }]}
-                testID="home_show_places"
-                accessibilityRole="button"
-              >
-                <Icon name="expand-less" color={t.c.onSurface} />
-                <Txt v="labelLarge" style={{ marginLeft: 8 }}>
-                  {S.settings.places}
-                </Txt>
-              </Pressable>
-            )}
           </>
         )}
         testID="home_sheet"
@@ -190,6 +178,7 @@ function SheetButtons({
   bottomInset,
   onBoardShown,
   onExpand,
+  onShowPlaces,
   onMyLocation,
 }: {
   position: SharedValue<number>;
@@ -198,6 +187,7 @@ function SheetButtons({
   bottomInset: number;
   onBoardShown: boolean;
   onExpand: () => void;
+  onShowPlaces: () => void;
   onMyLocation: () => void;
 }) {
   const t = useTheme();
@@ -219,7 +209,17 @@ function SheetButtons({
           </Txt>
         </Pressable>
       )}
-      <View style={{ flex: 1 }} />
+      {/* With the map full screen, a way back to the places, on the same row as the buttons. */}
+      <View style={{ flex: 1, alignItems: 'center' }} pointerEvents="box-none">
+        {hidden && (
+          <Pressable onPress={onShowPlaces} style={[styles.places, { backgroundColor: t.c.surface }]} testID="home_show_places" accessibilityRole="button">
+            <Icon name="expand-less" color={t.c.onSurface} />
+            <Txt v="labelLarge" style={{ marginLeft: 8 }}>
+              {S.settings.places}
+            </Txt>
+          </Pressable>
+        )}
+      </View>
       <SmallFab icon={hidden ? 'fullscreen-exit' : 'fullscreen'} label={hidden ? S.home.showPlaces : S.detail.expandMap} onPress={onExpand} testID="home_map_expand" />
       <View style={{ width: 8 }} />
       <SmallFab icon="my-location" label={S.common.myLocation} color={t.c.primary} onPress={onMyLocation} testID="home_my_location" />
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
   buttons: { position: 'absolute', left: 0, right: 0, top: 0, height: 64, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12 },
   onBoard: { flexDirection: 'row', alignItems: 'center', height: 40, borderRadius: 20, paddingLeft: 12, paddingRight: 14, ...elevated },
   smallFab: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', ...elevated },
-  extendedFab: { position: 'absolute', alignSelf: 'center', flexDirection: 'row', alignItems: 'center', height: 48, borderRadius: 16, paddingHorizontal: 16, ...elevated },
+  places: { flexDirection: 'row', alignItems: 'center', height: 40, borderRadius: 20, paddingLeft: 12, paddingRight: 16, ...elevated },
   quickRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 16 },
   quick: { flex: 1, flexDirection: 'row', alignItems: 'center', borderRadius: 16, paddingLeft: 12, paddingVertical: 6 },
   chips: { gap: 8, paddingHorizontal: 16, paddingTop: 10 },

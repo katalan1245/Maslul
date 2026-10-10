@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import type { TransitMode } from '../../data/models';
 import { S } from '../../i18n';
-import { ModeColors, alpha, contentColorOn, numeric, type, useTheme } from '../theme';
+import { ModeColors, alpha, contentColorOn, numeric, inputType, type, useTheme } from '../theme';
 import { Icon, type IconName, modeIcon } from './icons';
 
 type Variant = keyof typeof type;
@@ -450,7 +450,7 @@ export function SearchBox({
         placeholderTextColor={t.x.subtle}
         returnKeyType="search"
         autoFocus={autoFocus}
-        style={[type.bodyLarge, { flex: 1, marginLeft: 10, color: t.c.onSurface, paddingVertical: 0 }]}
+        style={[inputType('bodyLarge'), { flex: 1, marginLeft: 10, color: t.c.onSurface, paddingVertical: 0 }]}
         testID={testID}
         accessibilityLabel={placeholder}
       />

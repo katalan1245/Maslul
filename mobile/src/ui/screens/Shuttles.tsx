@@ -11,7 +11,7 @@ import { store, useUserData } from '../../state/store';
 import { Button, Chip, IconButton, PlaceRow, TextButton, Txt } from '../components/common';
 import { Dialog } from '../components/overlays';
 import { type RootStack, nav } from '../nav';
-import { hex, type, useTheme } from '../theme';
+import { hex, inputType, useTheme } from '../theme';
 
 /** "07:30, 08:00 +3 · Sun–Thu". */
 function summary(s: Shuttle): string {
@@ -120,7 +120,7 @@ export function ShuttleEditScreen({ route }: NativeStackScreenProps<RootStack, '
   const sameStop = from != null && to != null && ShuttleSchedule.isNear(placePoint(from), placePoint(to));
   const bad = parsed == null && (!ShuttleSchedule.isEmptyTimes(times) || showMissing);
   const rideMissing = rideMinutes == null && showMissing;
-  const input = [type.bodyLarge, styles.input, { color: t.c.onSurface }];
+  const input = [inputType('bodyLarge'), styles.input, { color: t.c.onSurface }];
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: t.c.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} testID="shuttle_edit_screen">
