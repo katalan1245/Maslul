@@ -7,7 +7,8 @@ Read this first. A fresh session should be able to start from this file alone. T
 - `TESTING.md`: the full Android pass.
 - `TESTING-ios.md`: the iPhone pass.
 - `FEATURES.md`: what's new compared with the original app, in user-facing words.
-- `FEATURE-REQUESTS.md`: what the user wants next.
+- `FEATURE-REQUESTS.md`: what the user wants next. **Local only, not in git** (ignored via `.git/info/exclude`); the user will turn them into GitHub issues later.
+- `UPSTREAM-PORT.md`: every upstream 1.1.1–1.2.1 change and where it landed here.
 
 ## The project
 
@@ -19,22 +20,18 @@ Read this first. A fresh session should be able to start from this file alone. T
 - **Licence:** AGPL-3.0. The About credits and the OSM/OpenFreeMap credit must stay.
 - **Upstream:** the original developer's repo is `Tom-stack3/Maslul`. The user's goal is to test everything fully, port upstream's new versions, and eventually offer all of this to the original developer as a PR. That PR **restructures the repo**: the React Native app moves out of `mobile/` to the repo root and the Kotlin `app/` (with its Gradle files) is removed. Until then everything stays in `mobile/`.
 
-## Git state (2026-10-10)
+## Git state (2026-10-10, evening)
 
-| Branch | Local | Fork (`origin`) | What |
-|---|---|---|---|
-| `rewrite/react-native` | see `git log` | pushed | The rewrite, Hebrew, iOS prep, and the five "daily rider" features. 220 tests |
-| `feature/upstream-1.2.1` | see `git log` | not pushed | Upstream 1.1.1–1.2.1 merged in and ported (Russian, Simple Maslul, grace, wider walk). 253 tests |
-| `master` | upstream's 1.2.1 (`076af78`) | 3 commits behind | Fast-forwarded to `upstream/master`, not pushed |
+| Branch | Fork (`origin`) | What |
+|---|---|---|
+| `feature/upstream-1.2.1` | pushed up to `01b1f51`; 3 doc commits after it are local (`9825073`, `def35e2`, `8a65437`) | **The branch under test.** Everything: the rewrite, its fixes, the upstream 1.1.1–1.2.1 port, the iOS round-1 fixes. 255 tests |
+| `rewrite/react-native` | pushed, `19875c5` | The rewrite and the iOS round-1 fixes, without the upstream port. Fully contained in the branch above |
+| `master` | 3 commits behind the local one | Fast-forwarded to upstream's 1.2.1 (`076af78`), not pushed |
 
-- `rewrite/react-native` is pushed to the fork; `feature/upstream-1.2.1` and `master` are local only. Push again only when the user says yes. The Mac clones the fork.
+- Push only when the user says yes, each time. The Mac pulls `feature/upstream-1.2.1` from the fork.
 - **Remotes:**
   - `origin` is the user's fork, `katalan1245/Maslul`.
   - `upstream` is `Tom-stack3/Maslul`. **Never push there.**
-- **Feature branches:**
-  - The five features (offline routes, stops away, favourite stops, last bus, stop reminder) were combined in `feature/daily-rider`, one `--no-ff` merge each.
-  - It was merged into `rewrite/react-native` as `b4b5ca0`: a local merge, pushed directly to the fork, with no PR.
-  - All feature branches have been deleted. The user is done with feature branches for now.
 - **History:** it was rewritten on 2026-10-10 to remove `Claude-Session:` lines, then force-pushed. PR #1 on GitHub still lists its 8 old commits; only GitHub Support can purge those.
 
 ## Rules from the user
@@ -46,9 +43,7 @@ Read this first. A fresh session should be able to start from this file alone. T
   - Set them through the `GIT_AUTHOR_*` / `GIT_COMMITTER_*` env vars, never through git config. Never use any other email.
 - **Release signing:** the user signs releases with a private `keystore.properties` that stays out of the repo and out of `/share`.
 - **Container:** don't change the container or the firewall, and don't expose credentials.
-- **Branches:**
-  - Test fixes go straight on `rewrite/react-native`.
-  - A new feature gets its own branch off it.
+- **Branches:** the user tests both platforms together on `feature/upstream-1.2.1`, so fixes from this round go there. Once the round passes, merge it into `rewrite/react-native` (ask first). New features come after the move to the original repo, each on its own branch.
 - **Code review:** the user decides when one runs. Don't start one on your own.
 - **Agents:** keep fan-out small. Parallel review agents used up the session limit once without reporting anything.
 
@@ -84,45 +79,39 @@ Beyond the plain rewrite and Hebrew (see `FEATURES.md` for the user-facing list)
 - "אחרון להיום";
 - "האחרון להיום יוצא ב-… מהתחנה …";
 - "תזכירו לי לצאת";
-- "לחיצה ארוכה לתזכורת יציאה".
+- "לחיצה ארוכה לתזכורת יציאה";
+- `common.tryRefresh`: "לחצו על רענון כדי לנסות שוב." (new with the iOS fixes).
+
+And the Russian: all of `src/i18n/ru.ts` was translated here, so a Russian speaker should read it.
 
 They should also check the wording of `FEATURES.md`.
 
 ## Known open items
 
-- **Narrow phones:** the row with "On a bus?", Places and the two round buttons now lets both labels shrink and truncate (`SheetButtons` in `NavHome.tsx`). Still not seen on a small screen; the full test should look at it on a narrow emulator.
+- **Narrow phones:** the row with "On a bus?", Places and the two round buttons lets both labels shrink and truncate (`SheetButtons` in `NavHome.tsx`). Not seen on a small screen yet.
 - **Last bus on quiet nights:** unverified whether the planner's next page reaches past 04:00. If it doesn't, the feature just stays silent, which is safe.
-- **The iOS text fix** hasn't been confirmed on the user's iPhone 17.
+- **iOS round-1 fixes, none seen on a device yet** (I14 in `TESTING-ios.md`): Language = System via the native `preferredLanguage` constant; `writingDirection` on all text (`textDirection` in `theme.ts`); the app redrawing when the text size changes (`Fragment key={fontScale}` in `App.tsx`, nav state kept); Photon `lang=default`. Nominatim still follows iOS's Accept-Language (last fallback only).
+- **To discuss with the user — the Markdown files.** Should the working docs (`HANDOVER`, `STATUS`, `UPSTREAM-PORT`, `TESTING*`, `FEATURES`, `scripts/START-HERE.md`) stay in git? Suggested: keep them in the fork for now (the Mac and the testers get them that way), and leave them out of the PR to the original repo: there only the code, the READMEs, `AGENTS.md` and a trimmed `NOTES.md` (e.g. `docs/architecture.md`) go; `FEATURES.md` and `UPSTREAM-PORT.md` become the PR description. The user hasn't decided.
 
 ## Testing state
 
-- **Checks here:**
-  - `npx tsc --noEmit` is clean.
-  - `npx jest --selectProjects app` passes 253 tests (220 on `rewrite/react-native`).
-  - The `live` project calls real services; run it only on purpose.
-- **Android, full pass:**
-  - `TESTING.md` covers the whole app in sections U (upgrade from `maslul-kotlin-v4.apk`), N, P, L, T, R, S, A, H, V and M (11 Maestro flows).
-  - Its APK, built from `f8f829a` (`rewrite/react-native`, without the upstream port),  is in `/share/maslul-test`, with an empty `report.md` and `evidence/`.
-  - The tester is a separate Claude session on the Windows host, with mobile-mcp. It can't see `/workspace`, only `/share`.
-- **iOS:**
-  - Round 1 (simulator, build 6fdd280) is in `/share/maslul-ios-test/ios-report.md`: 12 pass, 3 fail. Its fixes are on both branches; `STATUS.md` lists them and `TESTING-ios.md` I14 re-tests them.
-  - The user has a Mac and an iPhone 17, and runs `TESTING-ios.md` (I1–I12) there with a Claude session. The report comes back through the user.
-  - Some iOS build has already run, because the user saw the text offset on the iPhone. No full report has come back yet.
-- **Never seen:**
-  - Live buses: every test session fell on Shabbat or at night.
-  - A real ride on a phone on a weekday. It's needed for real GPS, live buses, and battery savers stopping the trip service.
+- **Checks here:** `npx tsc --noEmit` is clean; `npx jest --selectProjects app` passes 255 tests in 37 suites (222 on `rewrite/react-native`). The `live` project calls real services; run it only on purpose.
+- **Running now (started 2026-10-10 evening, after Shabbat), both on `feature/upstream-1.2.1`:**
+  - **Android:** a Claude session on the Windows host (mobile-mcp, adb, Maestro) runs `/share/maslul-test/TESTING.md`: the whole app plus section X (upstream features, X4 upgrades from `maslul-kotlin-1.2.1.apk`) and section F (fixes since round 5). APK built from `01b1f51`, versionCode 8. Its report lands in `/share/maslul-test/report.md` and `evidence/`. The folder was tidied: old rounds are in `archive/round2…5`, and `START-HERE.md` points to `TESTING.md`. The tester can't see `/workspace`, only `/share`.
+  - **iOS:** a Claude session on the user's Mac (Xcode 27, simulator) runs `TESTING-ios.md` round 2, I1–I14. The report comes back through the user, last time into `/share/maslul-ios-test/` (round 1 is archived there as `*-round1`).
+  - The user will say when the reports are in. Read them in full before fixing anything.
+- **Results so far:** Android rounds 1–5 (`STATUS.md`); iOS round 1: 12 pass, 3 fail, all fixed (`STATUS.md`, "Verified on iOS").
+- **Never seen:** a real ride on a phone on a weekday (real GPS, live buses during a trip, battery savers stopping the trip service). Live buses were seen once, on iOS after Shabbat.
 
 ## The plan, in order
 
-1. **Full test:**
-   - Wait for the Android report (`/share/maslul-test/report.md` and `evidence/`) and the iOS report. Read them before fixing anything.
-   - Fix on `rewrite/react-native`, add tests, commit, rebuild, and re-test only what failed.
-   - Between rounds, archive the old report as described under "Build and environment".
-2. **Upstream 1.1.1–1.2.1 port:** done on `feature/upstream-1.2.1`. Needs a device pass (`TESTING.md` section X, `TESTING-ios.md` I13), and the user to check the Russian and the new Hebrew. Then merge into `rewrite/react-native` when the user says so.
+1. **This test round** (above): read both reports, fix on `feature/upstream-1.2.1`, add tests, commit, rebuild, re-test only what failed. Archive each round as described under "Build and environment".
+2. **Merge** `feature/upstream-1.2.1` into `rewrite/react-native` once it passes (ask first).
 3. **Full code review,** when the user says so.
 4. **A real weekday ride** with the release-like build.
 5. **Release:** the user builds and signs it.
-6. **PR to `Tom-stack3/Maslul`,** only when the user asks. It moves `mobile/` to the root and deletes the Kotlin app. Paths to fix then: the docs' `mobile/` and `/workspace/app` references, `scripts/publish-test.sh` (`../app` for the old Kotlin APK), the README, any CI, and `.gitignore`.
+6. **PR to `Tom-stack3/Maslul`,** only when the user asks. It **restructures the repo**: the React Native app moves from `mobile/` to the root and the Kotlin `app/` and its Gradle files are deleted. Paths to fix then: the docs' `mobile/` and `/workspace/app` references, `scripts/publish-test.sh` (`../app` for the old Kotlin APK; `KOTLIN_121_APK` for the 1.2.1 one), the READMEs, any CI, and `.gitignore`.
+7. **Feature requests** (`FEATURE-REQUESTS.md`, local) after that, as GitHub issues.
 
 ## Porting upstream (done, untested on devices)
 
@@ -136,15 +125,16 @@ Upstream released 1.1.1, 1.2.0 (Simple Maslul) and 1.2.1 (the whole app in Russi
 
 ## Feature requests and ideas
 
-In [FEATURE-REQUESTS.md](FEATURE-REQUESTS.md): wanted after the full test and the move into the original repo. Don't start them before then.
+In `FEATURE-REQUESTS.md` (local only, not in git): 1. scrolling time wheels instead of typing (time sheet and shuttle times); 2. a full design pass by a dedicated UI agent; 3. repeating shuttles ("every 30 min, 07:00–19:00"); 4. the trip working out its own state (boarded, missed the bus, off route, walking vs riding). Plus the older ideas list. Don't start them before the move to the original repo.
 
 ## Build and environment
 
 - **Test APK:**
-  - In `mobile/`, run `JAVA_HOME=$HOME/jdk/jdk-17.0.20.1+1 ANDROID_HOME=$HOME/android-sdk npm run build:test-apk`.
+  - In `mobile/`, run `JAVA_HOME=$HOME/jdk/jdk-17.0.20.1+1 ANDROID_HOME=$HOME/android-sdk npm run build:test-apk`. To refresh the Kotlin 1.2.1 APK too, set `KOTLIN_121_APK` to an `assembleDebug` build of `master` (made in a temporary `git worktree`; it's already in `/share`, so normally not needed).
   - It runs prebuild --clean, assembleRelease and `scripts/publish-test.sh`, and publishes to `/share/maslul-test` with `build-info.txt` written last.
   - It takes about 2 minutes. Check the log for `BUILD SUCCESSFUL`, not the exit code of a `tail`.
-  - Commit first, or `build-info.txt` says "with uncommitted changes". An untracked file like this one counts.
+  - Commit first, or `build-info.txt` says "with uncommitted changes".
+  - All test APKs are signed with the debug key `~/.android/debug.keystore` (SHA-256 `1a5ac6dd…`), so each installs over the others.
 - **Between test rounds:**
   - Move `report.md` and `evidence/` into `archive/roundN/` (as `report.md` and `evidence/`), then leave an empty `report.md` and `evidence/`. The folder's top level stays: `START-HERE.md`, `TESTING.md`, the three APKs, `build-info.txt`, `maestro/`, `report.md`, `evidence/`, `archive/`.
   - If renaming `evidence/` is refused (a host-side lock), copy it with `cp -r` and ask the user to clear the original.
