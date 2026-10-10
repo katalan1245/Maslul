@@ -28,17 +28,17 @@ import { type Instant, nowSec } from '../../data/time';
 import { WALK_SPEEDS } from '../../data/userStore';
 import { S } from '../../i18n';
 import { activeTrip, useActiveTrip } from '../../live/liveTrip';
-import { canNotify, scheduleReminder } from '../../live/notifications';
-import MaslulNative from '../../../modules/maslul-native/src/MaslulNativeModule';
+import { canNotify } from '../../live/notifications';
 import { location, useLastLocation } from '../../state/location';
 import { repo } from '../../state/services';
 import { store } from '../../state/store';
 import { Fmt, modeName, rideName } from '../fmt';
-import { Button, IconButton, LineBadge, TextButton, Txt } from '../components/common';
+import { Button, IconButton, LineBadge, Txt } from '../components/common';
 import { Icon, modeIcon } from '../components/icons';
 import { LiveLocationCard, LiveSignal, freshnessColor, useNow } from '../components/live';
 import { MapSheet } from '../components/MapSheet';
-import { Dialog, showToast } from '../components/overlays';
+import { showToast } from '../components/overlays';
+import { ExactAlarmDialog, setReminder } from '../components/reminders';
 import { type RailSpec, TimelineRow } from '../components/timeline';
 import { type MapLine, type MapMarker, type MapVehicle, TransitMap, useMapController } from '../map/TransitMap';
 import { Model, useModel } from '../model';
@@ -197,11 +197,7 @@ class RouteDetailModel extends Model {
     const text = first
       ? S.detail.reminder(Fmt.time(leaveAt), first.shuttleId != null ? lineLabel(first) : rideName(first), first.from.name, Fmt.time(first.start))
       : S.detail.leaveAt(Fmt.time(leaveAt));
-    const ok = await scheduleReminder(at, S.detail.reminderTitle(this.to.name), text).catch(() => false);
-    showToast(ok ? S.detail.reminderSet(Fmt.when(at, nowSec()), minutes) : S.detail.reminderTooSoon);
-    // Without "Alarms & reminders" Android may hold a reminder back by minutes, up to an hour.
-    if (ok && MaslulNative?.canScheduleExactAlarms() === false) {
-      // The app's own dialog, not Alert: Android lays that out by the phone's language, not the app's.
+    if (await setReminder(at, S.detail.reminderTitle(this.to.name), text)) {
       this.askExactAlarm = true;
       this.changed();
     }
@@ -293,26 +289,7 @@ export function RouteDetailScreen({ route }: NativeStackScreenProps<RootStack, '
           <View style={{ height: 24 }} />
         </View>
       </MapSheet>
-      <Dialog
-        visible={model.askExactAlarm}
-        title={S.detail.exactAlarmTitle}
-        onDismiss={() => model.closeExactAlarm()}
-        testID="exact_alarm_dialog"
-        actions={
-          <>
-            <TextButton text={S.detail.notNow} onPress={() => model.closeExactAlarm()} />
-            <TextButton
-              text={S.detail.allow}
-              onPress={() => {
-                model.closeExactAlarm();
-                MaslulNative?.openExactAlarmSettings();
-              }}
-            />
-          </>
-        }
-      >
-        <Txt v="bodyMedium">{S.detail.exactAlarmBody}</Txt>
-      </Dialog>
+      <ExactAlarmDialog visible={model.askExactAlarm} onClose={() => model.closeExactAlarm()} />
     </View>
   );
 }

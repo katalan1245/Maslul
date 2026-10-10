@@ -132,3 +132,12 @@ it('takes Hebrew from the phone however the platform writes it', () => {
   expect(['he_IL', 'iw_IL', 'he-IL', 'he'].map(ids)).toEqual(['he', 'he', 'he', 'he']);
   expect(['en_US', 'hello'].map(ids)).toEqual(['en', 'en']);
 });
+
+it('offers the stop reminder in Hebrew', async () => {
+  await launchHebrew(true);
+  await fireEvent.press(await screen.findByTestId('tab_stations'));
+  await fireEvent.press(await screen.findByText('Arlozorov/Ibn Gabirol'));
+  await fireEvent(await screen.findByTestId('board_row'), 'longPress');
+  await screen.findByText(he.stopBoard.remindLeave);
+  expect(leaks()).toEqual([]);
+});

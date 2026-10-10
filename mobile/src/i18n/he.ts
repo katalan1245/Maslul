@@ -254,6 +254,8 @@ export const he: Strings = {
     searchHint: 'שם או מספר תחנה',
   },
   stopBoard: {
+    remindLeave: 'תזכירו לי לצאת',
+    remindHint: 'לחיצה ארוכה לתזכורת יציאה',
     unknown: 'תחנה לא מוכרת',
     loadFailed: 'לא הצלחנו לטעון יציאות',
     favorite: 'תחנה מועדפת',
