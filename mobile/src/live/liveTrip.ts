@@ -9,7 +9,7 @@ import MaslulNative from '../../modules/maslul-native/src/MaslulNativeModule';
 import { location } from '../state/location';
 import { repo } from '../state/services';
 import { BRAND } from '../ui/theme';
-import { alert, canNotify, ensureChannels } from './notifications';
+import { alert, canNotify, dismissAlert, ensureChannels } from './notifications';
 import { type GuideState, TripGuide } from './tripGuide';
 
 export const TRIP_TASK = 'maslul-live-trip';
@@ -68,6 +68,8 @@ class ActiveTrip {
 
   async start(itinerary: Itinerary, destination: string) {
     await ensureChannels();
+    // A position left from an earlier trip would put the guide where that trip ended.
+    this.pos = null;
     this.begin(itinerary, destination, null);
     await AsyncStorage.setItem(SESSION_KEY, JSON.stringify({ itinerary, destination }));
     try {
@@ -94,7 +96,9 @@ class ActiveTrip {
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
     this.guide = null;
+    this.pos = null;
     this.set(null);
+    await dismissAlert();
     await AsyncStorage.removeItem(SESSION_KEY).catch(() => {});
     if (await Location.hasStartedLocationUpdatesAsync(TRIP_TASK).catch(() => false)) {
       await Location.stopLocationUpdatesAsync(TRIP_TASK).catch(() => {});

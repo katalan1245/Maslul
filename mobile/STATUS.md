@@ -43,6 +43,8 @@ Fixed after round 3 and not yet re-tested (NOTES.md, "Deliberate changes"):
 - The day in the route details header.
 - ride_within: "Couldn't load routes" on the device, while the same request and ranking succeed here. Not understood; the error now names its cause and is logged, for the next round.
 
+Found in round 4 (partial notes, build 95c7ed3) and fixed after it, not yet re-tested: ending a trip and starting another in the same session guided from where the last one ended ("Get off at the next stop" at the start, then stuck), and the "Get off now" alert stayed in the shade after End trip. The round-1 trip-guide fix itself passed.
+
 ## Not verified yet
 
 - **iOS native compile.** The Swift module and CocoaPods have never been built (needs a Mac).
