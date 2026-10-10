@@ -8,16 +8,72 @@ import { S } from '../../i18n';
 import { ShuttleSchedule } from '../../data/shuttles';
 import { type Shuttle, WORK_WEEK } from '../../data/userStore';
 import { store, useUserData } from '../../state/store';
-import { Button, Chip, IconButton, PlaceRow, TextButton, Txt } from '../components/common';
+import { Button, Chip, IconButton, PlaceRow, Segmented, TextButton, Txt } from '../components/common';
 import { Dialog } from '../components/overlays';
+import { TimeWheels } from '../components/wheels';
 import { type RootStack, nav } from '../nav';
 import { hex, inputType, useTheme } from '../theme';
 
-/** "07:30, 08:00 +3 · Sun–Thu". */
+/** "07:30, Every 30 min, 16:00–19:00 +3 · Sun–Thu". */
 function summary(s: Shuttle): string {
-  const shown = s.times.slice(0, 2).map(ShuttleSchedule.formatTime).join(', ');
-  const more = s.times.length > 2 ? ` +${s.times.length - 2}` : '';
+  const groups = ShuttleSchedule.groupTimes(s.times);
+  const shown = groups.slice(0, 2).map(ShuttleSchedule.formatGroup).join(', ');
+  const more = groups.length > 2 ? ` +${groups.length - 2}` : '';
   return `${shown}${more} · ${ShuttleSchedule.formatDays(s.days)}`;
+}
+
+const EVERY = [10, 15, 20, 30, 60];
+
+/** Adds one departure, or a run of them ("every 30 min from 07:00 until 19:00"), picked on wheels. */
+function AddTimes({ onAdd }: { onAdd: (times: number[]) => void }) {
+  const t = useTheme();
+  const [kind, setKind] = useState<'ONE' | 'REPEAT'>('ONE');
+  const [at, setAt] = useState(7 * 60 + 30);
+  const [until, setUntil] = useState(19 * 60);
+  const [every, setEvery] = useState(30);
+  const run = ShuttleSchedule.repeating(at, until, every);
+  return (
+    <View style={[styles.addBox, { backgroundColor: t.c.surfaceContainerHigh }]}>
+      <Segmented
+        options={[
+          { value: 'ONE', label: S.shuttles.oneTime },
+          { value: 'REPEAT', label: S.shuttles.repeating },
+        ]}
+        value={kind}
+        onChange={setKind}
+        testID="shuttle_add_kind"
+      />
+      {kind === 'REPEAT' && (
+        <Txt v="labelMedium" color={t.x.subtle} style={{ marginTop: 12 }}>
+          {S.shuttles.repeatFrom}
+        </Txt>
+      )}
+      <TimeWheels minutes={at} onChange={setAt} testID="shuttle_at" />
+      {kind === 'REPEAT' && (
+        <>
+          <Txt v="labelMedium" color={t.x.subtle} style={{ marginTop: 8 }}>
+            {S.shuttles.repeatUntil}
+          </Txt>
+          <TimeWheels minutes={until} onChange={setUntil} testID="shuttle_until" />
+          <Txt v="labelMedium" color={t.x.subtle} style={{ marginTop: 8 }}>
+            {S.shuttles.every}
+          </Txt>
+          <View style={[styles.days, { paddingHorizontal: 0 }]}>
+            {EVERY.map((m) => (
+              <Chip key={m} label={S.fmt.min(m)} selected={every === m} onPress={() => setEvery(m)} />
+            ))}
+          </View>
+        </>
+      )}
+      <Button
+        text={kind === 'ONE' ? S.shuttles.addTime(ShuttleSchedule.formatTime(at)) : S.shuttles.addRun(run.length)}
+        disabled={run.length === 0}
+        onPress={() => onAdd(kind === 'ONE' ? [at] : run)}
+        style={{ marginTop: 12, height: 48 }}
+        testID="shuttle_add_time"
+      />
+    </View>
+  );
 }
 
 export function ShuttlesScreen() {
@@ -67,7 +123,7 @@ export function ShuttleEditScreen({ route }: NativeStackScreenProps<RootStack, '
   const [name, setName] = useState(existing?.name ?? draft?.name ?? '');
   const [from, setFrom] = useState<Place | null>(existing?.from ?? draft?.from ?? null);
   const [to, setTo] = useState<Place | null>(existing?.to ?? draft?.to ?? null);
-  const [times, setTimes] = useState(existing ? ShuttleSchedule.formatTimes(existing.times) : '');
+  const [times, setTimes] = useState<number[]>(existing?.times ?? []);
   /** Unset on a new shuttle: there's no sensible default, so it has to be chosen. */
   const [rideMinutes, setRideMinutes] = useState<number | null>(existing?.rideMinutes ?? draft?.rideMinutes ?? null);
   const [days, setDays] = useState<number[]>(existing?.days ?? draft?.days ?? WORK_WEEK);
@@ -75,7 +131,6 @@ export function ShuttleEditScreen({ route }: NativeStackScreenProps<RootStack, '
   const [showMissing, setShowMissing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const parsed = ShuttleSchedule.parseTimes(times);
   const missing = ShuttleSchedule.missing(name, from, to, times, rideMinutes, days);
   const canSave = missing.length === 0;
   const err = t.c.error;
@@ -94,7 +149,7 @@ export function ShuttleEditScreen({ route }: NativeStackScreenProps<RootStack, '
       },
     });
 
-  const shuttle = (): Shuttle => ({ id, name: name.trim(), from: from!, to: to!, times: parsed!, rideMinutes: rideMinutes!, days });
+  const shuttle = (): Shuttle => ({ id, name: name.trim(), from: from!, to: to!, times, rideMinutes: rideMinutes!, days });
 
   /** False (and the missing fields marked) when something's still missing. */
   const check = () => {
@@ -118,7 +173,7 @@ export function ShuttleEditScreen({ route }: NativeStackScreenProps<RootStack, '
 
   // Both ends at one stop: the second one picked is the one to change.
   const sameStop = from != null && to != null && ShuttleSchedule.isNear(placePoint(from), placePoint(to));
-  const bad = parsed == null && (!ShuttleSchedule.isEmptyTimes(times) || showMissing);
+  const bad = times.length === 0 && showMissing;
   const rideMissing = rideMinutes == null && showMissing;
   const input = [inputType('bodyLarge'), styles.input, { color: t.c.onSurface }];
 
@@ -164,26 +219,27 @@ export function ShuttleEditScreen({ route }: NativeStackScreenProps<RootStack, '
         <Txt v="labelMedium" color={bad ? err : t.x.subtle} style={[styles.label, { marginTop: 8 }]}>
           {S.shuttles.times}
         </Txt>
-        <TextInput
-          value={times}
-          onChangeText={setTimes}
-          placeholder="07:30, 08:15, 17:00"
-          placeholderTextColor={t.x.subtle}
-          keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'default'}
-          autoCapitalize="none"
-          style={[input, { borderColor: bad ? err : t.c.outline }]}
-          accessibilityLabel={S.shuttles.times}
-          testID="shuttle_times"
-        />
-        <Txt v="bodySmall" color={bad ? err : t.x.subtle} style={{ paddingHorizontal: 36, paddingTop: 4 }}>
-          {bad && ShuttleSchedule.isEmptyTimes(times)
-            ? S.shuttles.timesNone
-            : bad
-              ? S.shuttles.timesBad
-              : parsed != null
-                ? S.shuttles.timesCount(parsed.length)
-                : S.shuttles.timesHint}
+        {times.length > 0 && (
+          <View style={styles.days} testID="shuttle_times">
+            {ShuttleSchedule.groupTimes(times).map((g) => {
+              const label = ShuttleSchedule.formatGroup(g);
+              return (
+                <Chip
+                  key={g.times[0]}
+                  label={label}
+                  icon="close"
+                  selected={false}
+                  a11yLabel={S.shuttles.removeTime(label)}
+                  onPress={() => setTimes(times.filter((x) => !g.times.includes(x)))}
+                />
+              );
+            })}
+          </View>
+        )}
+        <Txt v="bodySmall" color={bad ? err : t.x.subtle} style={{ paddingHorizontal: 20, paddingBottom: 4 }}>
+          {bad ? S.shuttles.timesNone : times.length > 0 ? S.shuttles.timesCount(times.length) : S.shuttles.timesHint}
         </Txt>
+        <AddTimes onAdd={(more) => setTimes(ShuttleSchedule.withTimes(times, more))} />
         <View style={[styles.rideRow, { marginTop: 8 }]}>
           <Txt v="titleSmall" color={rideMissing ? err : t.c.onSurface} style={{ flex: 1 }}>
             {S.shuttles.rideTakes}
@@ -272,5 +328,6 @@ const styles = StyleSheet.create({
   label: { paddingHorizontal: 24, marginBottom: 4 },
   input: { marginHorizontal: 20, borderWidth: 1, borderRadius: 4, paddingHorizontal: 12, paddingVertical: 12 },
   rideRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20 },
+  addBox: { marginHorizontal: 20, marginBottom: 8, padding: 12, borderRadius: 12 },
   days: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingHorizontal: 20, paddingTop: 6, paddingBottom: 16 },
 });

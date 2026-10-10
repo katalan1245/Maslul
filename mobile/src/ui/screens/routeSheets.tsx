@@ -1,6 +1,6 @@
 import Slider from '@react-native-community/slider';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import type { TransitMode } from '../../data/models';
 import { RIDE_MINUTES, type RideOffer } from '../../data/rides';
 import { WiderWalk } from '../../data/grace';
@@ -12,7 +12,8 @@ import { Fmt, modeName } from '../fmt';
 import { Button, Chip, Segmented, SettingSwitch, TextButton, Txt } from '../components/common';
 import { Icon, modeIcon } from '../components/icons';
 import { Sheet } from '../components/overlays';
-import { inputType, useTheme } from '../theme';
+import { TimeWheels } from '../components/wheels';
+import { useTheme } from '../theme';
 import type { TimeMode } from './routesModel';
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
@@ -34,12 +35,7 @@ export function TimeSheet({
   const todayDate = today();
   const [sel, setSel] = useState<TimeMode>(mode === 'NOW' ? 'DEPART' : mode);
   const [date, setDate] = useState(`${p.year}-${pad2(p.month)}-${pad2(p.day)}`);
-  const [hour, setHour] = useState(pad2(p.hour));
-  const [minute, setMinute] = useState(pad2(p.minute));
-  const h = Number(hour);
-  const m = Number(minute);
-  const valid = /^\d{1,2}$/.test(hour) && /^\d{1,2}$/.test(minute) && h <= 23 && m <= 59;
-  const field = [inputType('headlineSmall'), styles.timeField, { color: t.c.onSurface, backgroundColor: t.c.surfaceVariant }];
+  const [minutes, setMinutes] = useState(p.hour * 60 + p.minute);
   return (
     <Sheet visible onDismiss={onDismiss} testID="time_sheet">
       <Txt v="titleLarge">{S.sheets.when}</Txt>
@@ -58,29 +54,14 @@ export function TimeSheet({
           return <Chip key={day} label={Fmt.day(day, todayDate)} selected={day === date} onPress={() => setDate(day)} />;
         })}
       </ScrollView>
-      <View style={styles.timeRow}>
-        <TextInput value={hour} onChangeText={setHour} keyboardType="number-pad" maxLength={2} selectTextOnFocus style={field} accessibilityLabel={S.sheets.hour} testID="time_hour" />
-        <Txt v="headlineSmall" style={{ marginHorizontal: 8 }}>
-          :
-        </Txt>
-        <TextInput
-          value={minute}
-          onChangeText={setMinute}
-          keyboardType="number-pad"
-          maxLength={2}
-          selectTextOnFocus
-          style={field}
-          accessibilityLabel={S.sheets.minute}
-          testID="time_minute"
-        />
-      </View>
+      <TimeWheels minutes={minutes} onChange={setMinutes} />
       <View style={styles.buttons}>
         <Pressable onPress={() => onApply('NOW', null)} style={styles.half} accessibilityRole="button">
           <Txt v="labelLarge" color={t.c.primary}>
             {S.cards.leaveNow}
           </Txt>
         </Pressable>
-        <Button text={S.sheets.setTime} disabled={!valid} onPress={() => onApply(sel, zoned(date, h, m))} style={[styles.half, { height: 50 }]} testID="set_time" />
+        <Button text={S.sheets.setTime} onPress={() => onApply(sel, zoned(date, Math.trunc(minutes / 60), minutes % 60))} style={[styles.half, { height: 50 }]} testID="set_time" />
       </View>
     </Sheet>
   );
@@ -279,8 +260,6 @@ export function OptionsSheet({ onDismiss }: { onDismiss: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  timeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-  timeField: { width: 72, height: 64, borderRadius: 8, textAlign: 'center', paddingVertical: 0 },
   buttons: { flexDirection: 'row', gap: 12, marginTop: 16 },
   half: { flex: 1, height: 50, alignItems: 'center', justifyContent: 'center' },
   option: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, padding: 14 },

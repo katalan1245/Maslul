@@ -10,27 +10,36 @@ const COLOR = 0xff7c3aed;
 /** Walking this far or less to or from a shuttle stop needs no planning. */
 const SAME_PLACE_M = 80;
 
-/** "7:30, 08:15 17:00" → [450, 495, 1020]; null if any part isn't a time. */
-function parseTimes(text: string): number[] | null {
-  const parts = text
-    .split(/[, ;\n]/)
-    .map((p) => p.trim())
-    .filter((p) => p !== '');
-  if (parts.length === 0) return null;
+/** [times] with [more] added: each once, in order. */
+const withTimes = (times: readonly number[], more: readonly number[]) => [...new Set([...times, ...more])].sort((a, b) => a - b);
+
+/** Every [every] minutes from [from] up to [to], the end included when it falls on the step. */
+function repeating(from: number, to: number, every: number): number[] {
   const out: number[] = [];
-  for (const p of parts) {
-    const m = /^(\d{1,2})[:.](\d{2})$/.exec(p);
-    if (!m) return null;
-    const h = Number(m[1]);
-    const min = Number(m[2]);
-    if (h > 23 || min > 59) return null;
-    out.push(h * 60 + min);
-  }
-  return [...new Set(out)].sort((a, b) => a - b);
+  for (let m = from; m <= to && every > 0; m += every) out.push(m);
+  return out;
 }
 
-/** Nothing typed but spaces and separators. */
-const isEmptyTimes = (text: string) => /^[\s,;]*$/.test(text);
+/** Times as the editor lists them: three or more evenly spaced ones as one run ("every 30 min"). */
+export interface TimeGroup {
+  times: number[];
+  every: number | null;
+}
+
+function groupTimes(times: readonly number[]): TimeGroup[] {
+  const out: TimeGroup[] = [];
+  let i = 0;
+  while (i < times.length) {
+    const gap = times[i + 1] - times[i];
+    let j = i + 1;
+    while (j + 1 < times.length && times[j + 1] - times[j] === gap) j++;
+    if (j - i >= 2) {
+      out.push({ times: times.slice(i, j + 1), every: gap });
+      i = j + 1;
+    } else out.push({ times: [times[i++]], every: null });
+  }
+  return out;
+}
 
 const isNear = (a: GeoPoint, b: GeoPoint) => GeoMath.distance(a, b) <= SAME_PLACE_M;
 
@@ -39,7 +48,7 @@ function missing(
   name: string,
   from: Place | null,
   to: Place | null,
-  times: string,
+  times: readonly number[],
   rideMinutes: number | null,
   days: readonly number[],
 ): string[] {
@@ -49,7 +58,7 @@ function missing(
   if (from == null) out.push(n.from);
   if (to == null) out.push(n.to);
   if (from != null && to != null && isNear(placePoint(from), placePoint(to))) out.push(n.differentStops);
-  if (parseTimes(times) == null) out.push(isEmptyTimes(times) ? n.times : n.timesLike);
+  if (times.length === 0) out.push(n.times);
   if (rideMinutes == null) out.push(n.ride);
   if (days.length === 0) out.push(n.day);
   return out;
@@ -63,7 +72,9 @@ function missingText(m: string[]): string | null {
 const formatTime = (minutes: number) =>
   `${String(Math.trunc(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 
-const formatTimes = (times: number[]) => times.map(formatTime).join(', ');
+/** "07:30" or "Every 30 min, 07:00–19:00". */
+const formatGroup = (g: TimeGroup) =>
+  g.every == null ? formatTime(g.times[0]) : S.shuttles.everyMin(g.every, formatTime(g.times[0]), formatTime(g.times[g.times.length - 1]));
 
 /** "Sun–Thu", "Every day", "Fri, Sat": runs of three days or more as a range. */
 function formatDays(days: readonly number[]): string {
@@ -160,12 +171,13 @@ function relevant(shuttles: Shuttle[], origin: GeoPoint, dest: GeoPoint, max = 3
 
 export const ShuttleSchedule = {
   COLOR,
-  parseTimes,
-  isEmptyTimes,
+  withTimes,
+  repeating,
+  groupTimes,
+  formatGroup,
   missing,
   missingText,
   formatTime,
-  formatTimes,
   formatDays,
   departures,
   leg,

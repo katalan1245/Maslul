@@ -102,11 +102,14 @@ it("says what a shuttle is missing, the ride time included", async () => {
   );
   expect(screen.getByText('Add at least one departure time')).toBeTruthy();
   await fireEvent.changeText(screen.getByTestId('shuttle_name'), 'Office');
-  await fireEvent.changeText(screen.getByTestId('shuttle_times'), '07:30, soon');
-  expect(screen.getByText('Use 24-hour times', { exact: false })).toBeTruthy();
-  expect(screen.getByTestId('shuttle_missing')).toHaveTextContent(/departure times like 07:30/);
-  await fireEvent.changeText(screen.getByTestId('shuttle_times'), '07:30, 17:00');
+  // Times come from wheels (#1): 07:30 as offered, then the hour stepped up as a screen reader would.
+  await fireEvent.press(screen.getByText('Add 07:30'));
+  for (let i = 0; i < 10; i++) await fireEvent(screen.getByTestId('shuttle_at_hour'), 'accessibilityAction', { nativeEvent: { actionName: 'increment' } });
+  await fireEvent.press(screen.getByText('Add 17:30'));
   expect(screen.getByText('2 departures a day')).toBeTruthy();
+  // A chip takes a time off again.
+  await fireEvent.press(screen.getByLabelText('Remove 17:30'));
+  expect(screen.getByText('1 departure a day')).toBeTruthy();
   await setRide(60);
   expect(screen.getByTestId('shuttle_ride')).toHaveTextContent('60 min');
   expect(screen.getByTestId('shuttle_missing')).toHaveTextContent('Still needed: where it leaves from and where it goes.');
@@ -126,7 +129,12 @@ it('saves, edits and deletes a complete shuttle', async () => {
   await fireEvent.changeText(screen.getByTestId('shuttle_name'), 'Test shuttle');
   await pickStop('From', 'dizengoff center', 'Dizengoff Center');
   await pickStop('To', 'azrieli center', 'Azrieli Center');
-  await fireEvent.changeText(screen.getByTestId('shuttle_times'), '8:15 07:30');
+  await fireEvent.press(within(screen.getByTestId('shuttle_at_hour')).getByText('08'));
+  await fireEvent.press(within(screen.getByTestId('shuttle_at_minute')).getByText('15'));
+  await fireEvent.press(screen.getByText('Add 08:15'));
+  await fireEvent.press(within(screen.getByTestId('shuttle_at_hour')).getByText('07'));
+  await fireEvent.press(within(screen.getByTestId('shuttle_at_minute')).getByText('30'));
+  await fireEvent.press(screen.getByText('Add 07:30'));
   await setRide(120);
   expect(screen.getByTestId('shuttle_ride')).toHaveTextContent('120 min');
   expect(screen.queryByTestId('shuttle_missing')).toBeNull();
@@ -400,4 +408,28 @@ it('puts your favourite first when it matches what you type, by its name or your
   await fireEvent.changeText(screen.getByTestId('field_to'), 'dizengoff');
   await screen.findByText('Dizengoff Center', { exact: false });
   expect(screen.queryByText("Grandma's")).toBeNull();
+});
+
+it('adds a repeating shuttle as one run, every N minutes up to the end time (#3)', async () => {
+  await openNewShuttle();
+  await fireEvent.press(screen.getByText('Repeating'));
+  // From 07:30 until 19:00 (as offered), every 30 min: 24 departures, the last at 19:00.
+  await fireEvent.press(screen.getByText('Add 24 departures'));
+  expect(within(screen.getByTestId('shuttle_times')).getByText('Every 30 min, 07:30–19:00')).toBeTruthy();
+  expect(screen.getByText('24 departures a day')).toBeTruthy();
+  await fireEvent.press(screen.getByLabelText('Remove Every 30 min, 07:30–19:00'));
+  expect(screen.queryByTestId('shuttle_times')).toBeNull();
+});
+
+it('sets the trip time on wheels, without a keyboard (#1, F11)', async () => {
+  await planToDizengoff();
+  await fireEvent.press(screen.getByTestId('time_chip'));
+  await screen.findByTestId('time_sheet');
+  await fireEvent.press(screen.getByText('Arrive by'));
+  await fireEvent.press(within(screen.getByTestId('time_hour')).getByText('09'));
+  await fireEvent(screen.getByTestId('time_minute'), 'accessibilityAction', { nativeEvent: { actionName: 'decrement' } });
+  const minute = screen.getByTestId('time_minute').props.accessibilityValue.text as string;
+  await fireEvent.press(screen.getByTestId('set_time'));
+  await waitFor(() => expect(screen.getByTestId('time_chip')).toHaveTextContent(new RegExp(`09:${minute}`)));
+  expect(screen.getByTestId('time_chip')).toHaveTextContent(/Arrive/);
 });

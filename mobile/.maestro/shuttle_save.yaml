@@ -37,10 +37,14 @@ name: A complete shuttle is saved, edited and deleted
     text: "Azrieli Center.*"
     childOf:
       id: search_results
+- scrollUntilVisible:
+    element: Add 07:30
+- tapOn: Add 07:30
+# The hour wheel shows five rows with 07 in the middle: the one below it is 08.
 - tapOn:
-    id: shuttle_times
-- inputText: "8:15 07:30"
-- hideKeyboard
+    id: shuttle_at_hour
+    point: "50%,70%"
+- tapOn: Add 08:30
 # Drag the ride-time slider right: it lands near the end (100–120 min; the swipe stops short of the edge).
 - swipe:
     from:
@@ -59,7 +63,7 @@ name: A complete shuttle is saved, edited and deleted
 - extendedWaitUntil:
     visible: Maestro shuttle
     timeout: 5000
-- assertVisible: "07:30, 08:15 · Sun–Thu"
+- assertVisible: "07:30, 08:30 · Sun–Thu"
 - tapOn: Maestro shuttle
 - assertVisible: Edit shuttle
 - assertVisible:

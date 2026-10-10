@@ -17,18 +17,16 @@ name: A shuttle says what's missing, the ride time included
 - tapOn:
     id: shuttle_name
 - inputText: Office
-- tapOn:
-    id: shuttle_times
-- inputText: "07:30, soon"
-- assertVisible: ".*Use 24-hour times.*"
-# "Still needed" sits below the form, under the keyboard.
 - hideKeyboard
+# Times come from wheels: 07:30 is offered first; tapping a row of the hour wheel picks it
+# (five rows, 07 in the middle: the bottom one is 09).
 - scrollUntilVisible:
-    element: ".*departure times like 07:30.*"
+    element: Add 07:30
+- tapOn: Add 07:30
 - tapOn:
-    id: shuttle_times
-- eraseText: 20
-- inputText: "07:30, 17:00"
+    id: shuttle_at_hour
+    point: "50%,90%"
+- tapOn: Add 09:30
 - assertVisible: 2 departures a day
 # The ride-time slider is set by dragging; check by hand that it reads "60 min" at the middle and
 # that "Still needed" then drops the ride time.

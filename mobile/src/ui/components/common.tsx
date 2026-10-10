@@ -325,8 +325,11 @@ export function Chip({
   iconColor,
   testID,
   maxWidth,
+  a11yLabel,
 }: {
   label: string;
+  /** Read instead of [label], when the chip does something its label doesn't say (removes it). */
+  a11yLabel?: string;
   selected: boolean;
   onPress: () => void;
   icon?: IconName;
@@ -340,6 +343,7 @@ export function Chip({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityState={{ selected }}
+      accessibilityLabel={a11yLabel}
       testID={testID}
       style={[
         s.chip,

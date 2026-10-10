@@ -11,13 +11,21 @@ const office = place('Office', 0);
 const station = place('Station', 6);
 const shuttle: Shuttle = { id: 's1', name: 'Office shuttle', from: office, to: station, times: [7 * 60 + 30, 8 * 60, 17 * 60 + 15], rideMinutes: 15, days: WORK_WEEK };
 
-test('parses times leniently', () => {
-  expect(ShuttleSchedule.parseTimes('8:15, 07:30 17.00')).toEqual([450, 495, 1020]);
-  expect(ShuttleSchedule.parseTimes('07:30, 07:30')).toEqual([450]);
-  expect(ShuttleSchedule.parseTimes('07:30, soon')).toBeNull();
-  expect(ShuttleSchedule.parseTimes('24:00')).toBeNull();
-  expect(ShuttleSchedule.parseTimes('  ')).toBeNull();
-  expect(ShuttleSchedule.formatTimes([450, 1020])).toBe('07:30, 17:00');
+test('adds times once each, in order, and repeats up to the end time (#3)', () => {
+  expect(ShuttleSchedule.withTimes([1020, 450], [495, 450])).toEqual([450, 495, 1020]);
+  // 07:00 to 08:00 every 30: the end time is a departure too.
+  expect(ShuttleSchedule.repeating(420, 480, 30)).toEqual([420, 450, 480]);
+  expect(ShuttleSchedule.repeating(420, 470, 30)).toEqual([420, 450]);
+  expect(ShuttleSchedule.repeating(480, 420, 30)).toEqual([]);
+});
+
+test('lists three or more evenly spaced times as one run (#3)', () => {
+  const run = ShuttleSchedule.repeating(7 * 60, 19 * 60, 30);
+  const groups = ShuttleSchedule.groupTimes(ShuttleSchedule.withTimes(run, [5 * 60 + 45, 21 * 60]));
+  expect(groups.map(ShuttleSchedule.formatGroup)).toEqual(['05:45', 'Every 30 min, 07:00–19:00', '21:00']);
+  // Two at the same gap aren't a run.
+  expect(ShuttleSchedule.groupTimes([450, 480, 600]).map((g) => g.every)).toEqual([null, null, null]);
+  expect(ShuttleSchedule.groupTimes([]).length).toBe(0);
 });
 
 test('departures follow the days it runs', () => {
@@ -68,12 +76,12 @@ test("a shuttle that loops back isn't tried", () => {
   expect(ShuttleSchedule.relevant([shuttle], placePoint(station), placePoint(place('Far', -50, 20)))).toEqual([]);
 });
 
-const missing = (o: Partial<{ name: string; from: Place | null; to: Place | null; times: string; rideMinutes: number | null; days: number[] }> = {}) =>
+const missing = (o: Partial<{ name: string; from: Place | null; to: Place | null; times: number[]; rideMinutes: number | null; days: number[] }> = {}) =>
   ShuttleSchedule.missing(
     o.name ?? 'Office shuttle',
     o.from === undefined ? office : o.from,
     o.to === undefined ? station : o.to,
-    o.times ?? '07:30, 17:00',
+    o.times ?? [450, 1020],
     o.rideMinutes === undefined ? 15 : o.rideMinutes,
     o.days ?? WORK_WEEK,
   );
@@ -82,7 +90,7 @@ test('a complete shuttle needs nothing', () => {
   expect(missing()).toEqual([]);
   expect(ShuttleSchedule.missingText(missing())).toBeNull();
   // One departure and one day are enough; so are the shortest and longest rides.
-  expect(missing({ times: '7:05', days: [5], rideMinutes: 5 })).toEqual([]);
+  expect(missing({ times: [425], days: [5], rideMinutes: 5 })).toEqual([]);
   expect(missing({ rideMinutes: 120 })).toEqual([]);
 });
 
@@ -92,7 +100,7 @@ test('an unset ride time is called out', () => {
 });
 
 test('everything missing is listed in form order', () => {
-  const all = missing({ name: '  ', from: null, to: null, times: '', rideMinutes: null, days: [] });
+  const all = missing({ name: '  ', from: null, to: null, times: [], rideMinutes: null, days: [] });
   expect(all).toEqual(['a name', 'where it leaves from', 'where it goes', 'departure times', 'how long the ride takes', 'a day it runs']);
   expect(ShuttleSchedule.missingText(all)).toBe(
     'Still needed: a name, where it leaves from, where it goes, departure times, how long the ride takes and a day it runs.',
@@ -100,10 +108,8 @@ test('everything missing is listed in form order', () => {
   expect(ShuttleSchedule.missingText(missing({ name: '', rideMinutes: null }))).toBe('Still needed: a name and how long the ride takes.');
 });
 
-test('bad times and the same stop twice are missing', () => {
-  expect(missing({ times: '07:30, soon' })).toEqual(['departure times like 07:30']);
-  expect(missing({ times: '25:00' })).toEqual(['departure times like 07:30']);
-  expect(missing({ times: ' , ' })).toEqual(['departure times']);
+test('no times and the same stop twice are missing', () => {
+  expect(missing({ times: [] })).toEqual(['departure times']);
   // Both ends at the same stop (within a few dozen metres) isn't a shuttle.
   expect(missing({ to: place('Office gate', 0.05) })).toEqual(['two different stops']);
   expect(missing({ to: place('Down the road', 0.3) })).toEqual([]);
