@@ -31,7 +31,7 @@ Branch `rewrite/react-native`. Development is complete, the Android app compiles
 | First launch in Hebrew turns on right-to-left and reloads once | Same test, with the reload mocked |
 | Plurals, gender and day names | Unit checks in the same test |
 
-On the emulator (round 5, build 851a0b3): switching to Hebrew and back takes one reload; every screen, the map labels, a whole trip and its notification, the reminder toast and Share are Hebrew; right to left holds on every screen. The Hebrew wording is reviewed; Saturday reads יום שבת.
+On the emulator (round 5, build fa6a20b): switching to Hebrew and back takes one reload; every screen, the map labels, a whole trip and its notification, the reminder toast and Share are Hebrew; right to left holds on every screen. The Hebrew wording is reviewed; Saturday reads יום שבת.
 
 Fixed after round 5 and not yet re-tested (round 6 in `TESTING.md`):
 - Place search in English: it asked the geocoders for English names, so a Hebrew town after the street stopped matching and names changed (2 Maestro flows failed). Search now sends no language, as in round 4.
@@ -44,7 +44,7 @@ Not changed: the walking figure (mirrored in Hebrew; the tester read it as facin
 
 ## Verified on the Android emulator
 
-A separate Claude session with mobile-mcp and adb ran `TESTING.md` on a Pixel 9 AVD (API 37, 2 GB RAM), on release build b0925a6 and earlier. Its report is `/share/maslul-test/report.md`.
+A separate Claude session with mobile-mcp and adb ran `TESTING.md` on a Pixel 9 AVD (API 37, 2 GB RAM), on release build 6ec7f5b and earlier. Its report is `/share/maslul-test/report.md`.
 
 - **Upgrade from the Kotlin app** (versionCode 4 → 5, `adb install -r`): Home/Work, favourite places, line and stop, shuttle, theme, walk speed, rail preference, the Advanced switches and the reminder lead all migrated. They survive a kill, and the old data isn't read again.
 - Every tab opens and Back works, with no Maslul crash in `logcat -b crash`. Map tiles load in light and dark, with Hebrew and English names.
@@ -52,11 +52,11 @@ A separate Claude session with mobile-mcp and adb ran `TESTING.md` on a Pixel 9 
 - Shuttles: create, edit and delete persist. Dark theme on every screen.
 - **Reminders:** without "Alarms & reminders" allowed (Android 14+ leaves it off) they are windowed: 52 s late in round 3, and allowed up to an hour for far-off trips. Once allowed they arrive on the second (round 3). The app now offers to open that setting; untested.
 
-- **Maestro** (first run, 9 Oct 23:27, build b0925a6): 4 of 11 flows passed. Five failures were flow bugs, now fixed. Picking a search result matched the typed text in the field (Maestro ignores case). The "Still needed" line was under the keyboard. The slider swipe stops at 115 min, not 120. With the selector fixed, the host's rerun passed plan_trip, options_keep_routes and advanced_tools. One failure was an app bug: home_sheet, where the expanded Home sheet covered the search card. `MapSheet` sized itself by the window instead of its container above the tab bar, which also put the Home buttons over the map attribution. ride_within (rides on Shabbat) is still to be re-run.
+- **Maestro** (first run, 9 Oct 23:27, build 6ec7f5b): 4 of 11 flows passed. Five failures were flow bugs, now fixed. Picking a search result matched the typed text in the field (Maestro ignores case). The "Still needed" line was under the keyboard. The slider swipe stops at 115 min, not 120. With the selector fixed, the host's rerun passed plan_trip, options_keep_routes and advanced_tools. One failure was an app bug: home_sheet, where the expanded Home sheet covered the search card. `MapSheet` sized itself by the window instead of its container above the tab bar, which also put the Home buttons over the map attribution. ride_within (rides on Shabbat) is still to be re-run.
 
-- **Round 3** (10 Oct, Shabbat night, build 54cda38, 4 GB RAM): 13 pass, 3 fail. Passed: arrival sticking, times far away with their day, dark-map labels, the map attribution on Home, shuttle day ranges, edit after a cold start and the delete dialog, shuttle reminder text, the map after switching tabs (0.5 s). Maestro 9 of 11.
+- **Round 3** (10 Oct, Shabbat night, build b2eabc1, 4 GB RAM): 13 pass, 3 fail. Passed: arrival sticking, times far away with their day, dark-map labels, the map attribution on Home, shuttle day ranges, edit after a cold start and the delete dialog, shuttle reminder text, the map after switching tabs (0.5 s). Maestro 9 of 11.
 
-- **Round 4** (10 Oct, Shabbat, build 95c7ed3, 4 GB RAM): 25 pass, 3 fail, 1 couldn't test (live buses, Shabbat). Every round-3 fix passed: the trip guide on a simulated ride (stop countdown, "Get off now" at the stop with its alert, the walk after it, waiting at the boarding stop), the exact-alarm prompt with both answers and the exact alarm afterwards, line search on a weekend, ride within 15 min by hand, the day in the route header and in Share. Maestro 10 of 11.
+- **Round 4** (10 Oct, Shabbat, build ad93caf, 4 GB RAM): 25 pass, 3 fail, 1 couldn't test (live buses, Shabbat). Every round-3 fix passed: the trip guide on a simulated ride (stop countdown, "Get off now" at the stop with its alert, the walk after it, waiting at the boarding stop), the exact-alarm prompt with both answers and the exact alarm afterwards, line search on a weekend, ride within 15 min by hand, the day in the route header and in Share. Maestro 10 of 11.
 
 Fixed after round 4 (passed in round 5 except where said):
 - Ending a trip and starting another in the same session guided from where the last one ended, until the app was force-stopped. The "Get off now" alert stayed in the shade after End trip.
@@ -64,7 +64,7 @@ Fixed after round 4 (passed in round 5 except where said):
 - Share and the reminder said "Train Train" for a train (no line number).
 - Not changed: the Options chip cut off at the edge when the time chip shows a day. The chip row scrolls sideways (Refresh stays fixed), and the cut-off chip is the sign of it.
 
-- **Round 5** (10 Oct, Shabbat, build 851a0b3): 10 pass, 3 fail, 1 couldn't test. All four round-4 fixes passed: a trip started again three times in a row, no alert left after End, "Train from …", the chip row. The Hebrew results are above. ride_within stopped at the place search (finding above), so the ride-search timeout fix is still unchecked.
+- **Round 5** (10 Oct, Shabbat, build fa6a20b): 10 pass, 3 fail, 1 couldn't test. All four round-4 fixes passed: a trip started again three times in a row, no alert left after End, "Train from …", the chip row. The Hebrew results are above. ride_within stopped at the place search (finding above), so the ride-search timeout fix is still unchecked.
 
 ## Not verified yet
 
