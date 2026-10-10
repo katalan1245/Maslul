@@ -78,6 +78,8 @@ export const en = {
     noLocation: "Your location isn't available. Allow location access or choose a starting point.",
     noneFound: 'No routes found for this time.',
     loadFailed: "Couldn't load routes. Check your connection.",
+    savedShown: (when: string) => `No new routes, showing the ones saved at ${when}`,
+    savedAllLeft: (when: string) => `The routes saved at ${when} have all left.`,
     plannerError: (code: number) => `The route planner answered with an error (${code}). Try again in a moment.`,
     plannerSlow: 'The route planner took too long to answer. Try again.',
     showFailed: (why: string) => `Couldn't show the routes found (${why}).`,

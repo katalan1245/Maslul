@@ -132,3 +132,31 @@ it('takes Hebrew from the phone however the platform writes it', () => {
   expect(['he_IL', 'iw_IL', 'he-IL', 'he'].map(ids)).toEqual(['he', 'he', 'he', 'he']);
   expect(['en_US', 'hello'].map(ids)).toEqual(['en', 'en']);
 });
+
+it('words the saved-routes banner and "all left" in Hebrew', async () => {
+  const fake = (require('../src/state/services') as { repo: { plan: unknown } }).repo;
+  const plan = fake.plan;
+  await launchHebrew(true);
+  await fireEvent.press(await screen.findByText(he.home.whereTo));
+  await fireEvent.changeText(screen.getByTestId('field_to'), 'dizengoff center');
+  await fireEvent.press(await screen.findByText('Dizengoff Center', { exact: false }));
+  await screen.findAllByTestId('route_card');
+  await waitFor(async () => expect(await AsyncStorage.getItem('saved_routes_v1')).not.toBeNull());
+  fake.plan = async () => {
+    throw new TypeError('Network request failed');
+  };
+  jest.spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    await fireEvent.press(screen.getByTestId('refresh_chip'));
+    await screen.findByTestId('saved_routes_banner');
+    expect(screen.getByText(/^אין מסלולים חדשים, מוצגים המסלולים שנשמרו ב-\d\d:\d\d$/)).toBeTruthy();
+    expect(leaks()).toEqual([]);
+    jest.spyOn(Date, 'now').mockReturnValue(Date.now() + 3600_000);
+    await fireEvent.press(screen.getByTestId('refresh_chip'));
+    await screen.findByText(/המסלולים שנשמרו ב-\d\d:\d\d כבר יצאו\./);
+    expect(leaks()).toEqual([]);
+  } finally {
+    fake.plan = plan;
+    jest.restoreAllMocks();
+  }
+});

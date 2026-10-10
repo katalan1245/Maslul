@@ -57,6 +57,10 @@ Found by the emulator tests (`TESTING.md`); everything else follows Kotlin.
 - **A failed route search** says whether the planner answered with an error, took too long, or couldn't be reached, and logs the error (`console.warn`), instead of always "Check your connection".
 - **Route details** show the day in the header and the shared text when the trip isn't today.
 
+## New features (not in the Kotlin app)
+
+- **Last routes offline** (`src/state/savedRoutes.ts`). Each successful route search keeps its first 6 routes, for the last 5 trips (the same trip replaces its earlier copy; "current location" counts as the same start within 1 km). When a search fails for any reason, the routes saved for that trip are shown under a "showing the ones saved at 14:05" banner, without those whose first ride has left; if all have left, the error says so. Each search is stored under its own key: a route is ~60 KB, mostly its map line, and Android caps one stored value at 2 MB. Not for lifts or on-board searches. Kept apart from the user's data, so losing it costs nothing.
+
 ## Languages: English and Hebrew (`src/i18n/`)
 
 - **Choosing.** Settings → Language: System (the phone's language; Hebrew if it's `he`/`iw`, otherwise English), עברית or English. The app name stays Maslul in both.
