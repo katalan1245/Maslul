@@ -45,6 +45,16 @@ const sameSettings = (a: Settings, b: Settings) => JSON.stringify(a) === JSON.st
 const lookups = limiter(2);
 
 /** Route options between two places (RoutesModel in Kotlin). */
+/**
+ * [list] (ranked) with the routes added by "Earlier/Later routes" ([paged], by id) taken out of the
+ * ranking: above or below the first page's, in time order. Mixed in, a later page read as random times.
+ */
+export function pagesInOrder(list: Itinerary[], paged: ReadonlyMap<string, 'before' | 'after'>): Itinerary[] {
+  if (paged.size === 0) return list;
+  const byTime = (xs: Itinerary[]) => [...xs].sort((a, b) => a.start - b.start || a.end - b.end);
+  return [...byTime(list.filter((i) => paged.get(i.id) === 'before')), ...list.filter((i) => !paged.has(i.id)), ...byTime(list.filter((i) => paged.get(i.id) === 'after'))];
+}
+
 export class RoutesModel extends Model {
   timeMode: TimeMode = 'NOW';
   time: Instant | null = null;
@@ -121,8 +131,15 @@ export class RoutesModel extends Model {
     return this.settings.railPreference;
   }
 
+  /** Routes added by "Earlier/Later routes", by id: they go above or below the first page's, in time order. */
+  private readonly paged = new Map<string, 'before' | 'after'>();
+
   /** Folds options that differ only by line into one, then ranks and adds more lines found per ride. */
   private ranked(list: Itinerary[]): Itinerary[] {
+    return pagesInOrder(this.rankedAll(list), this.paged);
+  }
+
+  private rankedAll(list: Itinerary[]): Itinerary[] {
     const arriveBy = this.timeMode === 'ARRIVE';
     const best = [...list].sort((a, b) => Ranking.score(a, arriveBy, this.walkMps, this.rail) - Ranking.score(b, arriveBy, this.walkMps, this.rail));
     const now = nowSec();
@@ -294,6 +311,7 @@ export class RoutesModel extends Model {
     this.walkOnly = null;
     this.raw = [];
     this.rides.clear();
+    this.paged.clear();
     this.live.clear();
     this.rideLive.clear();
     this.searchedAt = nowSec();
@@ -482,6 +500,8 @@ export class RoutesModel extends Model {
       if (gen !== this.gen) return;
       const known = new Set(this.raw.map((i) => i.id));
       const fresh = this.graced([...this.raw, ...r.itineraries]).filter((i) => !known.has(i.id));
+      fresh.forEach((i) => this.paged.set(i.id, later ? 'after' : 'before'));
+
       this.raw = later ? [...this.raw, ...fresh] : [...fresh, ...this.raw];
       this.itineraries = this.ranked(this.raw);
       if (later) this.nextCursor = r.nextCursor;
@@ -534,7 +554,7 @@ export class RoutesModel extends Model {
         }),
       );
       const score = (i: Itinerary) => Ranking.score(Combine.expected(i, liveOf), false, this.walkMps, this.rail);
-      this.itineraries = picked.map((i) => [i, score(i)] as const).sort((a, b) => a[1] - b[1]).map((x) => x[0]);
+      this.itineraries = pagesInOrder(picked.map((i) => [i, score(i)] as const).sort((a, b) => a[1] - b[1]).map((x) => x[0]), this.paged);
     }
     for (const itin of this.itineraries) {
       const f = firstTransit(itin);

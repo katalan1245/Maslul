@@ -106,3 +106,13 @@ it('saves nothing for an on-board search', async () => {
   expect(m.itineraries.length).toBeGreaterThan(0);
   expect(await savedIndex()).toBeNull();
 });
+
+test('"Earlier/Later routes" go above and below the first page, each in time order (P6)', () => {
+  const { pagesInOrder } = require('../src/ui/screens/routesModel') as typeof import('../src/ui/screens/routesModel');
+  const r = (id: string, start: number) => ({ id, start, end: start + 900, transfers: 0, legs: [] });
+  // Ranked: the first page's best, then paged routes mixed in by how good they are.
+  const ranked = [r('best', 100), r('l2', 9000), r('e1', 10), r('ok', 200), r('l1', 5000)];
+  const paged = new Map<string, 'before' | 'after'>([['l1', 'after'], ['l2', 'after'], ['e1', 'before']]);
+  expect(pagesInOrder(ranked, paged).map((i) => i.id)).toEqual(['e1', 'best', 'ok', 'l1', 'l2']);
+  expect(pagesInOrder(ranked, new Map())).toBe(ranked);
+});
