@@ -63,6 +63,11 @@ export async function alert(title: string, text: string) {
   });
 }
 
+/** Takes the trip alert out of the shade once the trip ends. */
+export async function dismissAlert() {
+  await Notifications.dismissNotificationAsync('trip-alert').catch(() => {});
+}
+
 /**
  * Schedules a "time to leave" notification at [at]. Android delivers it with an exact alarm when
  * the app may set one (as the Kotlin app did), else as close as the system allows.

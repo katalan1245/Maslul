@@ -13,7 +13,7 @@ jest.mock('../src/state/services', () => ({ repo: { legLive: async () => null } 
 const hasStarted = Location.hasStartedLocationUpdatesAsync as jest.Mock;
 // Captured before any clearAllMocks: the module defines its task when it loads.
 const task = (TaskManager.defineTask as jest.Mock).mock.calls.find(([name]) => name === TRIP_TASK)?.[1];
-const update = () => task({ data: { locations: [{ coords: { latitude: 32.0853, longitude: 34.7818 } }] }, error: null });
+const update = (latitude = 32.0853, longitude = 34.7818) => task({ data: { locations: [{ coords: { latitude, longitude } }] }, error: null });
 
 /** A bus leaving in two minutes from right here, with no stops before the destination. */
 function trip(): Itinerary {
@@ -60,6 +60,17 @@ test('ending stops the location service and forgets the session', async () => {
   expect(activeTrip.session).toBeNull();
   expect(Location.stopLocationUpdatesAsync).toHaveBeenCalledWith(TRIP_TASK);
   expect(await AsyncStorage.getItem('live_trip_v1')).toBeNull();
+});
+
+test('a trip started after ending one begins where the user is, not where the last one ended', async () => {
+  await activeTrip.start(trip(), 'Savidor');
+  const fresh = activeTrip.session?.state?.title;
+  await update(32.1, 34.79); // at Savidor
+  expect(activeTrip.session?.state?.title).not.toBe(fresh);
+  await activeTrip.stop();
+  expect(Notifications.dismissNotificationAsync).toHaveBeenCalledWith('trip-alert');
+  await activeTrip.start(trip(), 'Savidor');
+  expect(activeTrip.session?.state?.title).toBe(fresh);
 });
 
 test('after a restart, a trip the service is still following is picked up again', async () => {
