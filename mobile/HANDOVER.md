@@ -104,6 +104,7 @@ They should also check the wording of `FEATURES.md`.
   - Its APK, built from `f8f829a` (`rewrite/react-native`, without the upstream port),  is in `/share/maslul-test`, with an empty `report.md` and `evidence/`.
   - The tester is a separate Claude session on the Windows host, with mobile-mcp. It can't see `/workspace`, only `/share`.
 - **iOS:**
+  - Round 1 (simulator, build 6fdd280) is in `/share/maslul-ios-test/ios-report.md`: 12 pass, 3 fail. Its fixes are on both branches; `STATUS.md` lists them and `TESTING-ios.md` I14 re-tests them.
   - The user has a Mac and an iPhone 17, and runs `TESTING-ios.md` (I1–I12) there with a Claude session. The report comes back through the user.
   - Some iOS build has already run, because the user saw the text offset on the iPhone. No full report has come back yet.
 - **Never seen:**

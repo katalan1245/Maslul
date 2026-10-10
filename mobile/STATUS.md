@@ -66,13 +66,25 @@ Fixed after round 4 (passed in round 5 except where said):
 
 - **Round 5** (10 Oct, Shabbat, build fa6a20b): 10 pass, 3 fail, 1 couldn't test. All four round-4 fixes passed: a trip started again three times in a row, no alert left after End, "Train from …", the chip row. The Hebrew results are above. ride_within stopped at the place search (finding above), so the ride-search timeout fix is still unchecked.
 
+## Verified on iOS
+
+**Round 1** (10 Oct, Shabbat, build 6fdd280, iPhone 17 Pro simulator, iOS 26.0, Xcode 27.0; report `/share/maslul-ios-test/ios-report.md`): 12 pass, 3 fail, 1 couldn't test (VoiceOver). The Swift module builds (Xcode 26.4+ needed) and the live-bus feed decodes: buses moved on line 24 after Shabbat. A trip in the background gave "Get off" alerts, was restored after a kill, and the reminder fired on time.
+
+Fixed after round 1 and not yet re-tested (I14 in `TESTING-ios.md`):
+- Language = System stayed English on a Hebrew iPhone: React Native's locale on iOS missed Hebrew. The native module now gives `Locale.preferredLanguages`.
+- Text aligned by the language iOS gave the app, not the app's direction: Hebrew titles stuck to the left on an English iPhone, and English text sat right on a Hebrew one. `Txt` and the text fields now set `writingDirection`.
+- Changing the text size with the app open left the screens already drawn at their old sizes ("2.." badges, clipped times): the app now redraws on the same screens.
+- `ויצמן 5 כ` put Kfar Saba 11th, in English: iOS adds `Accept-Language`, which Photon follows (checked with curl). Photon is now asked for `lang=default`. Nominatim still follows the header; it's only the last fallback.
+- "Allow location access" showed when access was on but no position came: it now says to tap Refresh, on Lines too.
+- The map credit was under Home's sheet: on Home it's top left now.
+- The segmented control's divider uses the start border (the Hebrew time sheet looked cut).
+
 ## Not verified yet
 
-- **iOS native compile.** The Swift module and CocoaPods have never been built (needs a Mac).
 - **Live vehicles** (SIRI brotli decoding at runtime) and green live times: every test session so far fell on Shabbat or at night.
 - **Compass** after rotating (mobile-mcp has no two-finger gesture).
 - **Blank map after switching back to Navigate** (known bug 6), seen only on the 2 GB emulator; re-test with more RAM.
-- **iOS as a whole.**
+- **iOS on a real iPhone**, and the round-1 fixes.
 
 ## Phase B: build (done for Android)
 

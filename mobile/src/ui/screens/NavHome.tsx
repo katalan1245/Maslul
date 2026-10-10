@@ -136,6 +136,8 @@ export function NavHomeScreen() {
             onLongPress={(p) => planTo({ name: S.home.droppedPin, lat: p.lat, lon: p.lon, kind: 'PIN' })}
             onCameraIdle={onCameraIdle}
             compassStyle={{ top: insets.top + 84, right: 16 }}
+            // The sheet covers the bottom left.
+            attributionPosition={{ top: insets.top + 84, left: 16 }}
           />
         )}
         overlay={(c) => (

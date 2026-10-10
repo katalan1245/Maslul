@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import type { TransitMode } from '../../data/models';
 import { S } from '../../i18n';
-import { ModeColors, alpha, contentColorOn, numeric, inputType, type, useTheme } from '../theme';
+import { ModeColors, alpha, contentColorOn, numeric, inputType, textDirection, type, useTheme } from '../theme';
 import { Icon, type IconName, modeIcon } from './icons';
 
 type Variant = keyof typeof type;
@@ -30,7 +30,7 @@ export function Txt({
   ...rest
 }: TextProps & { v?: Variant; color?: string; num?: boolean; style?: StyleProp<TextStyle> }) {
   const t = useTheme();
-  return <Text {...rest} style={[type[v], { color: color ?? t.c.onSurface }, num && numeric, style]} />;
+  return <Text {...rest} style={[type[v], textDirection, { color: color ?? t.c.onSurface }, num && numeric, style]} />;
 }
 
 /** Rounded line-number pill with the mode icon, e.g. [🚌 480]. */
@@ -379,7 +379,7 @@ export function Segmented<T extends string>({
             onPress={() => onChange(o.value)}
             accessibilityRole="radio"
             accessibilityState={{ checked: on }}
-            style={[s.segment, i > 0 && { borderLeftWidth: 1, borderLeftColor: t.c.outline }, on && { backgroundColor: t.c.primaryContainer }]}
+            style={[s.segment, i > 0 && { borderStartWidth: 1, borderStartColor: t.c.outline }, on && { backgroundColor: t.c.primaryContainer }]}
           >
             {on && <Icon name="check" size={16} color={t.c.onPrimaryContainer} />}
             <Txt v="labelLarge" color={on ? t.c.onPrimaryContainer : t.c.onSurface} numberOfLines={1} style={on ? { marginLeft: 4 } : undefined}>

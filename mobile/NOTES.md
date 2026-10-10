@@ -87,7 +87,7 @@ The original kept going after the port began. [UPSTREAM-PORT.md](UPSTREAM-PORT.m
 
 - **Simple Maslul** (`src/ui/simple/`): its own navigator in `App.tsx`, shown instead of the tabs while `settings.simpleMode` is on. It plans with the full app's `RoutesModel` (from the current location) and reads its own plainer words from the `simple` section of each language. Unlike upstream it doesn't have its own language: it follows the app's, and the app's layout direction.
 - **Grace and the wider walk** (`src/data/grace.ts`): each search also plans with the limits raised by 3 minutes (sent after the main request, as Transitous may answer one at a time), keeping what's over only when it's 10 minutes sooner. When nothing leaves within 2 hours, one more plan with a 50-minute walk. Both are extra planner calls.
-- **Differences kept on purpose:** the whole app asks the geocoder in its language (upstream: only Simple Maslul); map labels follow the language; a train headsign that's only a number shows nothing when the plan doesn't say where the trip ends (upstream shows the number).
+- **Differences kept on purpose:** place search never asks the geocoders for a language, Simple Maslul included (upstream's Simple Maslul does); map labels follow the language; a train headsign that's only a number shows nothing when the plan doesn't say where the trip ends (upstream shows the number).
 
 ## Map
 

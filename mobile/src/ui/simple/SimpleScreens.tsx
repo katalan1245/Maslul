@@ -6,7 +6,7 @@
 import { useIsFocused } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text as RNText, TextInput, type TextProps, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Combine } from '../../data/combine';
 import { type Itinerary, type Leg, type Place, firstTransit, itinDurationSec, rideKey, transitLegs } from '../../data/models';
@@ -26,7 +26,10 @@ import { useModel } from '../model';
 import { CURRENT_LOCATION, type RootStack, nav } from '../nav';
 import { lineColor } from '../screens/routeCards';
 import { RoutesModel } from '../screens/routesModel';
-import { useTheme } from '../theme';
+import { textDirection, useTheme } from '../theme';
+
+/** Aligned by the app's direction on iOS too (see [textDirection]). */
+const Text = ({ style, ...rest }: TextProps) => <RNText {...rest} style={[textDirection, style]} />;
 import { type SimpleStep, simpleLine, simpleMinutes, simpleSteps } from './steps';
 
 /** The same pictures as the full app's favourites, plus family, friends and work. */
@@ -244,7 +247,7 @@ export function SimpleSearchScreen({ route }: NativeStackScreenProps<RootStack, 
           placeholderTextColor={t.x.subtle}
           autoFocus
           returnKeyType="search"
-          style={{ flex: 1, fontSize: 22, color: t.c.onSurface, paddingVertical: 14 }}
+          style={[textDirection, { flex: 1, fontSize: 22, color: t.c.onSurface, paddingVertical: 14 }]}
           accessibilityLabel={S.simple.searchHint}
           testID="simple_search_field"
         />
@@ -600,7 +603,7 @@ export function SimpleSettingsScreen() {
               onChangeText={(v) => setEditing((e) => e && { ...e, draft: { ...e.draft, label: v } })}
               placeholder={S.simple.iconName[draft.icon]}
               placeholderTextColor={t.x.subtle}
-              style={[styles.nameField, { borderColor: t.c.outline, color: t.c.onSurface }]}
+              style={[textDirection, styles.nameField, { borderColor: t.c.outline, color: t.c.onSurface }]}
               accessibilityLabel={S.simple.name}
               testID="simple_edit_name"
             />

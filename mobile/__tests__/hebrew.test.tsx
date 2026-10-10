@@ -134,6 +134,18 @@ it('takes Hebrew from the phone however the platform writes it', () => {
   expect(['en_US', 'hello'].map(ids)).toEqual(['en', 'en']);
 });
 
+it('takes the language iOS gives the app over React Native locale, which missed Hebrew on a Hebrew iPhone', () => {
+  const native = (require('../modules/maslul-native/src/MaslulNativeModule') as { default: { preferredLanguage?: string } }).default;
+  jest.spyOn(I18nManager, 'getConstants').mockReturnValue({ ...I18nManager.getConstants(), localeIdentifier: 'en_US' });
+  native.preferredLanguage = 'he-IL';
+  try {
+    expect(deviceLang()).toBe('he');
+  } finally {
+    delete native.preferredLanguage;
+  }
+  expect(deviceLang()).toBe('en');
+});
+
 it('words the saved-routes banner and "all left" in Hebrew', async () => {
   const fake = (require('../src/state/services') as { repo: { plan: unknown } }).repo;
   const plan = fake.plan;

@@ -440,6 +440,7 @@ export const he: Strings = {
   map: { resetNorth: 'איפוס המפה לצפון' },
   address: { notOnMap: (num) => `רחוב · מספר ${num} לא מופיע במפה` },
   common: {
+    tryRefresh: 'לחצו על רענון כדי לנסות שוב.',
     start: 'נקודת התחלה',
     line: (label) => `קו ${label}`,
     retry: 'לנסות שוב',

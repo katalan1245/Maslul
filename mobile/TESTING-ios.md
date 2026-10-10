@@ -4,7 +4,7 @@ A full test of the React Native rewrite on iOS, with Hebrew and the five new fea
 
 ## Build on the Mac
 
-Needs: the current Xcode from the App Store (open it once to install its components), Node 22 LTS, CocoaPods (`brew install cocoapods`).
+Needs: Xcode 26.4 or newer from the App Store (Expo SDK 57 doesn't build with older ones; 27.0 is known to work) (open it once to install its components), Node 22 LTS, CocoaPods (`brew install cocoapods`).
 
 ```sh
 git clone https://github.com/katalan1245/Maslul.git && cd Maslul
@@ -22,7 +22,7 @@ npx expo run:ios --configuration Release
 ## Set up
 
 1. Time zone **Israel**: the simulator uses the Mac's time zone (System Settings → General → Date & Time).
-2. Location in Tel Aviv: Simulator → Features → Location → Custom Location → `32.0853`, `34.7818`.
+2. Location in Tel Aviv: `xcrun simctl location booted set 32.0853,34.7818` (Xcode 27 has no Simulator app menu for this). The simulator sometimes stops sending positions after the app restarts; set it again if the blue dot or nearby stops go missing.
 3. **Buses don't run on Shabbat** (Friday evening to Saturday evening) or at night. Mark checks that need running buses **couldn't test (Shabbat)**.
 4. Start with the simulator and the app in English.
 
@@ -33,14 +33,17 @@ npx expo run:ios --configuration Release
 - The cable-car chip's icon is a seated figure (the old app's).
 - MapLibre's screen-reader labels follow the phone's language, not the app's.
 - On the stop screen the Directions button covers a row until you scroll to the end.
+- The routes screen's chip row scrolls sideways; a long time chip pushes Options under the fixed Refresh button.
+- The walk-only card's arrive time counts from now, even with a chosen time (the Kotlin app does the same).
+- Pick on map names the spot as the map data has it (often Hebrew), whatever the app's language.
 
 ## Checks
 
-Screenshot each check (`⌘S` in the Simulator) and name it after the check, e.g. `I3-route-detail.png`.
+Screenshot each check (`xcrun simctl io booted screenshot <name>.png`) and name it after the check, e.g. `I3-route-detail.png`.
 
 **I1. Build.** `prebuild`, `pod install` and the Xcode build all finish; the app opens without a red error screen. If anything fails, this is the most important finding: copy the **first** error lines in full (from Xcode's Report navigator, or the terminal), not just the last.
 
-**I2. First run.** The location prompt appears with Maslul's text; allow it. Home: the map draws with streets and labels, the OpenFreeMap/OSM credit shows, the blue dot is in Tel Aviv. Tabs switch; the bottom sheet drags up and down.
+**I2. First run.** The location prompt appears with Maslul's text; allow it. Home: the map draws with streets and labels, the OpenFreeMap/OSM credit (the ⓘ button) shows at the top left under the search card, the blue dot is in Tel Aviv. Tabs switch; the bottom sheet drags up and down.
 
 **I3. Planning.** Where to? → type `haifa center`: "Haifa Center HaShemona" is listed; pick it. Routes are listed with times and line chips; open one: the details, the route on the map, Share opens the iOS share sheet. Change the time (Leave now → a later time, then Arrive by) and the list updates. Pick on map: drag the map under the pin, the place name under it updates, and Choose sets it. Typing works with the keyboard up (fields aren't covered).
 
@@ -48,7 +51,7 @@ Screenshot each check (`⌘S` in the Simulator) and name it after the check, e.g
 
 **I5. Live buses** (weekday daytime only). On a stop screen some times turn green; on line 1 or 480 bus icons appear on the map within about 30 s and move. This is the iOS native code (it downloads and unpacks the live-bus feed), so if no bus ever appears while the buses run, say so even with no error on screen.
 
-**I6. Live trip.** Best on a real iPhone; on the simulator use Features → Location → Freeway Drive or City Run.
+**I6. Live trip.** Best on a real iPhone; on the simulator move the position with `xcrun simctl location booted start` (a list of waypoints) or repeated `set`.
 1. Open a route → Start. iOS asks for location (if not yet) and **notifications**: allow both.
 2. The guide follows the trip step by step; the blue location indicator shows in the status bar.
 3. Put the app in the background (home screen, or lock the phone) for a few minutes: "board soon" / "get off" alerts arrive as notifications, and on return the guide has moved on.
@@ -68,6 +71,14 @@ Screenshot each check (`⌘S` in the Simulator) and name it after the check, e.g
 3. *Last routes offline:* plan a trip, turn on Airplane Mode (on a real iPhone; the simulator uses the Mac's network), tap refresh: the same routes under "No new routes, showing the ones saved at HH:MM". Airplane Mode off → Try again: fresh routes, no banner.
 4. *Last bus:* time sheet → Depart at 23:30 on the next Sunday–Thursday: if the list reaches into tomorrow morning, one card is tagged "Last today".
 5. *Stops away* (weekday daytime): a stop screen with live times shows "N stops away"; during a trip the waiting step says "· N stops away".
+
+**I14. Fixes from the first iOS report** (build it fresh: the native module changed). Each at the place it failed:
+- I9 again: phone in Hebrew (`defaults write -g AppleLanguages -array he-IL en-IL`, reboot) with the app on System: Hebrew and right to left. Also with the phone back in English and the app on עברית: titles (Lines, Stations, the time sheet's "מתי?") sit on the right with their padding.
+- I9: phone in Hebrew, app on English: all text left-aligned, nothing right-aligned.
+- I10: with the app open on the Lines tab, change the text size (`xcrun simctl ui booted content_size extra-large`, then `extra-extra-extra-large`): Lines, Home and the trip banner redraw at the new size, with no "2.." badges or clipped times, and the app stays on the screen it was on.
+- I8: with the app in English *and* in עברית, `ויצמן 5 כ` lists a "…כפר סבא" result, in Hebrew, in the top three.
+- I4: stop sending positions (or deny location), open Stations: "Allow location access" shows only when access is off; otherwise "Tap Refresh to try again".
+- I8: the time sheet's Depart at / Arrive by control is whole, with its edges, in Hebrew.
 
 **I12. Fixes from the last look.** In the search fields (From/To) the typed text and the placeholder sit vertically centred, level with the dot and the ✕, in English and in Hebrew. The same in the line search, the time sheet's hour and minute, the favourite name and the shuttle fields. With the Home map full screen, the "Places" button sits on the same row as the two square buttons.
 

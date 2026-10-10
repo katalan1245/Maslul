@@ -474,6 +474,7 @@ export const ru: Strings = {
   map: { resetNorth: 'Повернуть карту на север' },
   address: { notOnMap: (num) => `Улица · дома № ${num} нет на карте` },
   common: {
+    tryRefresh: 'Нажмите «Обновить», чтобы попробовать снова.',
     start: 'Старт',
     line: (label) => `Линия ${label}`,
     retry: 'Повторить',

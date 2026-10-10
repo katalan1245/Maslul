@@ -454,6 +454,7 @@ export const en = {
   map: { resetNorth: 'Reset map to north' },
   address: { notOnMap: (num: string) => `Street · no. ${num} not on the map` },
   common: {
+    tryRefresh: 'Tap Refresh to try again.',
     start: 'Start',
     line: (label: string) => `Line ${label}`,
     retry: 'Retry',

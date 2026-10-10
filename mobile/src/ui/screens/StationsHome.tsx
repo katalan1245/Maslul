@@ -55,11 +55,15 @@ class StationsHomeModel extends Model {
     }, 350);
   };
 
+  noPermission = false;
+
   loadNearby = async () => {
     if (this.nearbyLoading) return;
     this.nearbyLoading = true;
     this.changed();
     const here = (await location.current().catch(() => null)) ?? location.last;
+    // Without a fix the permission may still be granted (the position just didn't come).
+    this.noPermission = here == null && !(await location.hasPermission().catch(() => false));
     const r = here ? await repo.nearbyStops(here).catch(() => null) : null;
     if (r) this.nearby = r.slice(0, 15);
     this.nearbyLoading = false;
@@ -97,7 +101,7 @@ export function StationsHomeScreen() {
     rows.push({ kind: 'header', key: 'hn', text: S.stations.nearby, refresh: true });
     if (model.nearby.length === 0) {
       if (model.nearbyLoading) rows.push({ kind: 'loading', key: 'loading' });
-      else rows.push({ kind: 'message', key: 'nonear', title: S.stations.noneNearby, body: S.stations.noneNearbyHint, icon: 'near-me' });
+      else rows.push({ kind: 'message', key: 'nonear', title: S.stations.noneNearby, body: model.noPermission ? S.stations.noneNearbyHint : S.common.tryRefresh, icon: 'near-me' });
     }
     model.nearby.forEach((p) => rows.push({ kind: 'station', key: `nb-${p.stopId}`, place: p }));
   }

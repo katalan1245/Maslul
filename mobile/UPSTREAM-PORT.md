@@ -44,7 +44,7 @@ Status: **Done**, **To do**, **Different** (deliberately not the same; the reaso
 | C6 | Notification channels, the trip notification and the guide speak the language | `Notifications.kt`, `LiveTripService.kt`, `TripGuide.kt` | Already from `S` (the Hebrew work) | Done |
 | C7 | Light rail is "трамвай" in Russian ("трамвай близко", "Ближайшие трамваи") | `StringsRu.kt` | `models.ts` `vehicleKind`: LIGHT_RAIL is its own kind; "train" in English and Hebrew, "трамвай" in Russian | Done |
 | C8 | Text: the rest of the app's strings moved to i18n | all screens | Done in the Hebrew work; Hebrew and Russian leak tests | Done |
-| C9 | Place names: Simple Maslul asks the geocoder in its language; the full app doesn't (English ranks matches worse) | `MaslulApp.kt` | The whole app asks in its language (`App.tsx` `repo.language`), as decided for Hebrew. Stop names come back in Hebrew either way | Different |
+| C9 | Place names: Simple Maslul asks the geocoder in its language; the full app doesn't (English ranks matches worse) | `MaslulApp.kt` | Place search sends no language anywhere, Simple Maslul included (round 5: English names broke matching a Hebrew town), and Photon gets `lang=default` against iOS's Accept-Language. `repo.language` names stops and trips | Different |
 | C10 | Map labels | — (upstream shows the map's default labels) | `darkStyle.ts`: the app's language, Russian falling back to the local name | Different |
 | C11 | iOS: location prompt and localisation list | — (Android only) | `locales/ru.json`, `CFBundleLocalizations` | Done |
 

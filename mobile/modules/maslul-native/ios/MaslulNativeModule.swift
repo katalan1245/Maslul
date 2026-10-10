@@ -11,6 +11,12 @@ public class MaslulNativeModule: Module {
   public func definition() -> ModuleDefinition {
     Name("MaslulNative")
 
+    // The phone's language as the app sees it (per-app language included). React Native's
+    // localeIdentifier missed Hebrew on a Hebrew iPhone.
+    Constant("preferredLanguage") { () -> String in
+      Locale.preferredLanguages.first ?? ""
+    }
+
     AsyncFunction("readLegacyStore") { () -> String? in
       nil
     }

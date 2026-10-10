@@ -82,11 +82,15 @@ class LinesHomeModel extends Model {
     );
   }
 
+  noPermission = false;
+
   loadNearby = async () => {
     if (this.nearbyLoading) return;
     this.nearbyLoading = true;
     this.changed();
     const here = (await location.current().catch(() => null)) ?? location.last;
+    // Without a fix the permission may still be granted (the position just didn't come).
+    this.noPermission = here == null && !(await location.hasPermission().catch(() => false));
     const stops = here ? await repo.nearbyStops(here).catch(() => null) : null;
     this.nearbyLoading = false;
     this.changed();
@@ -141,7 +145,7 @@ export function LinesHomeScreen() {
     rows.push({ kind: 'header', key: 'hn', text: S.lines.nearby, refresh: true });
     if (lines.length === 0) {
       if (model.nearbyLoading || model.linesLoading) rows.push({ kind: 'loading', key: 'loading' });
-      else rows.push({ kind: 'message', key: 'nonear', title: S.lines.noneNearby, body: S.lines.noneNearbyHint, icon: 'near-me' });
+      else rows.push({ kind: 'message', key: 'nonear', title: S.lines.noneNearby, body: model.noPermission ? S.lines.noneNearbyHint : S.common.tryRefresh, icon: 'near-me' });
     }
     lines.slice(0, 10).forEach((l) => rows.push({ kind: 'nearby', key: `nl-${l.departure.routeId}-${l.departure.headsign}`, line: l }));
   }
