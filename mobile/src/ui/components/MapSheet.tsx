@@ -1,4 +1,4 @@
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetHandle, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { type ReactNode, useRef, useState } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { type SharedValue, useSharedValue } from 'react-native-reanimated';
@@ -78,7 +78,9 @@ export function MapSheet({
         animatedPosition={position}
         onChange={setIndex}
         backgroundStyle={{ backgroundColor: t.c.surface }}
-        handleIndicatorStyle={{ backgroundColor: t.c.outline }}
+        // The library's default labels ("Bottom Sheet", "Bottom sheet handle") are English and say nothing useful.
+        accessibilityLabel={null}
+        handleComponent={(p) => <BottomSheetHandle {...p} indicatorStyle={{ backgroundColor: t.c.outline }} accessible={false} accessibilityLabel={null} />}
         style={styles.shadow}
       >
         {scroll ? <BottomSheetScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 8 }}>{children}</BottomSheetScrollView> : children}

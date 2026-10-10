@@ -217,16 +217,16 @@ export class TransitRepository {
 
   async searchPlaces(text: string, near: GeoPoint | null): Promise<Place[]> {
     const q = AddressSearch.parse(text);
-    const a = orDefault(this.transitous.geocode(q.text, near, this.language), [] as Place[]);
-    const b = orDefault(this.photon.search(q.text, near, this.language), [] as Place[]);
+    const a = orDefault(this.transitous.geocode(q.text, near), [] as Place[]);
+    const b = orDefault(this.photon.search(q.text, near), [] as Place[]);
     // With a house number, also look up the bare street in case the number isn't mapped.
-    const c = q.number != null ? orDefault(this.photon.search(q.rest, near, this.language), [] as Place[]) : null;
+    const c = q.number != null ? orDefault(this.photon.search(q.rest, near), [] as Place[]) : null;
     const merged = TransitRepository.mergePlaces(await a, await b);
     if (c == null) return merged;
     const candidates = [...merged, ...(await c)];
     const resolved = AddressSearch.resolve(q, candidates);
     if (resolved) return resolved.slice(0, 14);
-    const n = await orDefault(this.nominatim.search(q.text, this.language), [] as Place[]);
+    const n = await orDefault(this.nominatim.search(q.text), [] as Place[]);
     return (AddressSearch.resolve(q, [...n, ...candidates]) ?? merged).slice(0, 14);
   }
 
@@ -240,7 +240,7 @@ export class TransitRepository {
 
   /** Stops and stations matching [text], biased towards [near]. */
   async searchStops(text: string, near: GeoPoint | null): Promise<Place[]> {
-    return (await this.transitous.geocode(text, near, this.language, 'STOP')).filter((p) => p.kind === 'STOP' && p.stopId != null);
+    return (await this.transitous.geocode(text, near, null, 'STOP')).filter((p) => p.kind === 'STOP' && p.stopId != null);
   }
 
   // ---- Routing --------------------------------------------------------------------

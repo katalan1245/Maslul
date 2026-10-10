@@ -36,12 +36,10 @@ export function featureToPlace(f: PhotonFeature): Place | null {
 export class PhotonApi {
   constructor(private readonly base = 'https://photon.komoot.io') {}
 
-  async search(text: string, near: GeoPoint | null, language: string | null = null): Promise<Place[]> {
+  async search(text: string, near: GeoPoint | null): Promise<Place[]> {
     const url = buildUrl(this.base, 'api/', [
       ['q', text],
       ['limit', '8'],
-      // Photon has no Hebrew; its default is each place's local name, which in Israel is the Hebrew one.
-      ['lang', language === 'en' ? 'en' : null],
       // Israel + West Bank bounding box
       ['bbox', '34.2,29.4,35.95,33.4'],
       ['lat', near?.lat],

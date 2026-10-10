@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
-import { Alert, Platform, Pressable, Share, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, Share, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Combine } from '../../data/combine';
 import type { LiveApproach, LiveCall } from '../../data/eta';
@@ -34,11 +34,11 @@ import { location, useLastLocation } from '../../state/location';
 import { repo } from '../../state/services';
 import { store } from '../../state/store';
 import { Fmt, modeName, rideName } from '../fmt';
-import { Button, IconButton, LineBadge, Txt } from '../components/common';
+import { Button, IconButton, LineBadge, TextButton, Txt } from '../components/common';
 import { Icon, modeIcon } from '../components/icons';
 import { LiveLocationCard, LiveSignal, freshnessColor, useNow } from '../components/live';
 import { MapSheet } from '../components/MapSheet';
-import { showToast } from '../components/overlays';
+import { Dialog, showToast } from '../components/overlays';
 import { type RailSpec, TimelineRow } from '../components/timeline';
 import { type MapLine, type MapMarker, type MapVehicle, TransitMap, useMapController } from '../map/TransitMap';
 import { Model, useModel } from '../model';
@@ -52,6 +52,8 @@ class RouteDetailModel extends Model {
   readonly approach = new Map<number, LiveApproach>();
   /** Leg index whose live vehicle the map follows, after tapping its arrival. */
   following: number | null = null;
+  /** After a reminder was set without "Alarms & reminders": offer to allow it. */
+  askExactAlarm = false;
   /** The itinerary with the line picked on each combined leg (initially the best one). */
   itinerary: Itinerary;
   /** Rides found after each transfer leg's (by leg index), for the wait if it's missed; null while looking. */
@@ -199,11 +201,15 @@ class RouteDetailModel extends Model {
     showToast(ok ? S.detail.reminderSet(Fmt.when(at, nowSec()), minutes) : S.detail.reminderTooSoon);
     // Without "Alarms & reminders" Android may hold a reminder back by minutes, up to an hour.
     if (ok && MaslulNative?.canScheduleExactAlarms() === false) {
-      Alert.alert(S.detail.exactAlarmTitle, S.detail.exactAlarmBody, [
-        { text: S.detail.notNow, style: 'cancel' },
-        { text: S.detail.allow, onPress: () => MaslulNative?.openExactAlarmSettings() },
-      ]);
+      // The app's own dialog, not Alert: Android lays that out by the phone's language, not the app's.
+      this.askExactAlarm = true;
+      this.changed();
     }
+  }
+
+  closeExactAlarm() {
+    this.askExactAlarm = false;
+    this.changed();
   }
 
   share() {
@@ -287,6 +293,26 @@ export function RouteDetailScreen({ route }: NativeStackScreenProps<RootStack, '
           <View style={{ height: 24 }} />
         </View>
       </MapSheet>
+      <Dialog
+        visible={model.askExactAlarm}
+        title={S.detail.exactAlarmTitle}
+        onDismiss={() => model.closeExactAlarm()}
+        testID="exact_alarm_dialog"
+        actions={
+          <>
+            <TextButton text={S.detail.notNow} onPress={() => model.closeExactAlarm()} />
+            <TextButton
+              text={S.detail.allow}
+              onPress={() => {
+                model.closeExactAlarm();
+                MaslulNative?.openExactAlarmSettings();
+              }}
+            />
+          </>
+        }
+      >
+        <Txt v="bodyMedium">{S.detail.exactAlarmBody}</Txt>
+      </Dialog>
     </View>
   );
 }
@@ -428,7 +454,7 @@ function DetailHeader({ itin, active, onStart, onRemind, onShare }: { itin: Itin
   return (
     <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 8 }}>
       <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
-        <Txt v="headlineSmall" num>{S.fmt.range(Fmt.when(itin.start, nowSec()), Fmt.time(itin.end))}</Txt>
+        <Txt v="headlineSmall" num>{S.fmt.span(Fmt.when(itin.start, nowSec()), Fmt.time(itin.end))}</Txt>
         <Txt v="titleMedium" color={t.x.subtle} style={{ marginLeft: 10, marginBottom: 2 }}>
           {Fmt.duration(itin.end - itin.start)}
         </Txt>
@@ -440,7 +466,7 @@ function DetailHeader({ itin, active, onStart, onRemind, onShare }: { itin: Itin
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
         <Button text={active ? S.detail.end : S.detail.start} icon={active ? 'stop' : 'navigation'} onPress={onStart} testID="start_button" />
         <Button text={S.detail.remindMe} icon="alarm-add" kind="tonal" onPress={onRemind} testID="remind_button" />
-        <Button icon="share" kind="outlined" onPress={onShare} testID="share_button" />
+        <Button icon="share" kind="outlined" onPress={onShare} label={S.detail.shareTitle} testID="share_button" />
       </View>
     </View>
   );

@@ -311,7 +311,7 @@ function HomePlaces({ data, onEdit, onAddFavorite }: { data: UserData; onEdit: (
 function QuickPlace({ title, subtitle, icon, onPress, onEdit }: { title: string; subtitle: string; icon: IconName; onPress: () => void; onEdit: () => void }) {
   const t = useTheme();
   return (
-    <Pressable onPress={onPress} style={[styles.quick, { backgroundColor: t.c.surfaceVariant }]} accessibilityRole="button" testID={`quick_${title.toLowerCase()}`}>
+    <Pressable onPress={onPress} style={[styles.quick, { backgroundColor: t.c.surfaceVariant }]} accessibilityRole="button" testID={`quick_${icon}`}>
       <Icon name={icon} size={20} color={t.c.primary} />
       <View style={{ flex: 1, marginLeft: 8 }}>
         <Txt v="labelLarge" numberOfLines={1}>

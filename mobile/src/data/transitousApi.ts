@@ -247,7 +247,8 @@ export function legToDomain(d: LegDto): Leg {
     // A walk after a car drop-off can come back a few seconds "shorter than nothing".
     end: !isTransit(mode) && end < start ? start : end,
     distanceM: d.distance ?? (cum ? cum[cum.length - 1] : null),
-    headsign: d.headsign != null ? cleanHeadsign(d.headsign) : null,
+    // A train's headsign is only its number ("114"), which says nothing about where it goes.
+    headsign: d.headsign != null && !/^\d+$/.test(d.headsign.trim()) ? cleanHeadsign(d.headsign) : null,
     routeShortName: d.routeShortName ?? d.displayName ?? null,
     routeLongName: d.routeLongName ?? null,
     routeColor: parseColor(d.routeColor),

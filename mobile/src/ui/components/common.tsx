@@ -274,10 +274,13 @@ export function Button({
   testID,
   style,
   disabled,
+  label,
 }: {
   text?: string;
   onPress: () => void;
   icon?: IconName;
+  /** What a screen reader says, for a button with only an icon. */
+  label?: string;
   kind?: 'filled' | 'tonal' | 'outlined';
   testID?: string;
   style?: StyleProp<ViewStyle>;
@@ -291,7 +294,7 @@ export function Button({
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
-      accessibilityLabel={text ?? undefined}
+      accessibilityLabel={label ?? text}
       testID={testID}
       style={({ pressed }) => [
         s.button,
