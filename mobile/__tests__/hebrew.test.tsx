@@ -168,3 +168,12 @@ it('shows the starred stops on Home without English UI text', async () => {
   await screen.findByTestId('board_row');
   expect(leaks()).toEqual([]);
 });
+
+it('offers the stop reminder in Hebrew', async () => {
+  await launchHebrew(true);
+  await fireEvent.press(await screen.findByTestId('tab_stations'));
+  await fireEvent.press(await screen.findByText('Arlozorov/Ibn Gabirol'));
+  await fireEvent(await screen.findByTestId('board_row'), 'longPress');
+  await screen.findByText(he.stopBoard.remindLeave);
+  expect(leaks()).toEqual([]);
+});

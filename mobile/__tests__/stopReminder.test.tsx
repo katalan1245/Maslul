@@ -1,0 +1,54 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import * as Notifications from 'expo-notifications';
+import App from '../src/App';
+import { nowSec } from '../src/data/time';
+import { stopReminderAt } from '../src/ui/components/reminders';
+import { makeFakeRepo } from './support/fakeRepo';
+
+jest.mock('../src/state/services', () => ({ repo: require('./support/fakeRepo').makeFakeRepo() }));
+
+const fake = (require('../src/state/services') as { repo: ReturnType<typeof makeFakeRepo> }).repo;
+const schedule = Notifications.scheduleNotificationAsync as jest.Mock;
+
+it('reminds the walk to the stop and the reminder minutes before the bus', () => {
+  const stop = { lat: 32.0866, lon: 34.7818 };
+  const here = { lat: stop.lat + 1000 / 111_195, lon: stop.lon }; // 1 km north
+  // 1.3 km of streets at 1.3 m/s: 1000 s.
+  expect(stopReminderAt(10_000, stop, here, 1.3, 5)).toEqual({ leaveAt: 9_000, at: 8_700 });
+  // No location: leave when the bus does.
+  expect(stopReminderAt(10_000, stop, null, 1.3, 5)).toEqual({ leaveAt: 10_000, at: 9_700 });
+});
+
+async function longPressDeparture() {
+  await render(<App />);
+  await fireEvent.press(await screen.findByTestId('tab_stations'));
+  await fireEvent.press(await screen.findByText('Arlozorov/Ibn Gabirol'));
+  await fireEvent(await screen.findByTestId('board_row'), 'longPress');
+  await fireEvent.press(await screen.findByTestId('remind_leave'));
+}
+
+it('sets a reminder from a departure on the stop screen', async () => {
+  schedule.mockClear();
+  const board = fake.stopBoard;
+  // An hour away, so there's time for a reminder.
+  fake.stopBoard = async () => (await board()).map((e) => ({ ...e, departure: { ...e.departure, scheduled: e.departure.scheduled + 3300 } }));
+  try {
+    await longPressDeparture();
+    await waitFor(() => expect(schedule).toHaveBeenCalledTimes(1));
+    const { content, trigger } = schedule.mock.calls[0][0];
+    expect(content.title).toBe('Time to go to Arlozorov/Ibn Gabirol');
+    expect(content.body).toMatch(/^Leave at \d\d:\d\d · Bus 5 from Arlozorov\/Ibn Gabirol at \d\d:\d\d$/);
+    // Before the bus, and still ahead.
+    expect(trigger.date / 1000).toBeLessThan(nowSec() + 3600);
+    expect(trigger.date / 1000).toBeGreaterThan(nowSec());
+  } finally {
+    fake.stopBoard = board;
+  }
+});
+
+it("sets no reminder for a bus that's too soon", async () => {
+  schedule.mockClear();
+  await longPressDeparture();
+  await screen.findByText('That departure is too soon for a reminder');
+  expect(schedule).not.toHaveBeenCalled();
+});

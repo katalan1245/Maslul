@@ -1,4 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { S } from '../../i18n';
@@ -7,14 +8,18 @@ import { callFreshness, callRecordedAt } from '../../data/freshness';
 import { type Place, platformLabel, placePoint } from '../../data/models';
 import type { Instant } from '../../data/time';
 import type { BoardEntry } from '../../data/transitRepository';
-import { useLastLocation } from '../../state/location';
+import { WALK_SPEEDS } from '../../data/userStore';
+import { canNotify } from '../../live/notifications';
+import { location, useLastLocation } from '../../state/location';
 import { repo } from '../../state/services';
 import { store, useUserData } from '../../state/store';
-import { Fmt } from '../fmt';
+import { Fmt, modeName } from '../fmt';
 import { Hairline, IconButton, LineBadge, LoadingBox, MessageBox, ProgressBar, Txt } from '../components/common';
 import { FAVORITE_GOLD } from '../components/favorites';
 import { Icon } from '../components/icons';
 import { ArrivalTime, useNow } from '../components/live';
+import { Menu } from '../components/overlays';
+import { ExactAlarmDialog, setReminder, stopReminderAt } from '../components/reminders';
 import { TransitMap } from '../map/TransitMap';
 import { Model, useModel } from '../model';
 import { CURRENT_LOCATION, type RootStack, nav } from '../nav';
@@ -52,6 +57,28 @@ class StopModel extends Model {
     this.changed();
   };
 
+  /** After a reminder was set without "Alarms & reminders": offer to allow it. */
+  askExactAlarm = false;
+
+  /** A reminder to leave for [e], the walk here from the last location included. */
+  async remind(e: BoardEntry) {
+    await canNotify(true);
+    const settings = store.value.settings;
+    const departs = entryTime(e);
+    const { leaveAt, at } = stopReminderAt(departs, placePoint(this.place), location.last, WALK_SPEEDS[settings.walkSpeed].mps, settings.reminderMinutes);
+    const d = e.departure;
+    const text = S.detail.reminder(Fmt.time(leaveAt), `${modeName(d.mode)} ${d.lineLabel}`, this.place.name, Fmt.time(departs));
+    if (await setReminder(at, S.detail.reminderTitle(this.place.name), text)) {
+      this.askExactAlarm = true;
+      this.changed();
+    }
+  }
+
+  closeExactAlarm = () => {
+    this.askExactAlarm = false;
+    this.changed();
+  };
+
   /** Opens the trip; with [focusVehicle] its map zooms to the live vehicle and follows it. */
   open = (e: BoardEntry, focusVehicle = false) => nav.push('Trip', { tripId: e.departure.tripId, boardStopId: this.place.stopId, focusVehicle });
 }
@@ -84,6 +111,7 @@ export function StopScreen({ route }: NativeStackScreenProps<RootStack, 'Stop'>)
   const now = useNow(10_000);
   const place = model.place;
   const fav = data.favoriteStops.some((s) => s.stopId === place.stopId);
+  const [menuFor, setMenuFor] = useState<BoardEntry | null>(null);
   const groups = boardGroups(model.entries);
 
   return (
@@ -129,7 +157,13 @@ export function StopScreen({ route }: NativeStackScreenProps<RootStack, 'Stop'>)
           keyExtractor={(g) => g.key}
           renderItem={({ item }) => (
             <>
-              <BoardRow group={item} now={now} onTimePress={() => model.open(item.entries[0], true)} onPress={() => model.open(item.entries[0])} />
+              <BoardRow
+                group={item}
+                now={now}
+                onTimePress={() => model.open(item.entries[0], true)}
+                onPress={() => model.open(item.entries[0])}
+                onLongPress={() => setMenuFor(item.entries[0])}
+              />
               <Hairline start={20} />
             </>
           )}
@@ -148,11 +182,29 @@ export function StopScreen({ route }: NativeStackScreenProps<RootStack, 'Stop'>)
           {S.stopBoard.directions}
         </Txt>
       </Pressable>
+      <Menu
+        visible={menuFor != null}
+        onDismiss={() => setMenuFor(null)}
+        items={[{ text: S.stopBoard.remindLeave, icon: 'alarm-add', onPress: () => menuFor && void model.remind(menuFor), testID: 'remind_leave' }]}
+      />
+      <ExactAlarmDialog visible={model.askExactAlarm} onClose={model.closeExactAlarm} />
     </View>
   );
 }
 
-export function BoardRow({ group, now, onTimePress, onPress }: { group: BoardGroup; now: Instant; onTimePress: () => void; onPress: () => void }) {
+export function BoardRow({
+  group,
+  now,
+  onTimePress,
+  onPress,
+  onLongPress,
+}: {
+  group: BoardGroup;
+  now: Instant;
+  onTimePress: () => void;
+  onPress: () => void;
+  onLongPress?: () => void;
+}) {
   const t = useTheme();
   const first = group.entries[0];
   const d = first.departure;
@@ -171,7 +223,14 @@ export function BoardRow({ group, now, onTimePress, onPress }: { group: BoardGro
   } else if (live?.status === 'UNTRACKED') sub = S.stopBoard.noLiveData;
   else sub = time - now < 3600 ? Fmt.time(time) : S.stopBoard.scheduled;
   return (
-    <Pressable onPress={onPress} style={styles.row} accessibilityRole="button" testID="board_row">
+    <Pressable
+      onPress={onPress}
+      onLongPress={onLongPress}
+      accessibilityHint={onLongPress ? S.stopBoard.remindHint : undefined}
+      style={styles.row}
+      accessibilityRole="button"
+      testID="board_row"
+    >
       <View style={{ minWidth: 64 }}>
         <LineBadge label={d.lineLabel} mode={d.mode} color={lineColorOf(d.mode, d.routeColor, d.agencyId, d.agency)} />
       </View>

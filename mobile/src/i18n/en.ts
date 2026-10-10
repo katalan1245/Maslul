@@ -262,6 +262,8 @@ export const en = {
     searchHint: 'Stop or station name',
   },
   stopBoard: {
+    remindLeave: 'Remind me to leave',
+    remindHint: 'Long-press for a reminder to leave',
     unknown: 'Unknown stop',
     loadFailed: "Couldn't load departures",
     favorite: 'Favorite stop',
