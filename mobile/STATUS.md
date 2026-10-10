@@ -27,11 +27,20 @@ Branch `rewrite/react-native` (the owner pushes it to their fork). Development i
 | What | How |
 |---|---|
 | Every string has a Hebrew version | `he.ts` is typed against `en.ts`: `tsc` clean |
-| No English left on the main screens in Hebrew: Home, Settings, search, routes, Options, route details, Lines, a line and its timetable, Stations | `__tests__/hebrew.test.tsx`; 25 suites, 179 tests pass |
+| No English left on the main screens in Hebrew: Home, Settings, search, routes, Options, route details, Lines, a line and its timetable, Stations | `__tests__/hebrew.test.tsx`; 27 suites, 188 tests pass |
 | First launch in Hebrew turns on right-to-left and reloads once | Same test, with the reload mocked |
 | Plurals, gender and day names | Unit checks in the same test |
 
-Not verified: anything on a device. That covers the right-to-left layout itself (the test renderer can't flip it), the alignment of mixed Hebrew and numbers, the reload on a release build, the Hebrew "End trip" action (native change, needs a rebuild), and iOS. The device checks are round 5 in `TESTING.md` (H1–H9). The owner approved the Hebrew wording, with one change: Saturday reads יום שבת.
+On the emulator (round 5, build 851a0b3): switching to Hebrew and back takes one reload; every screen, the map labels, a whole trip and its notification, the reminder toast and Share are Hebrew; right to left holds on every screen. The owner approved the Hebrew wording, with one change: Saturday reads יום שבת.
+
+Fixed after round 5 and not yet re-tested (round 6 in `TESTING.md`):
+- Place search in English: it asked the geocoders for English names, so a Hebrew town after the street stopped matching and names changed (2 Maestro flows failed). Search now sends no language, as in round 4.
+- Language = System ignored a Hebrew phone: Android's "he_IL" didn't match the check.
+- The exact-alarm dialog wasn't mirrored (Android's own dialog follows the phone): it's the app's dialog now.
+- The live-directions notification channel was "Maslul" with an English description.
+- The details header wrapped onto two lines in Hebrew; a train leg showed its number as its destination ("to 114"); Share had no screen-reader label; the bottom sheet's labels were English.
+
+Not changed: the walking figure (mirrored in Hebrew; the tester read it as facing right), the cable-car icon (the Kotlin app's), MapLibre's own screen-reader labels (they follow the phone's language). Not verified: iOS.
 
 ## Verified on the Android emulator
 
@@ -49,11 +58,13 @@ A separate Claude session with mobile-mcp and adb ran `TESTING.md` on a Pixel 9 
 
 - **Round 4** (10 Oct, Shabbat, build 95c7ed3, 4 GB RAM): 25 pass, 3 fail, 1 couldn't test (live buses, Shabbat). Every round-3 fix passed: the trip guide on a simulated ride (stop countdown, "Get off now" at the stop with its alert, the walk after it, waiting at the boarding stop), the exact-alarm prompt with both answers and the exact alarm afterwards, line search on a weekend, ride within 15 min by hand, the day in the route header and in Share. Maestro 10 of 11.
 
-Fixed after round 4 and not yet re-tested:
+Fixed after round 4 (passed in round 5 except where said):
 - Ending a trip and starting another in the same session guided from where the last one ended, until the app was force-stopped. The "Get off now" alert stayed in the shade after End trip.
 - ride_within failed in Maestro: "Fetch request has been canceled" 32 s into the search. The screen's lookups behind the shown routes (other lines on each hop, the ride after a tight transfer) all went to Transitous at once, and Transitous answers a client one request at a time. Here a ride search took 3 s alone and 18 s behind 16 others. With cold caches after clearState the queue passed the 30 s timeout. They now go two at a time, and are dropped once a newer search starts. A timeout now reads "took too long", not "Couldn't show the routes found".
 - Share and the reminder said "Train Train" for a train (no line number).
 - Not changed: the Options chip cut off at the edge when the time chip shows a day. The chip row scrolls sideways (Refresh stays fixed), and the cut-off chip is the sign of it.
+
+- **Round 5** (10 Oct, Shabbat, build 851a0b3): 10 pass, 3 fail, 1 couldn't test. All four round-4 fixes passed: a trip started again three times in a row, no alert left after End, "Train from …", the chip row. The Hebrew results are above. ride_within stopped at the place search (finding above), so the ride-search timeout fix is still unchecked.
 
 ## Not verified yet
 
