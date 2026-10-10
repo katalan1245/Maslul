@@ -1,5 +1,5 @@
 import { Http, buildUrl } from './http';
-import { type Line, type LineRoute, type LineStop, type Ride, type TransitMode, modeFromGtfsRouteType } from './models';
+import { type GeoPoint, type Line, type LineRoute, type LineStop, type Ride, type TransitMode, modeFromGtfsRouteType } from './models';
 import { type LocalDate, isoUtc, startOfDay } from './time';
 import { instant } from './transitousApi';
 import { distinctBy, groupBy, sortedBy } from './util';
@@ -146,6 +146,15 @@ export class StrideApi {
       if (t != null) params.push(['route_type', t]);
     }
     return (await Http.getJson<RouteDto[]>(buildUrl(this.base, 'gtfs_routes/list', params))).map(routeToDomain);
+  }
+
+  /** Where the stop with this code (the number on its sign) is, from the newest feed. */
+  async stopByCode(code: string): Promise<GeoPoint | null> {
+    const rows = await Http.getJson<{ lat?: number; lon?: number }[]>(
+      buildUrl(this.base, 'gtfs_stops/list', [['code', code], ['limit', '1'], ['order_by', 'date desc']]),
+    );
+    const r = rows[0];
+    return r?.lat != null && r.lon != null ? { lat: r.lat, lon: r.lon } : null;
   }
 
   /** The newest day Stride has a feed for: over a weekend it can be days behind (Thursday's on Saturday). */

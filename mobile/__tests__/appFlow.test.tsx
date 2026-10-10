@@ -388,3 +388,16 @@ it('keeps the steps on the bus the live guide was started with (T2)', async () =
     fake.legLive = legLive;
   }
 });
+
+it('puts your favourite first when it matches what you type, by its name or yours for it (#9)', async () => {
+  await start();
+  await act(async () => store.saveFavorite({ name: 'Herzl 10, Holon', lat: 32.01, lon: 34.77, kind: 'ADDRESS' }, "Grandma's", 'HEART'));
+  await fireEvent.press(screen.getByText('Where to?'));
+  await fireEvent.changeText(screen.getByTestId('field_to'), 'grand');
+  await screen.findByText("Grandma's");
+  // Not a search result, but it's yours: no "no results".
+  expect(screen.queryByText(S.search.noResults)).toBeNull();
+  await fireEvent.changeText(screen.getByTestId('field_to'), 'dizengoff');
+  await screen.findByText('Dizengoff Center', { exact: false });
+  expect(screen.queryByText("Grandma's")).toBeNull();
+});

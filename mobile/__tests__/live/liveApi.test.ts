@@ -177,3 +177,14 @@ test("a late bus whose slot is long gone still gets a live lookup", async () => 
   expect(await r.worthLive(ride(v.journeyRef!), now)).toBe(true);
   expect(await r.worthLive(ride('1', '999999999'), now)).toBe(false);
 });
+
+test('finds a stop by the code on its sign, and nearby namesakes before far ones', async () => {
+  const byCode = await repo.searchStops('20314', { lat: 32.0741, lon: 34.7922 });
+  expect(byCode[0]?.stopId).toBe('il-Israel-MOT_42858');
+  expect((await repo.searchPlaces('20314', null))[0]?.stopId).toBe('il-Israel-MOT_42858');
+  const herzl = await repo.searchStops('הרצל', { lat: 32.08, lon: 34.78 });
+  console.log(herzl.slice(0, 5).map((p) => `${p.name} · ${p.subtitle ?? ''}`));
+  expect(herzl.length).toBeGreaterThan(0);
+  const { GeoMath } = require('../../src/data/geo') as typeof import('../../src/data/geo');
+  expect(GeoMath.distance({ lat: 32.08, lon: 34.78 }, herzl[0])).toBeLessThan(25_000);
+});

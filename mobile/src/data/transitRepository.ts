@@ -98,6 +98,8 @@ export interface NearbyLine {
   next: Instant[];
 }
 
+/** Stops and streets further than this are another town's namesakes (see nearFirst). */
+const FAR_M = 25_000;
 /** Requests at once when trying several starting points (see onward). */
 const FAN_OUT = 2;
 const ONWARD_TIMEOUT_MS = 15_000;
@@ -217,11 +219,12 @@ export class TransitRepository {
 
   async searchPlaces(text: string, near: GeoPoint | null): Promise<Place[]> {
     const q = AddressSearch.parse(text);
+    const code = orDefault(this.stopByCode(text), [] as Place[]);
     const a = orDefault(this.transitous.geocode(q.text, near), [] as Place[]);
     const b = orDefault(this.photon.search(q.text, near), [] as Place[]);
     // With a house number, also look up the bare street in case the number isn't mapped.
     const c = q.number != null ? orDefault(this.photon.search(q.rest, near), [] as Place[]) : null;
-    const merged = TransitRepository.mergePlaces(await a, await b);
+    const merged = [...(await code), ...TransitRepository.nearFirst(TransitRepository.mergePlaces(await a, await b), near)];
     if (c == null) return merged;
     const candidates = [...merged, ...(await c)];
     const resolved = AddressSearch.resolve(q, candidates);
@@ -240,7 +243,22 @@ export class TransitRepository {
 
   /** Stops and stations matching [text], biased towards [near]. */
   async searchStops(text: string, near: GeoPoint | null): Promise<Place[]> {
-    return (await this.transitous.geocode(text, near, null, 'STOP')).filter((p) => p.kind === 'STOP' && p.stopId != null);
+    const code = orDefault(this.stopByCode(text), [] as Place[]);
+    const found = (await this.transitous.geocode(text, near, null, 'STOP')).filter((p) => p.kind === 'STOP' && p.stopId != null);
+    return [...(await code), ...TransitRepository.nearFirst(found, near)];
+  }
+
+  /**
+   * The stop whose sign shows [text] (3–5 digits), which the geocoders don't know: Open Bus has
+   * where it is, and Transitous's stop there (named with that code, see nearbyStops) its id.
+   */
+  private async stopByCode(text: string): Promise<Place[]> {
+    const code = text.trim();
+    if (!/^\d{3,5}$/.test(code)) return [];
+    const at = await this.stride.stopByCode(code);
+    if (at == null) return [];
+    const stops = await this.transitous.nearbyStops(at, 0.0005);
+    return stops.filter((s) => s.subtitle?.startsWith(`#${code}`)).slice(0, 1);
   }
 
   // ---- Routing --------------------------------------------------------------------
@@ -1075,6 +1093,16 @@ export class TransitRepository {
   }
 
   /** Interleaves two ranked result lists, dropping near-duplicates. */
+  /**
+   * Stops and streets over [FAR_M] away after the rest: a common name (Herzl) is a stop or street
+   * in every town, and the one nearby is the likely one. Places (a city, a mall) keep their order.
+   */
+  static nearFirst(list: Place[], near: GeoPoint | null): Place[] {
+    if (near == null) return list;
+    const far = (p: Place) => (p.kind === 'STOP' || p.kind === 'ADDRESS') && GeoMath.distance(near, placePoint(p)) > FAR_M;
+    return [...list.filter((p) => !far(p)), ...list.filter(far)];
+  }
+
   static mergePlaces(primary: Place[], secondary: Place[]): Place[] {
     const out: Place[] = [];
     const maxLen = Math.max(primary.length, secondary.length);

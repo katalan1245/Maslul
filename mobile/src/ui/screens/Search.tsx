@@ -131,11 +131,21 @@ export function SearchScreen({ route }: NativeStackScreenProps<RootStack, 'Searc
 
   const rows: Row[] = [];
   if (query.length >= 2) {
-    if (failed) rows.push({ kind: 'message', key: 'failed', title: S.search.failed, body: S.search.failedHint });
-    else if (!loading && results.length === 0) {
-      rows.push({ kind: 'message', key: 'none', title: S.search.noResults, body: S.search.noResultsHint, icon: 'place' });
+    // Your own places that match go first: a favourite (by its name or yours for it), then recents.
+    const typed = query.toLowerCase();
+    const has = (s: string | undefined) => s != null && s.toLowerCase().includes(typed);
+    const shown = new Set<string>();
+    for (const f of data.favoritePlaces.filter((f) => has(f.label) || has(f.place.name)).slice(0, 3)) {
+      shown.add(placeKey(f.place));
+      rows.push({ kind: 'favorite', key: `kf${placeKey(f.place)}`, place: f.place, label: f.label, icon: f.icon });
     }
-    results.forEach((p) => rows.push({ kind: 'place', key: `r${placeKey(p)}${p.kind}`, place: p, star: !single }));
+    for (const p of data.recents.filter((p) => has(p.name) && !shown.has(placeKey(p))).slice(0, 2)) {
+      shown.add(placeKey(p));
+      rows.push({ kind: 'place', key: `kr${placeKey(p)}`, place: p, icon: 'history', star: !single });
+    }
+    results.filter((p) => !shown.has(placeKey(p))).forEach((p) => rows.push({ kind: 'place', key: `r${placeKey(p)}${p.kind}`, place: p, star: !single }));
+    if (failed) rows.unshift({ kind: 'message', key: 'failed', title: S.search.failed, body: S.search.failedHint });
+    else if (!loading && rows.length === 0) rows.push({ kind: 'message', key: 'none', title: S.search.noResults, body: S.search.noResultsHint, icon: 'place' });
   } else {
     if (!single) {
       rows.push({ kind: 'action', key: 'here', title: S.common.currentLocation, icon: 'my-location', tint: true, onPress: () => pick(CURRENT_LOCATION) });
