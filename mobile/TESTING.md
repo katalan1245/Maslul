@@ -21,9 +21,9 @@ Both APKs are signed with the same key, so the new one installs over the old one
 ## Rules
 
 - Don't modify, rebuild or re-sign the APKs, and don't push anything anywhere.
-- Take a screenshot at every check, named after the check (e.g. `R1-home-work.png`), and keep it in `evidence/`.
+- Take a screenshot at every check, named after the check (e.g. `H3-route-card.png`), and keep it in `evidence/`.
 - A failure is a finding: record it and go on. Don't stop at the first failure.
-- A missing file or tool only blocks the checks that need it. Only R6 needs `maestro/`; this round no check needs `maslul-kotlin-v4.apk`. Mark those **couldn't test** and do every other check. Never end the run because one thing is missing.
+- A missing file or tool only blocks the checks that need it. Only H9 needs `maestro/`; this round no check needs `maslul-kotlin-v4.apk`. Mark those **couldn't test** and do every other check. Never end the run because one thing is missing.
 - If a check is impossible, mark it **couldn't test** with the exact reason. Never skip silently.
 - Keep what you **saw** separate from what you **guess** about the cause.
 - The emulator was unstable last round: the launcher restarted, Play services crashed, and Android soft-restarted. If something odd happens right after one of those, repeat the check once before you report it, and say in the report whether it happened again.
@@ -61,41 +61,57 @@ Use `adb` from a shell if you have one. If a command isn't available to you, mar
 
 ## Already passed: no need to repeat
 
-- Everything that passed in rounds 1–3: the upgrade from the old app, tabs, Back, settings, planning, line 480 (on a weekday), the trip notification and "End trip", trips with the screen locked and after Recents, arrival sticking, Share, shuttles (Sun–Fri label, edit after a cold start, delete dialog), About credits, dark theme and dark map labels, the map attribution on Home, times far away carrying their day, the exact reminder once allowed, shuttle reminder text, the map after switching tabs (4 GB), and Hebrew text.
+- Everything that passed in rounds 1–4: the upgrade from the old app, tabs, Back, settings, planning, line 480, the trip notification and "End trip", trips with the screen locked and after Recents, arrival sticking, Share, shuttles, About credits, dark theme and dark map labels, the map attribution on Home, times far away carrying their day, the exact-alarm prompt and exact reminders, shuttle reminder text, the map after switching tabs (4 GB), line search on a weekend, ride within 15 min by hand, and the trip guide on a simulated ride (stop countdown, "Get off now", the walk after it, waiting at the boarding stop).
 
 ## What to test now, in this order
 
-Round 4 re-tests what was fixed after round 3. This build has **native changes**, so install it fresh over the old one: `adb install -r maslul-latest.apk`. Use 4 GB RAM again. If it's Shabbat or night, mark the checks that need running buses **couldn't test (Shabbat)**; a simulated ride by `geo fix`, as you did in R1 last time, works at any hour.
+Round 5 has two parts: re-tests of what was fixed after round 4 (A1–A5, app in English), then the new **Hebrew** language (H1–H9). This build has **native changes**, so install it fresh over the old one: `adb install -r maslul-latest.apk`. Use 4 GB RAM again. Screenshot every check; a layout finding needs its screenshot. If it's Shabbat or night, mark the checks that need running buses **couldn't test (Shabbat)**; a simulated ride by `geo fix` works at any hour.
 
-**R1. Trip guide on the bus** (was finding 1 and the stop-count lag). Same trip as last round: plan to "Dizengoff Center", take the line 24 route (or any bus route), Start, and step through the same `geo fix` points along the route (your `R1-R6-observed-text.txt` list works).
-1. At the stop one before the last (Kaplan on line 24): "Get off at the next stop".
-2. At the last stop: **"Get off now"**, with its alert.
-3. 150 m off to the side, away from the walking path: within one or two fixes, "Walk to Dizengoff Center · N m to go".
-4. Also: stay at the last stop for over a minute: it moves on to the walk by itself.
-5. Waiting at the boarding stop before the bus is due shows "Walk to <stop>" with "Bus N in M min" (or "at <time>"), not the bus step.
-Write down each fix and what the app and notification showed, as last time.
+**A1. Starting a trip again** (was finding 1). Do R1 of round 4 once up to "Get off now" (your `R1-observed-text.txt` fixes work). Tap End trip, put the location back at the start (`adb emu geo fix 34.7818 32.0853`) and Start the same route again **without** force-stopping the app. The first step is "Walk to <stop>", and on the bus it counts "4 stops", "3 stops", … as in a first run. Repeat End → Start once more.
 
-**R2. Reminders without the exact-alarm grant** (was finding 2). Reset it first: `adb shell appops set com.maslul.app SCHEDULE_EXACT_ALARM default`.
-1. Set a reminder ("Remind me" on a route or a shuttle a few minutes out). After the "Reminder set" toast, a dialog asks "Get reminders on time?".
-2. "Not now" closes it; the reminder is still set (`dumpsys alarm`: windowed, as before).
-3. Set another and tap "Allow": Android's "Alarms & reminders" page for Maslul opens. Switch it on and go back. `appops get` says allow, and `dumpsys alarm` shows the new reminder (set again after allowing) exact, `window=0`.
-4. With it allowed, setting a reminder shows no dialog.
+**A2. The alert after End trip** (was finding 3). In A1, after "Get off now" fired its alert, tap End trip: the "Get off now" alert is gone from the shade (`adb shell dumpsys notification --noredact | grep -A2 com.maslul.app`).
 
-**R3. Line search over a weekend** (was finding 4). Lines tab, search 480 and 1: lines are listed, even on Saturday when Stride has no feed for today or yesterday; opening 480 shows its stops. Search "zzzz": "No lines found" with a search icon, not the crossed-out cloud.
+**A3. Share for a train** (was finding 4). Share a route with a train leg (as R5.2): the train line reads "• Train from …", not "Train Train". Also set a reminder on a route that starts with a train: its text says "Train from …".
 
-**R4. Ride within 15 min** (was finding 3). As the ride_within flow: Settings → Advanced → rides on; to "Haifa Center HaShemona"; ride chip → 15 min → within.
-- If routes say "Get dropped off …": pass.
-- If not, the message now names the cause. Quote it exactly, and save `adb logcat -d -t 3000 ReactNativeJS:V '*:S'` right after: the app logs "Route search failed" with the error.
+**A4. The chip row** (was finding 5). On the routes screen with "Depart … · Tomorrow", swipe the chip row left: the Options chip comes fully into view and opens Options. The row scrolls sideways by design; report only if Options can't be reached.
 
-**R5. Route details on another day** (was finding 6). Late in the evening or on Shabbat, open a route whose bus is tomorrow: the header says "Sun 00:49 → 01:04". Share it: the first line has the day too.
+**A5. Live buses**, only outside Shabbat and night (not seen in any round yet): on a stop screen some times turn green, and on line 1 or 480 bus icons appear on the map within about 30 s and move.
 
-**R6. Automated flows (Maestro).** As last round: stop mobile-mcp's agent (`adb shell pkill -f com.mobilenext`), put the location back in Tel Aviv (`adb emu geo fix 34.7818 32.0853`) **before** the run (last round two flows failed only because R1 left it at Dizengoff Center), then `maestro --device emulator-5554 test maestro/ --format junit --output maestro-report.xml`. All 11 should pass; search_line and ride_within were the two app failures (R3, R4).
+Now the Hebrew part. Report what looks wrong without guessing at the Hebrew: the wording was reviewed separately.
 
-**R7. Live buses**, only outside Shabbat and night (not seen in any round yet): on a stop screen some times turn green, and on line 1 or 480 bus icons appear on the map within about 30 s and move.
+**H1. Switching to Hebrew.** Emulator in English. Settings → Language (שפה) → עברית.
+- The app reloads by itself within a few seconds and opens in Hebrew. Say if it didn't reload, or reloaded more than once.
+- The layout is right to left: the tab bar reads ניווט · קווים · תחנות from the right, the back arrow points right, list rows start at the right.
+- Kill the app and reopen: still Hebrew, no extra reload.
+
+**H2. Every screen in Hebrew.** Walk through: Home (לאן?), search, a route list and Options (אפשרויות), a route's details, a line and its timetable (לוח זמנים), Stations and a stop, Settings, My shuttles and a new shuttle, About. Record any English UI text you see. Stop, line and place names are data and may be in either language.
+
+**H3. Right-to-left layout.** On the same screens, look for:
+- text that overlaps, is cut off, or sits on the wrong side;
+- times and line numbers inside Hebrew sentences out of order (e.g. a route card's "14:05 – 14:40" must read 14:05 first, from the right);
+- icons that point the wrong way (arrows, chevrons, the walking figure should face left);
+- the loading bar under the search field sweeping from right to left;
+- the chip row on the routes screen starting at the right and scrolling;
+- the map: the compass and buttons stay clear of each other, the (i) attribution is reachable.
+
+**H4. Map labels.** Navigate tab, zoom into Tel Aviv: street and place names in Hebrew. Dark theme too.
+
+**H5. A trip in Hebrew.** Plan to "דיזנגוף סנטר" and start it.
+- The notification's text is Hebrew, and its action is "סיום הנסיעה"; tapping it ends the trip.
+- Move the location along the route (as in A1): the steps and alerts are in Hebrew, ending with "הגעתם".
+- `adb shell dumpsys notification | grep -i -A2 com.maslul.app`: what the channel names say.
+
+**H6. Reminder in Hebrew.** Set a reminder: the toast, the exact-alarm dialog (reset it first with `adb shell appops set com.maslul.app SCHEDULE_EXACT_ALARM default`) and the notification are in Hebrew. Share a route: the text is Hebrew.
+
+**H7. Back to English.** Settings → שפה → English: one reload, the layout is left to right again, every screen English. Then Settings → Language → System: stays English (the emulator is English).
+
+**H8. Phone in Hebrew.** Set the emulator's language to Hebrew (Settings → System → Languages), keep the app on System, reopen it: Hebrew and right to left after one reload. Set the emulator back to English afterwards.
+
+**H9. Automated flows (Maestro)**, with the app and the emulator in English (after H7 and H8). Stop mobile-mcp's agent (`adb shell pkill -f com.mobilenext`), put the location back in Tel Aviv (`adb emu geo fix 34.7818 32.0853`), then `maestro --device emulator-5554 test maestro/ --format junit --output maestro-report.xml`. All 11 should pass; ride_within was the one failure in round 4 (finding 2: the ride search queued behind the screen's other lookups and timed out). If it fails again, quote the message and save `adb logcat -d -t 3000 ReactNativeJS:V '*:S'`. The flows match English text, so they aren't run in Hebrew.
 
 ## Report
 
-Earlier rounds' reports and evidence are kept as `report-round2.md`, `report-round3.md` and `evidence-round2/`, `evidence-round3/` (with their `maestro-report-*.xml`). Write this round's results into the empty `report.md`, with screenshots in `evidence/`. End your session with the Summary as your final message.
+Earlier rounds' reports and evidence are kept as `report-round2.md` … `report-round4.md` and `evidence-round2/` … `evidence-round4/` (with their `maestro-report-*.xml`). Write this round's results into the empty `report.md`, with screenshots in `evidence/`. End your session with the Summary as your final message.
 
 ```
 # Maslul test report
@@ -118,6 +134,6 @@ emulator: <image, API level>   time zone: <...>   tested at: <date, Israel time>
 ## All checks
 | check | result | note |
 |---|---|---|
-| R1.3 off the path after the last stop | pass | |
+| A1 starting a trip again | pass | |
 ...
 ```

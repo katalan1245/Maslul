@@ -31,7 +31,7 @@ Branch `rewrite/react-native` (the owner pushes it to their fork). Development i
 | First launch in Hebrew turns on right-to-left and reloads once | Same test, with the reload mocked |
 | Plurals, gender and day names | Unit checks in the same test |
 
-Not verified: anything on a device. That covers the right-to-left layout itself (the test renderer can't flip it), the alignment of mixed Hebrew and numbers, the reload on a release build, the Hebrew "End trip" action (native change, needs a rebuild), and iOS. The device checks are in `TESTING-hebrew.md`. The Hebrew wording is waiting for the owner's review.
+Not verified: anything on a device. That covers the right-to-left layout itself (the test renderer can't flip it), the alignment of mixed Hebrew and numbers, the reload on a release build, the Hebrew "End trip" action (native change, needs a rebuild), and iOS. The device checks are round 5 in `TESTING.md` (H1–H9). The owner approved the Hebrew wording, with one change: Saturday reads יום שבת.
 
 ## Verified on the Android emulator
 
