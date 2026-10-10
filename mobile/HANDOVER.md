@@ -22,13 +22,10 @@ Read this first. A fresh session should be able to start from this file alone. T
 
 | Branch | Local | Fork (`origin`) | What |
 |---|---|---|---|
-| `rewrite/react-native` | `f290b03` | `b4b5ca0` | The rewrite, Hebrew, iOS prep, and the five "daily rider" features. 220 tests |
+| `rewrite/react-native` | see `git log` | pushed | The rewrite, Hebrew, iOS prep, and the five "daily rider" features. 220 tests |
 | `master` | the fork's copy of the original | same | Behind upstream by 1.1.1 and 1.2.0 |
 
-- **Not pushed yet:**
-  - `6d8ff22`: TESTING.md and TESTING-ios.md as one full pass.
-  - `f290b03`: FEATURES.md.
-  - Push only when the user says yes. The Mac clones the fork, so it needs this push to get the newest `TESTING-ios.md`.
+- Everything is pushed to the fork. Push again only when the user says yes. The Mac clones the fork.
 - **Remotes:**
   - `origin` is the user's fork, `katalan1245/Maslul`.
   - `upstream` is `Tom-stack3/Maslul`. **Never push there.**
@@ -80,6 +77,7 @@ Beyond the plain rewrite and Hebrew (see `FEATURES.md` for the user-facing list)
   - Both design fixes are in `2962923`.
 
 **The user should review these Hebrew strings:**
+- `home.recentHint`: "חפשו מקום, או לחצו לחיצה ארוכה על המפה כדי לקבל הוראות הגעה לשם." (it was hardcoded English before);
 - the two offline-routes strings: `routes.savedShown` and `routes.savedAllLeft`;
 - "אחרון להיום";
 - "האחרון להיום יוצא ב-… מהתחנה …";
@@ -90,8 +88,7 @@ They should also check the wording of `FEATURES.md`.
 
 ## Known open items
 
-- **Hardcoded English on Home:** the empty Recent hint ("Search for a place, or long-press the map to get directions there.") is written directly in `NavHome.tsx`, so Hebrew users see English. The Hebrew leak test misses it because the string isn't in `en.ts`. Fix: move it to i18n.
-- **Narrow phones:** the row with "On a bus?", Places and the two round buttons may be tight. Not checked on a small screen.
+- **Narrow phones:** the row with "On a bus?", Places and the two round buttons now lets both labels shrink and truncate (`SheetButtons` in `NavHome.tsx`). Still not seen on a small screen; the full test should look at it on a narrow emulator.
 - **Last bus on quiet nights:** unverified whether the planner's next page reaches past 04:00. If it doesn't, the feature just stays silent, which is safe.
 - **The iOS text fix** hasn't been confirmed on the user's iPhone 17.
 

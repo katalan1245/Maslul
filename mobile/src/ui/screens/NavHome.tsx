@@ -205,17 +205,17 @@ function SheetButtons({
       {onBoardShown && (
         <Pressable onPress={onBoard} style={[styles.onBoard, { backgroundColor: t.c.surface }]} testID="on_board" accessibilityRole="button">
           <Icon name="directions-bus" size={18} color={t.c.primary} />
-          <Txt v="labelLarge" style={{ marginLeft: 6 }}>
+          <Txt v="labelLarge" numberOfLines={1} style={{ marginLeft: 6, flexShrink: 1 }}>
             {S.home.onABus}
           </Txt>
         </Pressable>
       )}
       {/* With the map full screen, a way back to the places, on the same row as the buttons. */}
-      <View style={{ flex: 1, alignItems: 'center' }} pointerEvents="box-none">
+      <View style={{ flex: 1, alignItems: 'center', marginHorizontal: 8 }} pointerEvents="box-none">
         {hidden && (
           <Pressable onPress={onShowPlaces} style={[styles.places, { backgroundColor: t.c.surface }]} testID="home_show_places" accessibilityRole="button">
             <Icon name="expand-less" color={t.c.onSurface} />
-            <Txt v="labelLarge" style={{ marginLeft: 8 }}>
+            <Txt v="labelLarge" numberOfLines={1} style={{ marginLeft: 8, flexShrink: 1 }}>
               {S.settings.places}
             </Txt>
           </Pressable>
@@ -292,7 +292,7 @@ function HomePlaces({ data, here, onEdit, onAddFavorite }: { data: UserData; her
       <SectionHeader text={S.home.recent} />
       {data.recents.length === 0 && (
         <Txt v="bodyMedium" color={t.x.subtle} style={{ paddingHorizontal: 20, paddingVertical: 8 }}>
-          Search for a place, or long-press the map to get directions there.
+          {S.home.recentHint}
         </Txt>
       )}
       {data.recents.slice(0, 6).map((p) => (
@@ -353,9 +353,9 @@ const styles = StyleSheet.create({
   searchWrap: { position: 'absolute', left: 16, right: 16, top: 0 },
   searchCard: { flexDirection: 'row', alignItems: 'center', height: 56, borderRadius: 18, paddingLeft: 18, paddingRight: 4, ...elevated, elevation: 6 },
   buttons: { position: 'absolute', left: 0, right: 0, top: 0, height: 64, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12 },
-  onBoard: { flexDirection: 'row', alignItems: 'center', height: 40, borderRadius: 20, paddingLeft: 12, paddingRight: 14, ...elevated },
+  onBoard: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', height: 40, borderRadius: 20, paddingLeft: 12, paddingRight: 14, ...elevated },
   smallFab: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', ...elevated },
-  places: { flexDirection: 'row', alignItems: 'center', height: 40, borderRadius: 20, paddingLeft: 12, paddingRight: 16, ...elevated },
+  places: { maxWidth: '100%', flexDirection: 'row', alignItems: 'center', height: 40, borderRadius: 20, paddingLeft: 12, paddingRight: 16, ...elevated },
   quickRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 16 },
   quick: { flex: 1, flexDirection: 'row', alignItems: 'center', borderRadius: 16, paddingLeft: 12, paddingVertical: 6 },
   chips: { gap: 8, paddingHorizontal: 16, paddingTop: 10 },

@@ -215,6 +215,7 @@ export const he: Strings = {
     add: 'הוספה',
     savedTrips: 'נסיעות שמורות',
     recent: 'אחרונים',
+    recentHint: 'חפשו מקום, או לחצו לחיצה ארוכה על המפה כדי לקבל הוראות הגעה לשם.',
     remove: 'הסרה',
     edit: (name) => `עריכת ${name}`,
     fromPlace: (place) => `מ${place}`,

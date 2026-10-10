@@ -219,6 +219,7 @@ export const en = {
     add: 'Add',
     savedTrips: 'Saved trips',
     recent: 'Recent',
+    recentHint: 'Search for a place, or long-press the map to get directions there.',
     remove: 'Remove',
     edit: (name: string) => `Edit ${name}`,
     fromPlace: (place: string) => `From ${place}`,
