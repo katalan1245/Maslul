@@ -3,7 +3,7 @@
  * driven through the same test ids and texts.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import App from '../src/App';
 import { store } from '../src/state/store';
 import { S } from '../src/i18n';
@@ -187,4 +187,18 @@ it('picks a destination on the map', async () => {
   await waitFor(() => expect(screen.getByTestId('picked_label')).toHaveTextContent('Rothschild 1'));
   await fireEvent.press(screen.getByTestId('choose_location'));
   await screen.findByTestId('routes_list');
+});
+
+it('shows the next departures at a starred stop on Home, and opens the stop from there', async () => {
+  await start();
+  expect(screen.queryByTestId('home_stop')).toBeNull();
+  await fireEvent.press(screen.getByTestId('tab_stations'));
+  await fireEvent.press(await screen.findByText('Arlozorov/Ibn Gabirol'));
+  await fireEvent.press(await screen.findByTestId('favorite_stop'));
+  await fireEvent.press(screen.getByLabelText('Back'));
+  await fireEvent.press(screen.getByTestId('tab_navigate'));
+  const home = await screen.findByTestId('home_stop');
+  await waitFor(() => expect(within(home).getByTestId('board_row')).toHaveTextContent(/Bat Yam/));
+  await fireEvent.press(within(home).getByText('Arlozorov/Ibn Gabirol'));
+  await screen.findByTestId('stop_screen');
 });

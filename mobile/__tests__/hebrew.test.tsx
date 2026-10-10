@@ -50,10 +50,10 @@ function shown(): string[] {
 
 const leaks = () => shown().filter((s) => ENGLISH.has(s));
 
-async function launchHebrew(reloadedJustNow: boolean) {
+async function launchHebrew(reloadedJustNow: boolean, data: object = {}) {
   await AsyncStorage.clear();
   await AsyncStorage.setItem(MIGRATED_KEY, '1');
-  await AsyncStorage.setItem(STORE_KEY, JSON.stringify({ settings: { language: 'HE' } }));
+  await AsyncStorage.setItem(STORE_KEY, JSON.stringify({ ...data, settings: { language: 'HE' } }));
   // As after the reload that turned the layout right-to-left (the test renderer can't flip it).
   if (reloadedJustNow) await AsyncStorage.setItem('direction_reload_v1', `rtl:${Date.now()}`);
   await render(<App />);
@@ -131,4 +131,11 @@ it('takes Hebrew from the phone however the platform writes it', () => {
   };
   expect(['he_IL', 'iw_IL', 'he-IL', 'he'].map(ids)).toEqual(['he', 'he', 'he', 'he']);
   expect(['en_US', 'hello'].map(ids)).toEqual(['en', 'en']);
+});
+
+it('shows the starred stops on Home without English UI text', async () => {
+  await launchHebrew(true, { favoriteStops: [{ name: 'Arlozorov/Ibn Gabirol', lat: 32.0866, lon: 34.7818, kind: 'STOP', stopId: 'il-Israel-MOT_21437' }] });
+  await screen.findByText(he.stations.favorites);
+  await screen.findByTestId('board_row');
+  expect(leaks()).toEqual([]);
 });
