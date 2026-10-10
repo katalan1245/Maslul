@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 
 export interface SheetControls {
-  /** The sheet is dragged all the way down (or hidden): the map is on its own. */
+  /** The sheet is dragged all the way down (or hidden, or down to its strip): the map is on its own. */
   mapOnly: boolean;
   show: () => void;
   hide: () => void;
@@ -26,6 +26,7 @@ export function MapSheet({
   peekFraction,
   peekMax,
   topGap = 80,
+  strip,
   map,
   overlay,
   children,
@@ -37,9 +38,11 @@ export function MapSheet({
   peekMax?: number;
   /** Space kept above the fully expanded sheet (for a search card or a back button). */
   topGap?: number;
+  /** When set, the sheet goes down to a strip this tall instead of away, so it stays in reach. */
+  strip?: number;
   map: (c: SheetControls) => ReactNode;
   overlay?: (c: SheetControls) => ReactNode;
-  children: ReactNode;
+  children: ReactNode | ((c: SheetControls) => ReactNode);
   /** Wraps [children] in the sheet's scroll view; off when they bring their own sheet list. */
   scroll?: boolean;
   testID?: string;
@@ -50,31 +53,34 @@ export function MapSheet({
   // window let the expanded sheet run up over the search card.
   const [height, setHeight] = useState(useWindowDimensions().height);
   const sheet = useRef<BottomSheet>(null);
-  const [index, setIndex] = useState(0);
+  // With a strip, index 0 is the strip and 1 the peek.
+  const low = strip ? 1 : 0;
+  const [index, setIndex] = useState(low);
   const position = useSharedValue(height);
   const peekHeight = Math.min(height * peekFraction, peekMax ?? Infinity);
   const max = Math.max(height - insets.top - topGap, peekHeight + 1);
   const controls: SheetControls = {
-    mapOnly: index === -1,
-    show: () => sheet.current?.snapToIndex(0),
-    hide: () => sheet.current?.close(),
+    mapOnly: index < low,
+    show: () => sheet.current?.snapToIndex(low),
+    hide: () => (strip ? sheet.current?.snapToIndex(0) : sheet.current?.close()),
     peek: () => {
-      if (index > 0) sheet.current?.snapToIndex(0);
+      if (index > low) sheet.current?.snapToIndex(low);
     },
     position,
     height,
     peekHeight,
   };
+  const content = typeof children === 'function' ? children(controls) : children;
   return (
     <View style={styles.fill} testID={testID} onLayout={(e) => setHeight(e.nativeEvent.layout.height)}>
       {map(controls)}
       {overlay?.(controls)}
       <BottomSheet
         ref={sheet}
-        index={0}
-        snapPoints={[peekHeight, max]}
+        index={low}
+        snapPoints={strip ? [strip, peekHeight, max] : [peekHeight, max]}
         enableDynamicSizing={false}
-        enablePanDownToClose
+        enablePanDownToClose={!strip}
         animatedPosition={position}
         onChange={setIndex}
         backgroundStyle={{ backgroundColor: t.c.surface }}
@@ -83,7 +89,7 @@ export function MapSheet({
         handleComponent={(p) => <BottomSheetHandle {...p} indicatorStyle={{ backgroundColor: t.c.outline }} accessible={false} accessibilityLabel={null} />}
         style={styles.shadow}
       >
-        {scroll ? <BottomSheetScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 8 }}>{children}</BottomSheetScrollView> : children}
+        {scroll ? <BottomSheetScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 8 }}>{content}</BottomSheetScrollView> : content}
       </BottomSheet>
     </View>
   );

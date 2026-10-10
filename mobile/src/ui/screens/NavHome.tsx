@@ -121,6 +121,7 @@ export function NavHomeScreen() {
       <MapSheet
         peekFraction={0.45}
         peekMax={360}
+        strip={HOME_STRIP}
         map={() => (
           <TransitMap
             style={StyleSheet.absoluteFill}
@@ -156,50 +157,59 @@ export function NavHomeScreen() {
               position={c.position}
               hidden={c.mapOnly}
               height={c.height}
-              bottomInset={insets.bottom}
               onBoardShown={data.settings.onBoard}
               onExpand={() => (c.mapOnly ? c.show() : c.hide())}
-              onShowPlaces={c.show}
               onMyLocation={myLocation}
             />
           </>
         )}
         testID="home_sheet"
       >
-        <HomePlaces data={data} here={user} onEdit={(p) => setDraft(draftFor(p))} onAddFavorite={addFavorite} />
+        {(c) => (
+          <>
+            {/* All that shows of the sheet with the map full screen; tapping it brings the places back. */}
+            <Pressable
+              onPress={c.show}
+              disabled={!c.mapOnly}
+              accessibilityRole={c.mapOnly ? 'button' : undefined}
+              accessibilityLabel={c.mapOnly ? S.home.showPlaces : undefined}
+              testID={c.mapOnly ? 'home_show_places' : undefined}
+            >
+              <SectionHeader text={S.settings.places} />
+            </Pressable>
+            <HomePlaces data={data} here={user} onEdit={(p) => setDraft(draftFor(p))} onAddFavorite={addFavorite} />
+          </>
+        )}
       </MapSheet>
       <FavoriteDialogHost draft={draft} onClose={() => setDraft(null)} />
     </View>
   );
 }
 
-/** Buttons on the sheet's top edge (on the screen's bottom when the sheet is hidden). */
+/** The sheet's height with the map full screen: its handle and the Places header. */
+const HOME_STRIP = 64;
+
+/** Buttons on the sheet's top edge. */
 function SheetButtons({
   position,
   hidden,
   height,
-  bottomInset,
   onBoardShown,
   onExpand,
-  onShowPlaces,
   onMyLocation,
 }: {
   position: SharedValue<number>;
   hidden: boolean;
   height: number;
-  bottomInset: number;
   onBoardShown: boolean;
   onExpand: () => void;
-  onShowPlaces: () => void;
   onMyLocation: () => void;
 }) {
   const t = useTheme();
   const ROW = 64;
   const style = useAnimatedStyle(() => {
-    // With the map expanded the row stays clear of the map's attribution (i), bottom left.
-    const top = Math.min(position.value, height - bottomInset - 28) - ROW;
     // Pulled up past the middle, the buttons would crowd the search card: they step aside.
-    return { transform: [{ translateY: position.value > height * 0.4 ? top : -1000 }] };
+    return { transform: [{ translateY: position.value > height * 0.4 ? position.value - ROW : -1000 }] };
   });
   return (
     <Animated.View style={[styles.buttons, style]} pointerEvents="box-none">
@@ -212,17 +222,7 @@ function SheetButtons({
           </Txt>
         </Pressable>
       )}
-      {/* With the map full screen, a way back to the places, on the same row as the buttons. */}
-      <View style={{ flex: 1, alignItems: 'center', marginHorizontal: 8 }} pointerEvents="box-none">
-        {hidden && (
-          <Pressable onPress={onShowPlaces} style={[styles.places, { backgroundColor: t.c.surface }]} testID="home_show_places" accessibilityRole="button">
-            <Icon name="expand-less" color={t.c.onSurface} />
-            <Txt v="labelLarge" numberOfLines={1} style={{ marginLeft: 8, flexShrink: 1 }}>
-              {S.settings.places}
-            </Txt>
-          </Pressable>
-        )}
-      </View>
+      <View style={{ flex: 1, marginHorizontal: 8 }} pointerEvents="none" />
       <SmallFab icon={hidden ? 'fullscreen-exit' : 'fullscreen'} label={hidden ? S.home.showPlaces : S.detail.expandMap} onPress={onExpand} testID="home_map_expand" />
       <View style={{ width: 8 }} />
       <SmallFab icon="my-location" label={S.common.myLocation} color={t.c.primary} onPress={onMyLocation} testID="home_my_location" />
@@ -357,7 +357,6 @@ const styles = StyleSheet.create({
   buttons: { position: 'absolute', left: 0, right: 0, top: 0, height: 64, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12 },
   onBoard: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', height: 40, borderRadius: 20, paddingLeft: 12, paddingRight: 14, ...elevated },
   smallFab: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', ...elevated },
-  places: { maxWidth: '100%', flexDirection: 'row', alignItems: 'center', height: 40, borderRadius: 20, paddingLeft: 12, paddingRight: 16, ...elevated },
   quickRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 16 },
   quick: { flex: 1, flexDirection: 'row', alignItems: 'center', borderRadius: 16, paddingLeft: 12, paddingVertical: 6 },
   chips: { gap: 8, paddingHorizontal: 16, paddingTop: 10 },

@@ -88,7 +88,7 @@ They should also check the wording of `FEATURES.md`.
 
 ## Known open items
 
-- **Narrow phones:** the row with "On a bus?", Places and the two round buttons lets both labels shrink and truncate (`SheetButtons` in `NavHome.tsx`). Not seen on a small screen yet.
+- **Home with the map full screen:** the sheet now goes down to a 64 px "PLACES" strip (`strip` on `MapSheet`) instead of away, and the floating Places pill is gone; the user disliked the buttons floating. Not seen on a device yet (iOS I12 and Android N3 describe it).
 - **Last bus on quiet nights:** unverified whether the planner's next page reaches past 04:00. If it doesn't, the feature just stays silent, which is safe.
 - **iOS round-1 fixes, none seen on a device yet** (I14 in `TESTING-ios.md`): Language = System via the native `preferredLanguage` constant; `writingDirection` on all text (`textDirection` in `theme.ts`); the app redrawing when the text size changes (`Fragment key={fontScale}` in `App.tsx`, nav state kept); Photon `lang=default`. Nominatim still follows iOS's Accept-Language (last fallback only).
 - **To discuss with the user — the Markdown files.** Should the working docs (`HANDOVER`, `STATUS`, `UPSTREAM-PORT`, `TESTING*`, `FEATURES`, `scripts/START-HERE.md`) stay in git? Suggested: keep them in the fork for now (the Mac and the testers get them that way), and leave them out of the PR to the original repo: there only the code, the READMEs, `AGENTS.md` and a trimmed `NOTES.md` (e.g. `docs/architecture.md`) go; `FEATURES.md` and `UPSTREAM-PORT.md` become the PR description. The user hasn't decided.

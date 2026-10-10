@@ -9,7 +9,7 @@ name: The home map can be enlarged and the places brought back
       RIDES: "off"
       ON_BOARD: "on"
 - assertVisible: "Where to?"
-# The button hides the places; the map has the screen and its buttons stay in reach.
+# The button lowers the places to a strip; the map has the screen and its buttons stay in reach.
 - tapOn:
     id: home_map_expand
 - extendedWaitUntil:
@@ -25,7 +25,7 @@ name: The home map can be enlarged and the places brought back
     id: home_show_places
 - assertNotVisible:
     id: home_show_places
-# Dragging the sheet down does the same; the corner button brings it back.
+# Dragging the sheet down goes to the strip too; the corner button brings it back.
 - swipe:
     start: 50%, 70%
     end: 50%, 99%
