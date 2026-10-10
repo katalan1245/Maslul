@@ -126,7 +126,7 @@ Upstream released 1.1.1, 1.2.0 (Simple Maslul) and 1.2.1 (the whole app in Russi
 
 ## Feature requests and ideas
 
-In `FEATURE-REQUESTS.md` (local only, not in git): 1. scrolling time wheels instead of typing (time sheet and shuttle times); 2. a full design pass by a dedicated UI agent; 3. repeating shuttles ("every 30 min, 07:00–19:00"); 4. the trip working out its own state (boarded, missed the bus, off route, walking vs riding); 5. a lift that goes only to the driver's destination; 6. lift times that follow traffic; 7. setting the lift's time; 8. Israel's new express bus lines. Plus the older ideas list. Don't start them before the move to the original repo.
+In `FEATURE-REQUESTS.md` (local only, not in git): 1. scrolling time wheels instead of typing (time sheet and shuttle times); 2. a full design pass by a dedicated UI agent; 3. repeating shuttles ("every 30 min, 07:00–19:00"); 4. the trip working out its own state (boarded, missed the bus, off route, walking vs riding); 5. a lift that goes only to the driver's destination; 6. lift times that follow traffic; 7. setting the lift's time; 8. Israel's new express bus lines; 9. place and stop search ranked by more than the name; 10. a train icon for train stations. Plus the older ideas list. Don't start them before the move to the original repo.
 
 ## Build and environment
 
