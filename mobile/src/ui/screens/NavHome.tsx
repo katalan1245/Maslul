@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { BackHandler, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Animated, { type SharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GeoMath } from '../../data/geo';
@@ -153,6 +154,7 @@ export function NavHomeScreen() {
                 <IconButton icon="settings" label={S.settings.title} onPress={() => nav.push('Settings')} testID="settings_button" />
               </Pressable>
             </View>
+            <BackToPlaces mapOnly={c.mapOnly} show={c.show} />
             <SheetButtons
               position={c.position}
               hidden={c.mapOnly}
@@ -184,6 +186,21 @@ export function NavHomeScreen() {
       <FavoriteDialogHost draft={draft} onClose={() => setDraft(null)} />
     </View>
   );
+}
+
+/** With the map full screen, Android's Back brings the places back rather than leaving the app. */
+function BackToPlaces({ mapOnly, show }: { mapOnly: boolean; show: () => void }) {
+  useFocusEffect(
+    useCallback(() => {
+      if (!mapOnly) return;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        show();
+        return true;
+      });
+      return () => sub.remove();
+    }, [mapOnly, show]),
+  );
+  return null;
 }
 
 /** The sheet's height with the map full screen: its handle and the Places header. */

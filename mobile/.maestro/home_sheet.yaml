@@ -25,6 +25,17 @@ name: The home map can be enlarged and the places brought back
     id: home_show_places
 - assertNotVisible:
     id: home_show_places
+# Android Back on the full-screen map brings the places back too, and doesn't leave the app.
+- tapOn:
+    id: home_map_expand
+- extendedWaitUntil:
+    visible:
+      id: home_show_places
+    timeout: 5000
+- back
+- assertNotVisible:
+    id: home_show_places
+- assertVisible: "Where to?"
 # Dragging the sheet down goes to the strip too; the corner button brings it back.
 - swipe:
     start: 50%, 70%
