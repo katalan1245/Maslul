@@ -84,7 +84,8 @@ test('an empty Kotlin store is all defaults', () => {
     theme: 'SYSTEM', language: 'SYSTEM', walkSpeed: 'NORMAL', maxWalkMinutes: 20, modes: ['BUS', 'TRAIN', 'LIGHT_RAIL', 'METRO', 'CABLE_CAR', 'FERRY'],
     // rides and onBoard are on by default since the Kotlin app's 1.1.1: absent (never touched, or
     // switched on in 1.1.0) reads as on, as it does there.
-    wheelchair: false, railPreference: 'NONE', reminderMinutes: 5, rides: true, onBoard: true, simpleMode: false,
+    // routeSort is new: the user asked for the fastest route first.
+    wheelchair: false, railPreference: 'NONE', routeSort: 'FASTEST', reminderMinutes: 5, rides: true, onBoard: true, simpleMode: false,
   });
   expect(EMPTY_USER_DATA.simpleButtons.map((b) => b.icon)).toEqual(['HOME', 'FAMILY', 'WORK', 'HEART', 'SHOPPING']);
 });

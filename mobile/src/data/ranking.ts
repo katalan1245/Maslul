@@ -1,6 +1,6 @@
 import { GeoMath } from './geo';
 import { type Itinerary, type Leg, callPoint, isTransit, legDurationSec, walkSec } from './models';
-import { RAIL_PREFERENCES, type RailPreference } from './userStore';
+import { RAIL_PREFERENCES, type RailPreference, type RouteSort } from './userStore';
 import { sortedBy, sumOf } from './util';
 
 /** Connections with less spare time than this are flagged as tight. */
@@ -68,10 +68,15 @@ function busPenalty(itin: Itinerary, rail: RailPreference): number {
   );
 }
 
-/** Lower is better: arrival (or, for arrive-by, departure) plus penalties. */
-function score(itin: Itinerary, arriveBy: boolean, walkMps = 1.3, rail: RailPreference = 'NONE'): number {
+/**
+ * Lower is better: arrival (or, for arrive-by, departure) plus penalties. FASTEST puts the
+ * arrival first and uses the penalties only between options that arrive at the same second.
+ */
+function score(itin: Itinerary, arriveBy: boolean, walkMps = 1.3, rail: RailPreference = 'NONE', sort: RouteSort = 'BEST'): number {
   const base = arriveBy ? -itin.start : itin.end;
-  return base + riskPenalty(itin, walkMps) + walkSec(itin) * WALK_WEIGHT + busPenalty(itin, rail);
+  const penalty = riskPenalty(itin, walkMps) + walkSec(itin) * WALK_WEIGHT + busPenalty(itin, rail);
+  // Seconds × 1e5 stays well inside a double's exact range (about 2e14 for today's times).
+  return sort === 'FASTEST' ? base * 1e5 + Math.min(penalty, 99_999) : base + penalty;
 }
 
 /**
@@ -88,11 +93,11 @@ function dominates(a: Itinerary, b: Itinerary, walkMps = 1.3, rail: RailPreferen
 }
 
 /** Drops clearly dominated options and sorts the rest by [score]. */
-function rank(list: Itinerary[], arriveBy: boolean, walkMps = 1.3, rail: RailPreference = 'NONE'): Itinerary[] {
+function rank(list: Itinerary[], arriveBy: boolean, walkMps = 1.3, rail: RailPreference = 'NONE', sort: RouteSort = 'BEST'): Itinerary[] {
   const kept = list.filter((b) => !list.some((a) => a !== b && dominates(a, b, walkMps, rail)));
   return sortedBy(
     kept,
-    (i) => score(i, arriveBy, walkMps, rail),
+    (i) => score(i, arriveBy, walkMps, rail, sort),
     (i) => i.start,
   );
 }

@@ -35,6 +35,10 @@ export const RAIL_PREFERENCES = {
 } as const;
 export type RailPreference = keyof typeof RAIL_PREFERENCES;
 
+/** What goes first: the route that gets there soonest, or the one easiest to take (fewer changes, less walking). */
+export const ROUTE_SORTS = ['FASTEST', 'BEST'] as const;
+export type RouteSort = (typeof ROUTE_SORTS)[number];
+
 export const FAVORITE_ICONS = [
   'STAR', 'HEART', 'HOME', 'SCHOOL', 'GYM', 'SHOPPING', 'RESTAURANT', 'CAFE', 'HEALTH', 'PARK', 'POOL', 'SPORTS',
 ] as const;
@@ -69,6 +73,7 @@ export interface Settings {
   modes: TransitMode[];
   wheelchair: boolean;
   railPreference: RailPreference;
+  routeSort: RouteSort;
   reminderMinutes: number;
   /** Offers planning around a ride (טרמפ) for the first part of a trip. */
   rides: boolean;
@@ -88,6 +93,7 @@ export const DEFAULT_SETTINGS: Settings = {
   modes: DEFAULT_MODES,
   wheelchair: false,
   railPreference: 'NONE',
+  routeSort: 'FASTEST',
   reminderMinutes: 5,
   // On by default since the Kotlin app's 1.1.1.
   rides: true,
@@ -286,6 +292,7 @@ export function readSettings(v: unknown): Settings {
     modes: Array.isArray(v.modes) ? distinctBy(list(v.modes, (m) => oneOf(TRANSIT_MODES, m)), (m) => m) : d.modes,
     wheelchair: bool(v.wheelchair) ?? d.wheelchair,
     railPreference: oneOf(Object.keys(RAIL_PREFERENCES) as RailPreference[], v.railPreference) ?? d.railPreference,
+    routeSort: oneOf(ROUTE_SORTS, v.routeSort) ?? d.routeSort,
     reminderMinutes: int(v.reminderMinutes) ?? d.reminderMinutes,
     rides: bool(v.rides) ?? d.rides,
     onBoard: bool(v.onBoard) ?? d.onBoard,

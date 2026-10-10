@@ -50,6 +50,15 @@ test('direct beats risky chain arriving slightly earlier', () => {
   expect(Ranking.rank([threeBuses, direct], false).map((i) => i.id)).toEqual(['64', '22-143-56']);
 });
 
+test('sorted by fastest, the chain that arrives first goes first, and a tie falls back to the penalties', () => {
+  expect(Ranking.rank([direct, threeBuses], false, 1.3, 'NONE', 'FASTEST').map((i) => i.id)).toEqual(['22-143-56', '64']);
+  // Leaves earlier, so neither drops the other.
+  const sameEnd = itinOf('same', bus('9', 'A', 0.3, 'F', 8.0, -5, 37));
+  expect(Ranking.rank([threeBuses, sameEnd], false, 1.3, 'NONE', 'FASTEST').map((i) => i.id)).toEqual(['same', '22-143-56']);
+  // Arrive-by: the one leaving last goes first.
+  expect(Ranking.rank([threeBuses, direct], true, 1.3, 'NONE', 'FASTEST')[0].id).toBe('64');
+});
+
 test('much faster transfer still wins', () => {
   const fast = itinOf('fast', bus('1', 'A', 0, 'B', 2, 0, 5), bus('2', 'B', 2, 'F', 8, 12, 20));
   expect(Ranking.rank([direct, fast], false)[0].id).toBe('fast');

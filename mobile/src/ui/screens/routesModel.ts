@@ -130,6 +130,9 @@ export class RoutesModel extends Model {
   private get rail() {
     return this.settings.railPreference;
   }
+  private get sort() {
+    return this.settings.routeSort;
+  }
 
   /** Routes added by "Earlier/Later routes", by id: they go above or below the first page's, in time order. */
   private readonly paged = new Map<string, 'before' | 'after'>();
@@ -141,9 +144,9 @@ export class RoutesModel extends Model {
 
   private rankedAll(list: Itinerary[]): Itinerary[] {
     const arriveBy = this.timeMode === 'ARRIVE';
-    const best = [...list].sort((a, b) => Ranking.score(a, arriveBy, this.walkMps, this.rail) - Ranking.score(b, arriveBy, this.walkMps, this.rail));
+    const best = [...list].sort((a, b) => Ranking.score(a, arriveBy, this.walkMps, this.rail, this.sort) - Ranking.score(b, arriveBy, this.walkMps, this.rail, this.sort));
     const now = nowSec();
-    return Ranking.rank(Combine.merge(best), arriveBy, this.walkMps, this.rail).map((itin) =>
+    return Ranking.rank(Combine.merge(best), arriveBy, this.walkMps, this.rail, this.sort).map((itin) =>
       itin.legs.reduce((acc, _, i) => {
         const leg = acc.legs[i];
         const found = this.rides.get(TransitRepository.rideBucket(leg));
@@ -453,7 +456,7 @@ export class RoutesModel extends Model {
    */
   private async planWithRail(gen: number): Promise<PlanResult> {
     const req = this.request()!;
-    const score = (i: Itinerary) => Ranking.score(i, false, this.walkMps, this.rail);
+    const score = (i: Itinerary) => Ranking.score(i, false, this.walkMps, this.rail, this.sort);
     const ride = this.ride;
     if (ride?.kind === 'toPlace') {
       const options = await this.refined(gen, (show) => repo.rideAlong(req, placePoint(ride.dest), score, show));
@@ -553,7 +556,7 @@ export class RoutesModel extends Model {
           return Combine.pickBest(itin, now, liveOf, keep);
         }),
       );
-      const score = (i: Itinerary) => Ranking.score(Combine.expected(i, liveOf), false, this.walkMps, this.rail);
+      const score = (i: Itinerary) => Ranking.score(Combine.expected(i, liveOf), false, this.walkMps, this.rail, this.sort);
       this.itineraries = pagesInOrder(picked.map((i) => [i, score(i)] as const).sort((a, b) => a[1] - b[1]).map((x) => x[0]), this.paged);
     }
     for (const itin of this.itineraries) {

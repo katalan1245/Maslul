@@ -57,7 +57,7 @@ export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Route
   const todayDate = today();
   const askedDay = model.timeMode !== 'NOW' && model.time != null ? localDate(model.time) : todayDate;
   const custom =
-    s.modes.length < 6 || s.maxWalkMinutes !== DEFAULT_MAX_WALK_MINUTES || s.wheelchair || s.walkSpeed !== 'NORMAL' || s.railPreference !== 'NONE';
+    s.modes.length < 6 || s.maxWalkMinutes !== DEFAULT_MAX_WALK_MINUTES || s.wheelchair || s.walkSpeed !== 'NORMAL' || s.railPreference !== 'NONE' || s.routeSort !== 'FASTEST';
 
   const items: Item[] = [
     ...(model.savedAt != null ? [{ kind: 'saved', at: model.savedAt } as const] : []),
@@ -127,8 +127,9 @@ export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Route
       case 'itin': {
         const itin = item.itin;
         const tags: string[] = [];
-        // Ranked list: the first card is the recommended option.
-        if (itin === itineraries[0] && itineraries.length > 1) tags.push(S.routes.best);
+        // Ranked list: the first card is the one the chosen sort puts first.
+        if (itin === itineraries[0] && itineraries.length > 1)
+          tags.push(s.routeSort === 'BEST' ? S.routes.best : model.timeMode === 'ARRIVE' ? S.routes.leavesLast : S.routes.arrivesFirst);
         if (itin.id === fastest) tags.push(S.routes.fastest);
         if (itin.id === leastWalk && itin.id !== fastest) tags.push(S.routes.leastWalking);
         if (itin.id === model.last?.itinId) tags.push(S.routes.lastTag);

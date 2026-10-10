@@ -5,7 +5,7 @@ import type { TransitMode } from '../../data/models';
 import { RIDE_MINUTES, type RideOffer } from '../../data/rides';
 import { WiderWalk } from '../../data/grace';
 import { type Instant, localParts, nowSec, plusDays, today, zoned } from '../../data/time';
-import { RAIL_PREFERENCES, type RailPreference, WALK_SPEEDS, type WalkSpeed } from '../../data/userStore';
+import { RAIL_PREFERENCES, ROUTE_SORTS, type RailPreference, WALK_SPEEDS, type WalkSpeed } from '../../data/userStore';
 import { store, useUserData } from '../../state/store';
 import { S } from '../../i18n';
 import { Fmt, modeName } from '../fmt';
@@ -209,6 +209,18 @@ export function OptionsSheet({ onDismiss }: { onDismiss: () => void }) {
         options={(Object.keys(WALK_SPEEDS) as WalkSpeed[]).map((w) => ({ value: w, label: S.sheets.walkSpeeds[w] }))}
         value={s.walkSpeed}
         onChange={(w) => store.updateSettings((st) => ({ ...st, walkSpeed: w }))}
+      />
+      <Txt v="titleSmall" style={{ marginTop: 14 }}>
+        {S.sheets.routeSort}
+      </Txt>
+      <Txt v="bodySmall" color={t.x.subtle} style={{ marginBottom: 8 }}>
+        {S.sheets.routeSortHint}
+      </Txt>
+      <Segmented
+        options={ROUTE_SORTS.map((r) => ({ value: r, label: S.sheets.routeSorts[r] }))}
+        value={s.routeSort}
+        onChange={(r) => store.updateSettings((st) => ({ ...st, routeSort: r }))}
+        testID="route_sort"
       />
       <Txt v="titleSmall" style={{ marginTop: 14 }}>
         {S.sheets.preferRail}
