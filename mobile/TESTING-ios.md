@@ -1,6 +1,6 @@
 # Maslul: iOS test
 
-A full test of the React Native rewrite on iOS, with Hebrew and the five new features (I11). Pull first: `rewrite/react-native` was updated on 2026-10-10. The build itself is the first check. The goal is to **find and report problems, not fix them**; fixes are made in the main checkout and come back through git.
+A full test of the React Native rewrite on iOS: **round 2**, on branch `feature/upstream-1.2.1`. Do every check, I1–I14, from scratch: it adds the Kotlin app's 1.1.1–1.2.1 (I13, Simple Maslul and Russian) and the fixes from round 1 (I14). Round 1's report is `ios-report-round1.md`. The build itself is the first check. The goal is to **find and report problems, not fix them**; fixes are made in the main checkout and come back through git.
 
 ## Build on the Mac
 
@@ -8,7 +8,7 @@ Needs: Xcode 26.4 or newer from the App Store (Expo SDK 57 doesn't build with ol
 
 ```sh
 git clone https://github.com/katalan1245/Maslul.git && cd Maslul
-git checkout rewrite/react-native
+git checkout feature/upstream-1.2.1
 cd mobile
 npm ci
 npx expo prebuild -p ios --clean      # generates ios/ (not in git) and runs pod install
@@ -17,7 +17,7 @@ npx expo run:ios --configuration Release
 
 - `--configuration Release` builds a standalone app, as users get it; no Metro needed. For a quick debug loop, leave it out (Metro starts by itself).
 - **Real iPhone** (for I6): connect it, then `npx expo run:ios --device --configuration Release`. A free Apple ID works: in Xcode, open `ios/Maslul.xcworkspace` → target Maslul → Signing & Capabilities → pick your Personal Team. The app then runs for 7 days. On the phone: Settings → General → VPN & Device Management → trust your developer certificate, and turn on Developer Mode if asked.
-- To pick up fixes: `git pull`, then the prebuild and run lines again.
+- To pick up fixes: `git pull`, then the prebuild and run lines again. An existing clone: `git fetch && git switch feature/upstream-1.2.1 && git pull`, then `npm ci` and the prebuild (with `--clean`: the native module changed).
 
 ## Set up
 
@@ -61,7 +61,7 @@ Screenshot each check (`xcrun simctl io booted screenshot <name>.png`) and name 
 
 **I8. Hebrew.** Settings → Language → עברית: the app reloads once, in Hebrew and right to left. Repeat I2–I4 briefly in Hebrew: every screen right to left, map labels in Hebrew, the time sheet, dialogs and their buttons mirrored. Search `ויצמן 5 כ`: a "…כפר סבא" result near the top. Back to English: left to right after one reload.
 
-**I9. Language = System.** App on Language → System. Set the simulator to Hebrew (Settings → General → Language & Region, add עברית as primary; the simulator restarts) and open Maslul: Hebrew, right to left. Also check: iOS Settings → Maslul → Language offers English and עברית. Delete and reinstall the app while the phone is in Hebrew: the location prompt is in Hebrew. Set the phone back to English: Maslul is English again.
+**I9. Language = System.** App on Language → System. Set the simulator to Hebrew (Settings → General → Language & Region, add עברית as primary; the simulator restarts) and open Maslul: Hebrew, right to left. Also check: iOS Settings → Maslul → Language offers English, עברית and Русский. Delete and reinstall the app while the phone is in Hebrew: the location prompt is in Hebrew. Set the phone back to English: Maslul is English again.
 
 **I10. Look and feel.** Notch and home indicator: nothing hidden under them on any screen. Dark mode (Settings → Developer → Dark Appearance, or Control Center) with the app on System theme: colours follow. Larger text (Settings → Accessibility → Display & Text Size → Larger Text): nothing cut off badly. Optional: VoiceOver on Home, buttons read sensible names.
 
@@ -72,6 +72,12 @@ Screenshot each check (`xcrun simctl io booted screenshot <name>.png`) and name 
 4. *Last bus:* time sheet → Depart at 23:30 on the next Sunday–Thursday: if the list reaches into tomorrow morning, one card is tagged "Last today".
 5. *Stops away* (weekday daytime): a stop screen with live times shows "N stops away"; during a trip the waiting step says "· N stops away".
 
+**I12. Fixes from the last look.** In the search fields (From/To) the typed text and the placeholder sit vertically centred, level with the dot and the ✕, in English and in Hebrew. The same in the line search, the time sheet's hour and minute, the favourite name and the shuttle fields. With the Home map full screen, the "Places" button sits on the same row as the two square buttons.
+
+**I13. From the Kotlin app's 1.1.1–1.2.1.** In full detail as `TESTING.md` X1–X3 and X5–X7 (same app; skip X4, Android only). Briefly:
+1. *Simple Maslul:* Settings → Simple Maslul → Switch. Big buttons, no tab bar; the location prompt if not yet allowed. Set a button's address, plan to it, open an option: plain numbered steps. Simple Settings → Русский and עברית (right to left after one reload), edit a button, then "Switch to full Maslul": the tabs are back. Nothing hidden under the notch or the home indicator on these screens; big text fits on a small iPhone.
+2. *Russian:* Settings → Language → Русский: Russian everywhere (walk the screens of I2–I4 and record any English UI text), left to right; delete and reinstall with the phone in Russian: the location prompt is in Russian.
+
 **I14. Fixes from the first iOS report** (build it fresh: the native module changed). Each at the place it failed:
 - I9 again: phone in Hebrew (`defaults write -g AppleLanguages -array he-IL en-IL`, reboot) with the app on System: Hebrew and right to left. Also with the phone back in English and the app on עברית: titles (Lines, Stations, the time sheet's "מתי?") sit on the right with their padding.
 - I9: phone in Hebrew, app on English: all text left-aligned, nothing right-aligned.
@@ -80,15 +86,9 @@ Screenshot each check (`xcrun simctl io booted screenshot <name>.png`) and name 
 - I4: stop sending positions (or deny location), open Stations: "Allow location access" shows only when access is off; otherwise "Tap Refresh to try again".
 - I8: the time sheet's Depart at / Arrive by control is whole, with its edges, in Hebrew.
 
-**I12. Fixes from the last look.** In the search fields (From/To) the typed text and the placeholder sit vertically centred, level with the dot and the ✕, in English and in Hebrew. The same in the line search, the time sheet's hour and minute, the favourite name and the shuttle fields. With the Home map full screen, the "Places" button sits on the same row as the two square buttons.
-
-**I13. From the Kotlin app's 1.2.x** (branch `feature/upstream-1.2.1` only).
-1. *Simple Maslul:* Settings → Simple Maslul → Switch. Big buttons, no tab bar; the location prompt if not yet allowed. Set a button's address, plan to it, open an option: plain numbered steps. Simple Settings → Русский and עברית (right to left after one reload), edit a button, then "Switch to full Maslul": the tabs are back. Nothing hidden under the notch or the home indicator on these screens; big text fits on a small iPhone.
-2. *Russian:* Settings → Language → Русский: Russian everywhere, left to right; delete and reinstall with the phone in Russian: the location prompt is in Russian.
-
 ## Report
 
-Write `ios-report.md` (in the format below) with screenshots in an `evidence/` folder, and bring them back however is easiest.
+Write `ios-report.md` (in the format below) with screenshots in an `evidence/` folder and logs in `logs/`, and bring them back however is easiest (last time: the `maslul-ios-test` handoff folder). Work through every check even if some fail; a failure is a finding, not a reason to stop. Keep what you saw separate from guesses about the cause.
 
 ```
 # Maslul iOS test report

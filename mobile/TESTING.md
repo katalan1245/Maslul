@@ -10,8 +10,9 @@ The folder is `shared\maslul\maslul-test` in the host's handoff folder. Inside t
 
 | File | What it is |
 |---|---|
-| `maslul-latest.apk` | The new app: versionCode 5, standalone release build (no Metro needed) |
-| `maslul-kotlin-v4.apk` | The **old** Kotlin app (versionCode 4), for the upgrade test only |
+| `maslul-latest.apk` | The new app: versionCode 8, standalone release build (no Metro needed), from branch `feature/upstream-1.2.1` |
+| `maslul-kotlin-v4.apk` | The **old** Kotlin app (versionCode 4), for the upgrade test U only |
+| `maslul-kotlin-1.2.1.apk` | The Kotlin app's last version, 1.2.1 (versionCode 7), for the upgrade test X4 only |
 | `build-info.txt` | Commit and build details. Quote the commit line at the top of your report |
 | `maestro/` | Automated UI flows (Maestro), also readable as step-by-step scripts |
 | `TESTING.md` | This file |
@@ -23,7 +24,7 @@ Both APKs are signed with the same key, so the new one installs over the old one
 - Don't modify, rebuild or re-sign the APKs, and don't push anything anywhere.
 - Take a screenshot at every check, named after the check (e.g. `B3-route-header.png`), and keep it in `evidence/`.
 - A failure is a finding: record it and go on. Don't stop at the first failure.
-- A missing file or tool only blocks the checks that need it. Only M1 needs `maestro/`, and only U1–U3 need `maslul-kotlin-v4.apk`. Mark those **couldn't test** and do every other check. Never end the run because one thing is missing.
+- A missing file or tool only blocks the checks that need it. Only M1 needs `maestro/`, only U1–U3 need `maslul-kotlin-v4.apk`, and only X4 needs `maslul-kotlin-1.2.1.apk`. Mark those **couldn't test** and do every other check. Never end the run because one thing is missing.
 - If a check is impossible, mark it **couldn't test** with the exact reason. Never skip silently.
 - Keep what you **saw** separate from what you **guess** about the cause.
 - The emulator was unstable last round: the launcher restarted, Play services crashed, and Android soft-restarted. If something odd happens right after one of those, repeat the check once before you report it, and say in the report whether it happened again.
@@ -65,7 +66,7 @@ Use `adb` from a shell if you have one. If a command isn't available to you, mar
 
 ## What to test: a full pass over the whole app
 
-This round is a **complete re-test before release**: every area, from scratch, even what passed in rounds 1–6. It also covers five new features (marked *new*). Do the sections in this order. Use 4 GB RAM. Screenshot every check; a layout finding needs its screenshot. Unless a check says otherwise, the app and the emulator are in English. If it's Shabbat or night, mark the checks that need running buses **couldn't test (Shabbat)**; don't count them as failures.
+This round is a **complete re-test before release**: every area, from scratch, even what passed before. It covers the five new features (marked *new*), the Kotlin app's 1.1.1–1.2.1 brought over (section X), and the fixes since round 5 (section F). Do the sections in this order. Use 4 GB RAM. Screenshot every check; a layout finding needs its screenshot. Unless a check says otherwise, the app and the emulator are in English. If it's Shabbat or night, mark the checks that need running buses **couldn't test (Shabbat)**; don't count them as failures.
 
 ### U. Upgrade from the old app (most important; do it first)
 
@@ -77,7 +78,7 @@ This round is a **complete re-test before release**: every area, from scratch, e
 
 **N1.** Tabs (Navigate, Lines, Stations) switch; Android Back goes back one screen and leaves the app from a tab. No crash on any screen (dump the crash log after each section, as in Tools).
 **N2.** Map: streets and labels draw; rotate with two fingers: a compass appears, tapping it turns north up. Lines tab for 10 s, back to Navigate: the tiles show again within a few seconds (give the time).
-**N3.** Full-screen map (the button at the bottom right): the (i) at the bottom left is fully visible and opens the OpenStreetMap/OpenFreeMap credit. A "Places" button sits on the **same row** as the two square buttons, at the same height, not floating above them (*new*); with Settings → "Already on a bus" on, "On a bus?" shares the row and nothing overlaps or is cut off. Tap Places: the sheet comes back. Dragging the sheet down does the same.
+**N3.** Home: the map's (i) sits at the top left, under the search card, with the sheet down and with the map full screen (the button at the bottom right), and opens the OpenStreetMap/OpenFreeMap credit. A "Places" button sits on the **same row** as the two square buttons, at the same height, not floating above them (*new*); with Settings → "Already on a bus" on, "On a bus?" shares the row and nothing overlaps or is cut off. Tap Places: the sheet comes back. Dragging the sheet down does the same.
 **N4.** Dark theme: look over every screen for unreadable text or wrong colours; map labels are bright and readable. Back to light.
 **N5.** Settings → About: the credits list GNU AGPL v3, Transitous, Open Bus, Stride, Photon, Nominatim, OpenFreeMap and © OpenStreetMap contributors.
 
@@ -136,10 +137,18 @@ This round is a **complete re-test before release**: every area, from scratch, e
 **X1. Simple Maslul.** Settings → Simple Maslul switch: a confirmation first; Cancel leaves it off, Switch opens "Where are you going?" with five coloured buttons and "Other address", two per row, no tab bar; Android Back there leaves the app. Location is asked for if not yet granted. Tap an unset button: "Where is “Grandkids”?", search, pick: back on the buttons, and it's set. Tap it: "To Grandkids", up to 3 options ("Best" on the first, "Leave in N min", line badges, "Arrive at"), "More options" for the rest; a walk of up to 20 min is its own card. Open one: numbered plain steps (walk to the stop, take bus N, towards, leaves at, get off at, ride N stops, you're there).
 **X2.** Simple Settings: the language buttons (English, עברית, Русский) switch the app's language (one reload when the direction changes; Hebrew right to left); edit a button's name, picture and address, and clear it; "Switch to full Maslul" asks first, then the full app with its tabs is back. Kill and reopen while in Simple Maslul: it opens in Simple Maslul.
 **X3. Russian.** Settings → Language → Русский: no reload (left to right), the whole app in Russian. Walk the main screens as in H2 and record any English UI text. Light rail is "трамвай".
-**X4. Upgrade from the Kotlin 1.2.1 app.** As U1 but with the Kotlin 1.2.1 APK: pick Russian and Simple Maslul there and set a button's address. After installing this build over it: Russian, Simple Maslul, the button's address are all kept.
+**X4. Upgrade from the Kotlin 1.2.1 app.** As U1 but with `maslul-kotlin-1.2.1.apk` (uninstall first): pick Russian and Simple Maslul there and set a button's address. After installing this build over it: Russian, Simple Maslul, the button's address are all kept.
 **X5. Longer walks.** On Friday after about 16:00 or on Shabbat, plan a trip where nothing runs near you: if a line a longer walk away runs, its routes show with a note above the cards ("Nothing leaves soon within a 20 min walk…") and a "Longer walk" tag; routes leaving another day say which ("Tomorrow"). Options sheet: under the walk slider, a line explains the few extra minutes and the longer walks.
 **X6. Lifts.** Advanced → Getting a ride → within N min: no route has two car legs; a route driving a little over N minutes says "Longer ride".
 **X7. Route cards.** At a busy stop, a combined ride shows at most 3 line badges and "+N"; "+N more" under the times opens all of them and "Show fewer" closes them. A train's direction is a city ("Towards Nahariya"), not a number. A tight transfer onto an unnumbered train says "to catch the train", and "If missed, the next train at …".
+
+### F. Fixes since round 5 (check each where it failed)
+
+**F1.** App in English, emulator in English: `ויצמן 5 כ` lists a "…כפר סבא" result in the top three; `haifa center` lists "Haifa Center HaShemona". Maestro's search_top_result and ride_within (M1) cover the same.
+**F2.** Language → System with the emulator in Hebrew (as H4): Maslul is Hebrew and right to left.
+**F3.** Without a position: `adb emu geo fix` stopped and location left on, Stations and Lines say "Tap Refresh to try again", not "Allow location access". Turn location access off for Maslul (App info → Permissions): now they say to allow it. Turn it back on.
+**F4.** A train leg's direction is a city, not a number ("to 114"); the route details header is on one line in Hebrew; the exact-alarm dialog and the live-directions notification channel are in Hebrew with the app in Hebrew.
+**F5.** Settings → Display → Font size to the largest while the app is open on the Lines tab: back in the app, the line badges, times and chips are at the new size and not cut ("2.."), and the app is still on Lines.
 
 ### M. Automated flows (Maestro)
 
