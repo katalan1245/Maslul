@@ -123,13 +123,17 @@ export class TripGuide {
       const eta = isLive ? call!.expected : next.start;
       const mins = eta != null ? Math.trunc((eta - now + 30) / 60) : null;
       const ride = `${modeName(next.mode)} ${lineLabel(next)}`;
+      const away = isLive && call!.stopsAway != null && call!.stopsAway >= 1 && call!.stopsAway <= 40 ? call!.stopsAway : null;
       const text =
         (mins == null || mins > 60
           ? S.guide.rideAt(ride, Fmt.when(eta ?? next.start, now)) // "in 1208 min" reads as a bug; after the last bus it's tomorrow's
           : mins <= 0
             ? S.guide.rideArriving(ride, vehicleKind(next.mode))
-            : S.guide.rideIn(ride, mins)) + (isLive ? S.guide.liveTag : '');
-      const soon = mins != null && mins >= 0 && mins <= 3;
+            : S.guide.rideIn(ride, mins)) +
+        (away != null ? ` · ${S.cards.stopsAway(away)}` : '') +
+        (isLive ? S.guide.liveTag : '');
+      // Stops count too: in traffic the minutes keep slipping while the bus is already close.
+      const soon = (mins != null && mins >= 0 && mins <= 3) || (away != null && away <= 2);
       return {
         legIndex,
         title: leg.mode === 'CAR' ? S.cards.dropOffNear(next.from.name) : S.guide.walkTo(next.from.name),

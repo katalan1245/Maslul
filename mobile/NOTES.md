@@ -60,6 +60,7 @@ Found by the emulator tests (`TESTING.md`); everything else follows Kotlin.
 ## New features (not in the Kotlin app)
 
 - **Last routes offline** (`src/state/savedRoutes.ts`). Each successful route search keeps its first 6 routes, for the last 5 trips (the same trip replaces its earlier copy; "current location" counts as the same start within 1 km). When a search fails for any reason, the routes saved for that trip are shown under a "showing the ones saved at 14:05" banner, without those whose first ride has left; if all have left, the error says so. Each search is stored under its own key: a route is ~60 KB, mostly its map line, and Android caps one stored value at 2 MB. Not for lifts or on-board searches. Kept apart from the user's data, so losing it costs nothing.
+- **Stops away while waiting.** The live trip's waiting step reads "Bus 5 in 8 min · 2 stops away (live)", and "board soon" fires at 3 minutes *or* 2 stops away, whichever comes first (in traffic the minutes slip while the bus is already close). The stop screen shows "N stops away" under live times. Route cards and route details already showed it.
 
 ## Languages: English and Hebrew (`src/i18n/`)
 
