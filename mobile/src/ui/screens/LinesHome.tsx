@@ -84,6 +84,11 @@ class LinesHomeModel extends Model {
 
   noPermission = false;
 
+  override start() {
+    // Location allowed again in the phone's settings: show what's near without waiting for Refresh.
+    this.onForeground(() => this.noPermission && void this.loadNearby());
+  }
+
   loadNearby = async () => {
     if (this.nearbyLoading) return;
     this.nearbyLoading = true;

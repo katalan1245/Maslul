@@ -1,4 +1,5 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { AppState } from 'react-native';
 
 /**
  * State holder for one screen (ScreenModel in Kotlin): plain fields and async methods, with
@@ -8,6 +9,7 @@ export abstract class Model {
   private readonly listeners = new Set<() => void>();
   private version = 0;
   private readonly timers = new Set<ReturnType<typeof setInterval>>();
+  private readonly subs = new Set<{ remove: () => void }>();
   disposed = false;
 
   protected changed() {
@@ -28,6 +30,11 @@ export abstract class Model {
     this.timers.add(setInterval(() => !this.disposed && f(), ms));
   }
 
+  /** Runs [f] each time the app comes back to the foreground, until the screen closes. */
+  protected onForeground(f: () => void) {
+    this.subs.add(AppState.addEventListener('change', (s) => s === 'active' && !this.disposed && f()));
+  }
+
   /** Called when the screen appears (again); start loops here. */
   start() {}
 
@@ -35,6 +42,8 @@ export abstract class Model {
     this.disposed = true;
     this.timers.forEach(clearInterval);
     this.timers.clear();
+    this.subs.forEach((s) => s.remove());
+    this.subs.clear();
   }
 }
 
