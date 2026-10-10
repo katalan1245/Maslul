@@ -641,7 +641,9 @@ export class RoutesModel extends Model {
 
   toggleSaved = () => store.toggleSavedTrip({ from: this.from, to: this.to });
 
-  open = (itin: Itinerary) => nav.push('RouteDetail', { itinerary: itin, from: this.from, to: this.to });
+  open = (itin: Itinerary) =>
+    // Like the list, which only picks live buses when leaving now.
+    nav.push('RouteDetail', { itinerary: itin, from: this.from, to: this.to, keepRides: this.timeMode !== 'NOW' || this.onBoardTripId != null });
 
   /** Shows the first vehicle's live location: its trip, with the map following it. */
   openLive = (itin: Itinerary) => {

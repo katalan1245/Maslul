@@ -32,7 +32,7 @@ export type RootStack = {
   Search: SearchParams;
   PickOnMap: { onPicked: (p: Place) => void };
   Routes: { from: Place; to: Place };
-  RouteDetail: { itinerary: Itinerary; from: Place; to: Place };
+  RouteDetail: { itinerary: Itinerary; from: Place; to: Place; keepRides?: boolean };
   Settings: undefined;
   OnBoard: { onPicked: (p: Place) => void };
   Shuttles: undefined;

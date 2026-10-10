@@ -65,6 +65,8 @@ class RouteDetailModel extends Model {
     original: Itinerary,
     readonly from: Place,
     readonly to: Place,
+    /** A trip planned for a set time (or from the bus you're on): its rides stay as picked. */
+    private readonly keepRides = false,
   ) {
     super();
     this.itinerary = original;
@@ -166,7 +168,7 @@ class RouteDetailModel extends Model {
    */
   private pickBest() {
     const now = nowSec();
-    if (this.itinerary.start > now + 90 * 60) return;
+    if (this.keepRides || this.itinerary.start > now + 90 * 60) return;
     this.itinerary.legs.forEach((_, i) => {
       if (this.picked.has(i)) return;
       const b = Combine.bestOption(this.itinerary, i, now, this.liveOf);
@@ -211,7 +213,7 @@ class RouteDetailModel extends Model {
   share() {
     const e = this.expected();
     const lines = [S.detail.shareHeader(this.to.name, S.fmt.range(Fmt.when(e.start, nowSec()), Fmt.time(e.end)), Fmt.duration(e.end - e.start))];
-    for (const l of this.itinerary.legs) {
+    for (const l of e.legs) {
       if (l.mode === 'WALK') {
         if (legDurationSec(l) >= 60) lines.push(S.detail.shareWalk(Fmt.duration(legDurationSec(l)), l.to.name.trim() || this.to.name));
       } else {
@@ -225,7 +227,7 @@ class RouteDetailModel extends Model {
 export function RouteDetailScreen({ route }: NativeStackScreenProps<RootStack, 'RouteDetail'>) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
-  const model = useModel(() => new RouteDetailModel(route.params.itinerary, route.params.from, route.params.to));
+  const model = useModel(() => new RouteDetailModel(route.params.itinerary, route.params.from, route.params.to, route.params.keepRides));
   const active = useActiveTrip();
   const isActive = active?.itinerary.id === model.itinerary.id;
   const now = useNow(10_000);

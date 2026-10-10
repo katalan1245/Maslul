@@ -331,3 +331,29 @@ it('walks further when nothing leaves soon, and says so (upstream 1.2.1)', async
     jest.restoreAllMocks();
   }
 });
+
+it("shares the times the route screen shows, live ones included (P3)", async () => {
+  const { live } = require('./helpers') as typeof import('./helpers');
+  const { Share } = require('react-native') as typeof import('react-native');
+  const { Fmt } = require('../src/ui/fmt') as typeof import('../src/ui/fmt');
+  const { worthLive, legLive } = fake;
+  // The bus comes 4 minutes late.
+  fake.worthLive = async () => true;
+  fake.legLive = (async (l: { start: number; end: number }) => live('LIVE', l.start, l.start + 240, { alightExpected: l.end + 240 })) as never;
+  const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
+  try {
+    await planToDizengoff();
+    await fireEvent.press(screen.getAllByTestId('route_card')[0]);
+    await screen.findByTestId('route_detail_screen');
+    const bus = (await fake.plan({})).itineraries[0].legs[1];
+    await waitFor(() => expect(screen.getAllByText(Fmt.time(bus.start + 240)).length).toBeGreaterThan(0));
+    await fireEvent.press(screen.getByTestId('share_button'));
+    const text = share.mock.calls[0][0].message!;
+    expect(text).toContain(`${Fmt.time(bus.start + 240)} → `);
+    expect(text).toContain(`(${Fmt.time(bus.end + 240)})`);
+  } finally {
+    fake.worthLive = worthLive;
+    fake.legLive = legLive;
+    share.mockRestore();
+  }
+});

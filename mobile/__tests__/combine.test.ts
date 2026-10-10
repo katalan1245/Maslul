@@ -391,3 +391,15 @@ test('walk between rides moves with a switched ride', () => {
   expect(e.legs[3].start < e.legs[2].end).toBe(false);
   expect(e.end).toBe(at(43));
 });
+
+test('an earlier bus that gets in no sooner is not taken instead (R1: the card opened as an earlier trip)', () => {
+  const planned = direct('16', 12, 30);
+  const early = bus('92', 'A', 0.2, 'B', 5.0, 6, 30);
+  const itin = Combine.addAlternatives(planned, 1, [early], at(2));
+  const m = new Map([
+    [rideKey(early), live('LIVE', early.start, at(6), { alightExpected: at(30) })],
+    [rideKey(planned.legs[1]), live('LIVE', planned.legs[1].start, at(12), { alightExpected: at(30) })],
+  ]);
+  expect(trips(Combine.catchableOptions(itin, 1, at(2), false, of(m)))).toEqual(['trip-92-6', 'trip-16-12']);
+  expect(Combine.pickBest(itin, at(2), of(m))).toBe(itin);
+});

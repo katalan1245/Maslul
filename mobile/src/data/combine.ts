@@ -294,7 +294,7 @@ function catchableOptions(itin: Itinerary, legIndex: number, now: Instant, hurry
 
 /**
  * The catchable option of leg [legIndex] that gets you there first (ties: boards first),
- * or null when the current ride already is the best or nothing is catchable.
+ * or null when the current ride gets in as soon (or nothing is catchable).
  */
 function bestOption(itin: Itinerary, legIndex: number, now: Instant, liveOf: LiveOf): Leg | null {
   const leg = itin.legs[legIndex];
@@ -310,7 +310,10 @@ function bestOption(itin: Itinerary, legIndex: number, now: Instant, liveOf: Liv
       best = o;
     }
   }
-  return best != null && rideKey(best) !== rideKey(leg) ? best : null;
+  // A bus that gets in no sooner isn't worth switching to: an earlier one only means waiting at the next stop.
+  const current = options.find((o) => rideKey(o) === rideKey(leg));
+  if (best == null || current == null) return best != null && rideKey(best) !== rideKey(leg) ? best : null;
+  return arrives(best, liveOf(best)) < arrives(current, liveOf(current)) ? best : null;
 }
 
 /**
