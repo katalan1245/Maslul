@@ -4,7 +4,7 @@ import { type Place } from '../../data/models';
 import { S } from '../../i18n';
 import { FAVORITE_ICONS, type FavoriteIcon, type FavoritePlace, favoriteFor, favoriteKey } from '../../data/userStore';
 import { store } from '../../state/store';
-import { alpha, type, useTheme } from '../theme';
+import { alpha, inputType, useTheme } from '../theme';
 import { TextButton, Txt } from './common';
 import { FAVORITE_ICON_NAMES, Icon } from './icons';
 import { Dialog } from './overlays';
@@ -73,7 +73,7 @@ function FavoriteDialog({ draft, onClose }: { draft: FavoriteDraft; onClose: () 
         autoCapitalize="sentences"
         accessibilityLabel={S.favorites.label}
         testID="favorite_label"
-        style={[type.bodyLarge, styles.input, { color: t.c.onSurface, borderColor: t.c.outline }]}
+        style={[inputType('bodyLarge'), styles.input, { color: t.c.onSurface, borderColor: t.c.outline }]}
       />
       <View style={styles.icons}>
         {FAVORITE_ICONS.map((i) => {

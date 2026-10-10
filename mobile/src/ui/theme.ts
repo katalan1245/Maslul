@@ -136,6 +136,12 @@ export const type = {
 /** Tabular figures, so times don't jiggle as they tick. */
 export const numeric: TextStyle = { fontVariant: ['tabular-nums'] };
 
+/** A text style for a one-line TextInput: [type] without its lineHeight, which makes iOS draw the text low in the field. */
+export function inputType(v: keyof typeof type): TextStyle {
+  const { lineHeight: _, ...rest }: TextStyle = type[v];
+  return rest;
+}
+
 // ---- Colour helpers ----------------------------------------------------------------
 
 /** ARGB int → "#RRGGBB". */

@@ -11,7 +11,7 @@ import { Fmt, modeName } from '../fmt';
 import { Button, Chip, Segmented, SettingSwitch, TextButton, Txt } from '../components/common';
 import { Icon, modeIcon } from '../components/icons';
 import { Sheet } from '../components/overlays';
-import { type, useTheme } from '../theme';
+import { inputType, useTheme } from '../theme';
 import type { TimeMode } from './routesModel';
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
@@ -38,7 +38,7 @@ export function TimeSheet({
   const h = Number(hour);
   const m = Number(minute);
   const valid = /^\d{1,2}$/.test(hour) && /^\d{1,2}$/.test(minute) && h <= 23 && m <= 59;
-  const field = [type.headlineSmall, styles.timeField, { color: t.c.onSurface, backgroundColor: t.c.surfaceVariant }];
+  const field = [inputType('headlineSmall'), styles.timeField, { color: t.c.onSurface, backgroundColor: t.c.surfaceVariant }];
   return (
     <Sheet visible onDismiss={onDismiss} testID="time_sheet">
       <Txt v="titleLarge">{S.sheets.when}</Txt>
