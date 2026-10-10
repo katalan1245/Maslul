@@ -189,7 +189,7 @@ export function ItineraryCard({
       {first != null && !strips.includes(first) && !onBoard && (
         <View style={{ marginTop: 12 }}>
           <LiveLine
-            label={lineLabel(first)}
+            label={rideName(first)}
             mode={first.mode}
             stop={[first.from.name, platformLabel(first.from)].filter((x) => x != null).join(' · ')}
             live={live}
@@ -439,6 +439,7 @@ export function LiveLine({
   now,
   onPress,
 }: {
+  /** "Bus 61", or just "Train" (see rideName). */
   label: string;
   mode: TransitMode;
   stop: string;
@@ -460,7 +461,7 @@ export function LiveLine({
         <LiveSignal freshness={f} size={14} />
         <View style={{ flex: 1, marginLeft: 8 }}>
           <Text style={[type.bodyMedium, { color: t.c.onSurface, fontWeight: '500' }]} numberOfLines={1}>
-            {`${modeName(mode)} ${label} `}
+            {`${label} `}
             <Text style={{ color: freshnessColor(f, t), fontWeight: '600' }}>{eta}</Text>
             {away}
           </Text>

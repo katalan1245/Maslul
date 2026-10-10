@@ -3,8 +3,9 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { en } from '../src/i18n/en';
 import { ru } from '../src/i18n/ru';
 import { vehicleKind } from '../src/data/models';
-import { CombinedBadges, RideOptions, TransferWarning } from '../src/ui/screens/routeCards';
-import { call, instant, makeLeg } from './helpers';
+import { CombinedBadges, LiveLine, RideOptions, TransferWarning } from '../src/ui/screens/routeCards';
+import { rideName } from '../src/ui/fmt';
+import { call, instant, live, makeLeg } from './helpers';
 
 const t0 = instant('2026-10-09T10:00:00Z');
 const a = call('sA', 'Cinema City', 32.0, 34.8);
@@ -49,4 +50,12 @@ test('light rail is a tram in Russian, a train elsewhere', () => {
   expect(ru.vehicle[vehicleKind('LIGHT_RAIL')]).toBe('трамвай');
   expect(ru.cards.theNextVehicle(vehicleKind('LIGHT_RAIL'))).toBe('следующий трамвай');
   expect(en.vehicle[vehicleKind('LIGHT_RAIL')]).toBe('train');
+});
+
+test('a live train without a number reads "Train in 5 min", not "Train Train" (P3)', async () => {
+  const train = makeLeg({ mode: 'TRAIN', from: a, to: b, start: t0 + 300, end: t0 + 1500, routeShortName: '' });
+  await render(<LiveLine label={rideName(train)} mode="TRAIN" stop="Tel Aviv University" live={live('LIVE', train.start, train.start)} scheduled={train.start} now={t0} />);
+  expect(screen.getByText('Train', { exact: false })).toHaveTextContent(/^Train in 5 min/);
+  await render(<LiveLine label={rideName(bus('61', 5))} mode="BUS" stop="Cinema City" live={live('LIVE', t0 + 300, t0 + 300)} scheduled={t0 + 300} now={t0} />);
+  expect(screen.getByText('Bus 61', { exact: false })).toHaveTextContent(/^Bus 61 in 5 min/);
 });
