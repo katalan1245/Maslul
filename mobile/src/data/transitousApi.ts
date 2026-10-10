@@ -12,6 +12,7 @@ import {
   type StopCall,
   type TransitMode,
   TRANSIT_MODES,
+  stopMode,
   isTransit,
   makeLeg,
   modeFromMotis,
@@ -181,6 +182,7 @@ export interface PlaceDto {
   track?: string | null;
   scheduledTrack?: string | null;
   description?: string | null;
+  modes?: string[] | null;
 }
 
 export function toStopCall(p: PlaceDto): StopCall {
@@ -324,6 +326,7 @@ interface MatchDto {
   houseNumber?: string | null;
   country?: string | null;
   areas?: { name?: string; default?: boolean }[];
+  modes?: string[] | null;
 }
 
 export function matchToPlace(m: MatchDto): Place {
@@ -337,6 +340,8 @@ export function matchToPlace(m: MatchDto): Place {
   const p: Place = { name: title, lat: m.lat ?? 0, lon: m.lon ?? 0, kind };
   if (city != null) p.subtitle = city;
   if (type === 'STOP') p.stopId = m.id ?? '';
+  const mode = type === 'STOP' ? stopMode(m.modes) : undefined;
+  if (mode != null) p.mode = mode;
   return p;
 }
 
@@ -465,6 +470,8 @@ export class TransitousApi {
       .filter((s) => s.stopId != null)
       .map((s): Place => {
         const p: Place = { name: s.name ?? '', lat: s.lat ?? 0, lon: s.lon ?? 0, kind: 'STOP', stopId: s.stopId! };
+        const mode = stopMode(s.modes);
+        if (mode != null) p.mode = mode;
         const sub = [s.stopCode != null ? `#${s.stopCode}` : null, cityFromDescription(s.description)]
           .filter((x) => x != null)
           .join(' · ');

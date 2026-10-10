@@ -216,6 +216,8 @@ export function readPlace(v: unknown): Place | null {
   const subtitle = str(v.subtitle);
   const stopId = str(v.stopId);
   const tripId = str(v.tripId);
+  const mode = oneOf(TRANSIT_MODES, v.mode);
+  if (mode != null) p.mode = mode;
   if (subtitle != null) p.subtitle = subtitle;
   if (stopId != null) p.stopId = stopId;
   if (tripId != null) p.tripId = tripId;

@@ -120,7 +120,7 @@ export function StationsHomeScreen() {
       case 'header':
         return <SectionHeader text={item.text} action={item.refresh ? S.common.refresh : undefined} onAction={item.refresh ? model.loadNearby : undefined} />;
       case 'favorite':
-        return <PlaceRow title={item.place.name} subtitle={item.place.subtitle} icon="star" iconTint={ModeColors.BUS} onPress={() => open(item.place)} />;
+        return <PlaceRow title={item.place.name} subtitle={item.place.subtitle} icon="star" iconTint={ModeColors[item.place.mode ?? 'BUS']} onPress={() => open(item.place)} />;
       case 'station':
         return <StationRow place={item.place} here={here} onPress={() => open(item.place)} />;
     }
@@ -145,8 +145,8 @@ function StationRow({ place, here, onPress }: { place: Place; here: GeoPoint | n
     <PlaceRow
       title={place.name}
       subtitle={place.subtitle}
-      icon={modeIcon('BUS')}
-      iconTint={ModeColors.BUS}
+      icon={modeIcon(place.mode ?? 'BUS')}
+      iconTint={ModeColors[place.mode ?? 'BUS']}
       trailing={
         here != null ? (
           <Txt v="labelMedium" color={t.x.subtle}>

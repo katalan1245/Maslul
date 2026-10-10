@@ -16,7 +16,7 @@ import { FAVORITE_ICON_NAMES, Icon, type IconName } from '../components/icons';
 import { MapSheet } from '../components/MapSheet';
 import { TransitMap, useMapController } from '../map/TransitMap';
 import { CURRENT_LOCATION, nav } from '../nav';
-import { useTheme } from '../theme';
+import { ModeColors, useTheme } from '../theme';
 import { FavoriteStops } from './favoriteStops';
 
 export function planTo(to: Place, from: Place = CURRENT_LOCATION) {
@@ -126,7 +126,8 @@ export function NavHomeScreen() {
         map={() => (
           <TransitMap
             style={StyleSheet.absoluteFill}
-            markers={stops.map((s) => ({ point: placePoint(s), color: '#6B7280', kind: 'STOP_SMALL', id: s.stopId }))}
+            // Stations stand out: a bigger ring in their mode's colour.
+            markers={stops.map((s) => ({ point: placePoint(s), color: s.mode ? ModeColors[s.mode] : '#6B7280', kind: s.mode ? 'STOP' : 'STOP_SMALL', id: s.stopId }))}
             user={user}
             initialCenter={user ?? DEFAULT_LOCATION}
             initialZoom={15}

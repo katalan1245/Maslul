@@ -143,7 +143,7 @@ export function StopScreen({ route }: NativeStackScreenProps<RootStack, 'Stop'>)
       </View>
       <TransitMap
         style={{ height: 160 }}
-        markers={[{ point: placePoint(place), color: ModeColors.BUS, kind: 'STOP', id: place.stopId }]}
+        markers={[{ point: placePoint(place), color: ModeColors[place.mode ?? 'BUS'], kind: 'STOP', id: place.stopId }]}
         user={user}
         initialCenter={placePoint(place)}
         initialZoom={16}

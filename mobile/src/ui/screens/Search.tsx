@@ -197,7 +197,7 @@ export function SearchScreen({ route }: NativeStackScreenProps<RootStack, 'Searc
           <PlaceRow
             title={item.place.name}
             subtitle={item.place.subtitle}
-            icon={item.icon ?? kindIcon(item.place.kind)}
+            icon={item.icon ?? kindIcon(item.place.kind, item.place.mode)}
             iconTint={item.icon ? undefined : kindTint(item.place.kind, t)}
             trailing={item.star ? <FavoriteStar saved={favoriteFor(data, item.place) != null} onPress={() => setDraft(draftFor(item.place))} /> : undefined}
             onLongPress={() => setDraft(draftFor(item.place))}

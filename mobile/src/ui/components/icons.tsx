@@ -61,10 +61,10 @@ export const FAVORITE_ICON_NAMES: Record<FavoriteIcon, IconName> = {
   SPORTS: 'sports-soccer',
 };
 
-export function kindIcon(k: PlaceKind): IconName {
+export function kindIcon(k: PlaceKind, mode?: TransitMode): IconName {
   switch (k) {
     case 'STOP':
-      return 'directions-bus';
+      return modeIcon(mode ?? 'BUS');
     case 'ADDRESS':
       return 'location-on';
     case 'HOME':

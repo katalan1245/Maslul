@@ -119,8 +119,16 @@ export interface Place {
   subtitle?: string;
   kind: PlaceKind;
   stopId?: string;
+  /** For a STOP served by more than buses: the rail (or other) mode it's known for. Absent: a bus stop. */
+  mode?: TransitMode;
   /** The trip ridden, for ON_BOARD. */
   tripId?: string;
+}
+
+/** What a stop is known for, from the planner's modes: rail over buses, so a central station is a train station. */
+export function stopMode(modes: readonly string[] | null | undefined): TransitMode | undefined {
+  const ours = (modes ?? []).map(modeFromMotis);
+  return (['TRAIN', 'LIGHT_RAIL', 'METRO', 'CABLE_CAR', 'FERRY'] as const).find((m) => ours.includes(m));
 }
 
 export const placePoint = (p: Place): GeoPoint => ({ lat: p.lat, lon: p.lon });

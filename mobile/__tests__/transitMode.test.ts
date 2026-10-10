@@ -34,3 +34,21 @@ test('upstream 1.2.1: vehicles by kind in each language, and "the train" without
   expect(en.cards.ifMissed(en.cards.nextLine('143'), '21:40', '30 min')).toBe('If missed, next 143 at 21:40 (+30 min)');
   expect(he.cards.ifMissed(he.cards.theNextVehicle('TRAIN'), '21:40', '30 דק׳')).toBe('אם מפספסים: הרכבת הבאה ב-21:40 (+30 דק׳)');
 });
+
+test('a stop with trains is a train station, wherever it shows (#10)', () => {
+  const { stopMode } = require('../src/data/models') as typeof import('../src/data/models');
+  const { matchToPlace } = require('../src/data/transitousApi') as typeof import('../src/data/transitousApi');
+  const { readPlace } = require('../src/data/userStore') as typeof import('../src/data/userStore');
+  const { kindIcon } = require('../src/ui/components/icons') as typeof import('../src/ui/components/icons');
+  expect(stopMode(['BUS', 'REGIONAL_RAIL'])).toBe('TRAIN');
+  expect(stopMode(['TRAM'])).toBe('LIGHT_RAIL');
+  expect(stopMode(['BUS'])).toBeUndefined();
+  expect(stopMode(undefined)).toBeUndefined();
+  const station = matchToPlace({ type: 'STOP', name: 'Tel Aviv Center', id: 'il-Israel-MOT_37358', lat: 32.08, lon: 34.79, modes: ['REGIONAL_RAIL'] });
+  expect(station.mode).toBe('TRAIN');
+  expect(kindIcon(station.kind, station.mode)).toBe('directions-railway');
+  expect(kindIcon('STOP')).toBe('directions-bus');
+  // Kept in recents and favourites.
+  expect(readPlace(JSON.parse(JSON.stringify(station)))?.mode).toBe('TRAIN');
+  expect(readPlace({ ...station, mode: 'ROCKET' })?.mode).toBeUndefined();
+});
