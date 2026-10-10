@@ -6,7 +6,7 @@ You are a Claude session with tools (an MCP) that control an Android emulator. Y
 
 ## Files in this folder
 
-The folder is `shared\maslul\maslul-test` in the host's handoff folder. Inside the build container it's `/share/maslul-test`. Write your report and evidence here too.
+The folder is `maslul-test` in the host's handoff folder (`C:\Users\Raz\Desktop\CS\Claude\shared\maslul\maslul-test`). Write your report and evidence here.
 
 | File | What it is |
 |---|---|
@@ -15,9 +15,13 @@ The folder is `shared\maslul\maslul-test` in the host's handoff folder. Inside t
 | `maslul-kotlin-1.2.1.apk` | The Kotlin app's last version, 1.2.1 (versionCode 7), for the upgrade test X4 only |
 | `build-info.txt` | Commit and build details. Quote the commit line at the top of your report |
 | `maestro/` | Automated UI flows (Maestro), also readable as step-by-step scripts |
-| `TESTING.md` | This file |
+| `TESTING.md` | This file: the only instructions |
+| `START-HERE.md` | A pointer to this file |
+| `report.md` | Empty: **write your report here** |
+| `evidence/` | Empty: **put every screenshot and log here** |
+| `archive/` | Earlier rounds. **Don't read or use it**: those builds and findings are out of date, and everything still open is in this file |
 
-Both APKs are signed with the same key, so the new one installs over the old one as an update.
+All three APKs are signed with the same key, so the new one installs over either old one as an update.
 
 ## Rules
 
@@ -152,11 +156,11 @@ This round is a **complete re-test before release**: every area, from scratch, e
 
 ### M. Automated flows (Maestro)
 
-**M1.** App and emulator in English. Stop mobile-mcp's agent (`adb shell pkill -f com.mobilenext`), location in Tel Aviv (`adb emu geo fix 34.7818 32.0853`), then `maestro --device emulator-5554 test maestro/ --format junit --output maestro-report.xml`. All 11 should pass.
+**M1.** App and emulator in English. Stop mobile-mcp's agent (`adb shell pkill -f com.mobilenext`), location in Tel Aviv (`adb emu geo fix 34.7818 32.0853`), then `maestro --device emulator-5554 test maestro/ --format junit --output evidence/maestro-report.xml --debug-output evidence/maestro-output`. All 11 should pass.
 
 ## Report
 
-Earlier rounds' reports and evidence are kept as `report-round2.md` … `report-round5.md` and `evidence-round2/` … `evidence-round5/` (with their `maestro-report-*.xml`). Write this round's results into the empty `report.md`, with screenshots in `evidence/`. End your session with the Summary as your final message.
+Write this round's results into the empty `report.md`, with screenshots and logs in `evidence/`, and the Maestro report as `evidence/maestro-report.xml`. Leave `archive/` alone. End your session with the Summary as your final message.
 
 ```
 # Maslul test report

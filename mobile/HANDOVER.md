@@ -146,7 +146,7 @@ In [FEATURE-REQUESTS.md](FEATURE-REQUESTS.md): wanted after the full test and th
   - It takes about 2 minutes. Check the log for `BUILD SUCCESSFUL`, not the exit code of a `tail`.
   - Commit first, or `build-info.txt` says "with uncommitted changes". An untracked file like this one counts.
 - **Between test rounds:**
-  - Archive `report.md`, `evidence/` and `maestro-report*.xml` as `*-roundN`, then leave an empty `report.md` and `evidence/`.
+  - Move `report.md` and `evidence/` into `archive/roundN/` (as `report.md` and `evidence/`), then leave an empty `report.md` and `evidence/`. The folder's top level stays: `START-HERE.md`, `TESTING.md`, the three APKs, `build-info.txt`, `maestro/`, `report.md`, `evidence/`, `archive/`.
   - If renaming `evidence/` is refused (a host-side lock), copy it with `cp -r` and ask the user to clear the original.
 - **iOS project here:** `npx expo prebuild -p ios --no-install` generates `ios/` for inspection. It's gitignored; delete it afterwards. There's no Xcode here, so iOS builds happen only on the user's Mac.
 - **`android/`** is generated and gitignored.

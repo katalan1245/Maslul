@@ -13,6 +13,7 @@ mkdir -p "$out"
 put() { cp "$1" "$out/$2.tmp" && mv -f "$out/$2.tmp" "$out/$2"; }
 put "$apkdir/app-release.apk" maslul-latest.apk
 put TESTING.md TESTING.md
+put scripts/START-HERE.md START-HERE.md
 kotlin=../app/build/outputs/apk/debug/app-debug.apk
 if [ -f "$kotlin" ]; then put "$kotlin" maslul-kotlin-v4.apk; else echo "note: no Kotlin APK; run sh gradlew assembleDebug at the repo root" >&2; fi
 # The Kotlin app's last version (1.2.1, upstream master) for the X4 upgrade test: assembleDebug in a worktree of master.
@@ -23,7 +24,7 @@ rm -rf "$out/maestro.tmp" && cp -r .maestro "$out/maestro.tmp" && rm -rf "$out/m
   cat "$apkdir/build-info.txt"
   echo "published: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
   echo "files (sha256):"
-  (cd "$out" && find maslul-latest.apk maslul-kotlin-v4.apk maslul-kotlin-1.2.1.apk TESTING.md maestro -type f 2>/dev/null | sort | xargs sha256sum | sed 's/^/  /')
+  (cd "$out" && find maslul-latest.apk maslul-kotlin-v4.apk maslul-kotlin-1.2.1.apk TESTING.md START-HERE.md maestro -type f 2>/dev/null | sort | xargs sha256sum | sed 's/^/  /')
 } > "$out/build-info.txt.tmp"
 mv -f "$out/build-info.txt.tmp" "$out/build-info.txt"
 cat "$out/build-info.txt"
