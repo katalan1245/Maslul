@@ -57,12 +57,23 @@ class StopModel extends Model {
 }
 
 /** Departures grouped per line+direction, next few times each. */
-interface BoardGroup {
+export interface BoardGroup {
   key: string;
   entries: BoardEntry[];
 }
 
-const entryTime = (e: BoardEntry) => (e.live ? bestTime(e.live) : e.departure.scheduled);
+export const entryTime = (e: BoardEntry) => (e.live ? bestTime(e.live) : e.departure.scheduled);
+
+export function boardGroups(entries: BoardEntry[]): BoardGroup[] {
+  const groups: BoardGroup[] = [];
+  for (const e of entries) {
+    const key = `${e.departure.routeId}|${e.departure.headsign}`;
+    const g = groups.find((x) => x.key === key);
+    if (g) g.entries.push(e);
+    else groups.push({ key, entries: [e] });
+  }
+  return groups.sort((a, b) => entryTime(a.entries[0]) - entryTime(b.entries[0]));
+}
 
 export function StopScreen({ route }: NativeStackScreenProps<RootStack, 'Stop'>) {
   const t = useTheme();
@@ -73,14 +84,7 @@ export function StopScreen({ route }: NativeStackScreenProps<RootStack, 'Stop'>)
   const now = useNow(10_000);
   const place = model.place;
   const fav = data.favoriteStops.some((s) => s.stopId === place.stopId);
-  const groups: BoardGroup[] = [];
-  for (const e of model.entries) {
-    const key = `${e.departure.routeId}|${e.departure.headsign}`;
-    const g = groups.find((x) => x.key === key);
-    if (g) g.entries.push(e);
-    else groups.push({ key, entries: [e] });
-  }
-  groups.sort((a, b) => entryTime(a.entries[0]) - entryTime(b.entries[0]));
+  const groups = boardGroups(model.entries);
 
   return (
     <View style={{ flex: 1, backgroundColor: t.c.background }} testID="stop_screen">
@@ -148,7 +152,7 @@ export function StopScreen({ route }: NativeStackScreenProps<RootStack, 'Stop'>)
   );
 }
 
-function BoardRow({ group, now, onTimePress, onPress }: { group: BoardGroup; now: Instant; onTimePress: () => void; onPress: () => void }) {
+export function BoardRow({ group, now, onTimePress, onPress }: { group: BoardGroup; now: Instant; onTimePress: () => void; onPress: () => void }) {
   const t = useTheme();
   const first = group.entries[0];
   const d = first.departure;
