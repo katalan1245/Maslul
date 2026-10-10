@@ -489,8 +489,9 @@ export function SimpleSettingsScreen() {
   const [editing, setEditing] = useState<{ index: number; draft: SimpleButton } | null>(null);
 
   const setLanguage = (l: LanguageSetting) => {
-    store.updateSettings((s) => ({ ...s, language: l }));
+    // The language first: saving the setting redraws the app in it.
     void changeLanguage(l);
+    store.updateSettings((s) => ({ ...s, language: l }));
   };
   const save = () => {
     if (editing) store.setSimpleButton(editing.index, editing.draft);

@@ -111,3 +111,43 @@ it('shows Simple Maslul in Russian without English UI text', async () => {
   await screen.findByText(ru.simple.howToGetThere);
   expect(leaks()).toEqual([]);
 });
+
+it('switches English → Russian in place: no reload, still on Settings (X3)', async () => {
+  const { reloadAppAsync } = require('expo') as { reloadAppAsync: jest.Mock };
+  reloadAppAsync.mockClear();
+  await launch(JSON.stringify({ settings: { language: 'EN' } }));
+  await fireEvent.press(await screen.findByTestId('settings_button'));
+  await fireEvent.press(await screen.findByText('Русский'));
+  await screen.findByText(ru.settings.title);
+  expect(screen.getByTestId('language')).toBeTruthy();
+  expect(leaks()).toEqual([]);
+  await fireEvent.press(screen.getByText('English'));
+  await screen.findByText(en.settings.title);
+  expect(reloadAppAsync).not.toHaveBeenCalled();
+});
+
+it('comes back to the same screen when Android rebuilds the app, e.g. for a new text size (F5)', async () => {
+  await launch(JSON.stringify({ settings: { language: 'EN' } }));
+  await fireEvent.press(await screen.findByTestId('tab_lines'));
+  await screen.findByTestId('line_search');
+  // The activity is rebuilt: the app mounts again in the same JS runtime.
+  screen.unmount();
+  await render(<App />);
+  await screen.findByTestId('line_search');
+  expect(screen.queryByText('Where to?')).toBeNull();
+});
+
+it("follows the phone's language as it is now, not as it was at launch (H4)", () => {
+  const native = (require('../modules/maslul-native/src/MaslulNativeModule') as { default: { currentLanguage?: () => string } }).default;
+  let now = 'he-IL';
+  native.currentLanguage = () => now;
+  try {
+    expect(deviceLang()).toBe('he');
+    now = 'en-US';
+    expect(deviceLang()).toBe('en');
+    now = 'ru-RU';
+    expect(deviceLang()).toBe('ru');
+  } finally {
+    delete native.currentLanguage;
+  }
+});

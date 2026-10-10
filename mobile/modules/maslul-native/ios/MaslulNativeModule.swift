@@ -17,6 +17,10 @@ public class MaslulNativeModule: Module {
       Locale.preferredLanguages.first ?? ""
     }
 
+    Function("currentLanguage") { () -> String in
+      Locale.preferredLanguages.first ?? ""
+    }
+
     AsyncFunction("readLegacyStore") { () -> String? in
       nil
     }

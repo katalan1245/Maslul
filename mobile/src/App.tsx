@@ -13,6 +13,7 @@ import type { Place } from './data/models';
 import { END_TRIP_URL, activeTrip, useActiveTrip } from './live/liveTrip';
 import { setUpNotifications } from './live/notifications';
 import { readLegacyStore } from './native';
+import { navMemory } from './ui/navMemory';
 import { S, lang } from './i18n';
 import { applyLanguage } from './i18n/device';
 import { repo } from './state/services';
@@ -108,6 +109,8 @@ function Root() {
   const system = useColorScheme();
   const simple = data.settings.simpleMode;
   const { fontScale } = useWindowDimensions();
+  // Places and stop names come in the app's language, which can change without a restart.
+  repo.language = lang();
   const dark = data.settings.theme === 'SYSTEM' ? system === 'dark' : data.settings.theme === 'DARK';
   const theme = dark ? darkTheme : lightTheme;
   const [routeName, setRouteName] = useState<string | undefined>(undefined);
@@ -123,12 +126,16 @@ function Root() {
       <StatusBar style={dark ? 'light' : 'dark'} />
       {/* Screens already drawn keep their old text sizes when the phone's text size changes (seen on
           iOS: clipped labels), so everything is drawn again, on the same screens. */}
-      <Fragment key={fontScale}>
+      {/* So is a change between languages written the same way round (English and Russian). */}
+      <Fragment key={`${fontScale}:${lang()}`}>
       <NavigationContainer
         ref={navigationRef}
-        initialState={navigationRef.isReady() ? navigationRef.getRootState() : undefined}
+        initialState={navigationRef.isReady() ? navigationRef.getRootState() : navMemory.state}
         theme={navTheme}
-        onStateChange={() => setRouteName(navigationRef.getCurrentRoute()?.name)}>
+        onStateChange={(state) => {
+          navMemory.state = state;
+          setRouteName(navigationRef.getCurrentRoute()?.name);
+        }}>
         {/* Simple Maslul is its own app, without the tab bar: switching remounts the navigator at its home. */}
         <Stack.Navigator key={simple ? 'simple' : 'full'} screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
           {simple ? (

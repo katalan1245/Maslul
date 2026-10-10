@@ -2,14 +2,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { reloadAppAsync } from 'expo';
 import { I18nManager } from 'react-native';
 import MaslulNative from '../../modules/maslul-native/src/MaslulNativeModule';
-import { type Lang, type LanguageSetting, lang, setLanguage } from '.';
+import { type Lang, type LanguageSetting, setLanguage } from '.';
 
 const RELOAD_KEY = 'direction_reload_v1';
 
 /** The phone's language, if it's one the app speaks ("iw" is Android's old code for Hebrew). */
 export function deviceLang(): Lang {
   // Android gives "he_IL" or "iw_IL"; "_" is a word character, so \b wouldn't end the code there.
-  const id = MaslulNative?.preferredLanguage || (I18nManager.getConstants().localeIdentifier ?? '');
+  // Asked each time: React Native's locale is a constant from launch, stale once the phone's language changes.
+  const id = MaslulNative?.currentLanguage?.() || MaslulNative?.preferredLanguage || (I18nManager.getConstants().localeIdentifier ?? '');
   if (/^(he|iw)([-_]|$)/i.test(id)) return 'he';
   return /^ru([-_]|$)/i.test(id) ? 'ru' : 'en';
 }
@@ -38,8 +39,10 @@ export async function applyLanguage(setting: LanguageSetting): Promise<boolean> 
   return true;
 }
 
-/** From Settings: the open screens were drawn in the old language, so a change always reloads. */
-export async function changeLanguage(setting: LanguageSetting) {
-  const before = lang();
-  if (!(await applyLanguage(setting)) && lang() !== before) await reloadAppAsync('Language changed').catch(() => {});
+/**
+ * From Settings. A change of direction reloads the app; otherwise the screens are drawn again in
+ * the new language where they are (App keys them by language). Call before saving the setting.
+ */
+export function changeLanguage(setting: LanguageSetting): Promise<boolean> {
+  return applyLanguage(setting);
 }

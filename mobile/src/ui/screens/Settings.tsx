@@ -106,8 +106,9 @@ export function SettingsScreen() {
             options={LANGUAGES.map((m) => ({ value: m, label: S.settings.languages[m] }))}
             value={s.language}
             onChange={(m) => {
-              store.updateSettings((st) => ({ ...st, language: m }));
+              // The language first: saving the setting redraws the app in it.
               void changeLanguage(m);
+              store.updateSettings((st) => ({ ...st, language: m }));
             }}
             testID="language"
           />

@@ -52,6 +52,11 @@ class MaslulNativeModule : Module() {
       withContext(Dispatchers.IO) { fetchSiri(url, userAgent, snapshotEpochSec.toLong()) }
     }
 
+    // Read each time: after the phone's language changes the app carries on in the same JS runtime.
+    Function("currentLanguage") {
+      context.resources.configuration.locales[0].toLanguageTag()
+    }
+
     Function("canScheduleExactAlarms") {
       Build.VERSION.SDK_INT < Build.VERSION_CODES.S || context.getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
     }
