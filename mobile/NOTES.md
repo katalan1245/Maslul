@@ -57,6 +57,10 @@ Found by the emulator tests (`TESTING.md`); everything else follows Kotlin.
 - **A failed route search** says whether the planner answered with an error, took too long, or couldn't be reached, and logs the error (`console.warn`), instead of always "Check your connection".
 - **Route details** show the day in the header and the shared text when the trip isn't today.
 
+## New features (not in the Kotlin app)
+
+- **Stops away while waiting.** The live trip's waiting step reads "Bus 5 in 8 min · 2 stops away (live)", and "board soon" fires at 3 minutes *or* 2 stops away, whichever comes first (in traffic the minutes slip while the bus is already close). The stop screen shows "N stops away" under live times. Route cards and route details already showed it.
+
 ## Languages: English and Hebrew (`src/i18n/`)
 
 - **Choosing.** Settings → Language: System (the phone's language; Hebrew if it's `he`/`iw`, otherwise English), עברית or English. The app name stays Maslul in both.

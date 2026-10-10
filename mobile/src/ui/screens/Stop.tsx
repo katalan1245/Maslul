@@ -162,7 +162,8 @@ function BoardRow({ group, now, onTimePress, onPress }: { group: BoardGroup; now
   let sub: string;
   if (live?.status === 'LIVE') {
     const rec = callRecordedAt(live);
-    sub = freshness === 'STALE' && rec != null ? Fmt.ago(rec, now).toLowerCase() : S.stopBoard.live;
+    const away = live.stopsAway != null && live.stopsAway >= 1 && live.stopsAway <= 40 ? live.stopsAway : null;
+    sub = freshness === 'STALE' && rec != null ? Fmt.ago(rec, now).toLowerCase() : away != null ? S.cards.stopsAway(away) : S.stopBoard.live;
   } else if (live?.status === 'UNTRACKED') sub = S.stopBoard.noLiveData;
   else sub = time - now < 3600 ? Fmt.time(time) : S.stopBoard.scheduled;
   return (

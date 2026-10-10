@@ -125,3 +125,16 @@ test('counts stops from where the bus really is on a finely drawn route', () => 
   // 150 m off to the side of the last stop, away from the walking path: walking on.
   expect(g.update(east(3.9, -0.1), t0 + 900, none).title).toBe('Walk to Office');
 });
+
+test('waiting for a live bus: stops away in the text, and the boarding alert two stops out', () => {
+  const live = (stopsAway: number, expected: number) =>
+    new Map<number, LiveCall>([[1, { status: 'LIVE', scheduled: t0 + 300, expected, delaySec: 0, stopsAway, vehicle: null, alightExpected: null, progress: null }]]);
+  const far = new TripGuide(itin, 'Home').update(pt(-0.3), t0, live(5, t0 + 600));
+  expect(far.text).toBe('Bus 5 in 10 min · 5 stops away (live)');
+  expect(far.alert).toBeNull();
+  // Stuck in traffic: still 8 min by the clock, but only two stops out.
+  const close = new TripGuide(itin, 'Home').update(pt(-0.3), t0, live(2, t0 + 480));
+  expect(close.text).toBe('Bus 5 in 8 min · 2 stops away (live)');
+  expect(close.alert).toBe('BOARD_SOON');
+  expect(close.alertKey).toBe('board-1');
+});
