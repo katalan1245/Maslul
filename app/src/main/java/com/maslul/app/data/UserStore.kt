@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 
@@ -12,8 +13,8 @@ import kotlinx.serialization.encodeToString
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
 @Serializable
-enum class WalkSpeed(val mps: Double, val label: String) {
-    SLOW(1.0, "Relaxed"), NORMAL(1.3, "Normal"), FAST(1.6, "Brisk")
+enum class WalkSpeed(val mps: Double) {
+    SLOW(1.0), NORMAL(1.3), FAST(1.6)
 }
 
 /**
@@ -22,8 +23,8 @@ enum class WalkSpeed(val mps: Double, val label: String) {
  * per bus boarded.
  */
 @Serializable
-enum class RailPreference(val label: String, val busMinuteCost: Double, val busLegSec: Double) {
-    NONE("No", 0.0, 0.0), PREFER("Yes", 0.35, 240.0), STRONG("Strongly", 0.75, 450.0)
+enum class RailPreference(val busMinuteCost: Double, val busLegSec: Double) {
+    NONE(0.0, 0.0), PREFER(0.35, 240.0), STRONG(0.75, 450.0)
 }
 
 /** Longest walk to or from a stop that route planning allows by default. */
@@ -42,9 +43,49 @@ data class Settings(
     val railPreference: RailPreference = RailPreference.NONE,
     val reminderMinutes: Int = 5,
     /** Offers planning around a ride (טרמפ) for the first part of a trip. */
-    val rides: Boolean = false,
+    val rides: Boolean = true,
     /** Offers planning from the bus or train you're on. */
-    val onBoard: Boolean = false,
+    val onBoard: Boolean = true,
+    /** Simple Maslul: a few big buttons and plain directions instead of the full app. */
+    val simpleMode: Boolean = false,
+    /** The app's language (the full app's and Simple Maslul's); null follows the phone's. */
+    @SerialName("simpleLanguage")
+    val language: AppLanguage? = null,
+)
+
+/** Languages Maslul speaks. */
+@Serializable
+enum class AppLanguage(val code: String, val label: String, val rtl: Boolean) {
+    EN("en", "English", false), HE("he", "עברית", true), RU("ru", "Русский", false);
+
+    companion object {
+        /** The language for a phone set to [tag] (Android still reports Hebrew as "iw"). */
+        fun forLocale(tag: String): AppLanguage = when (tag.substringBefore('-').substringBefore('_').lowercase()) {
+            "he", "iw" -> HE
+            "ru" -> RU
+            else -> EN
+        }
+    }
+}
+
+/** The language the app speaks: the one picked, else the phone's. */
+fun Settings.languageOrDefault(): AppLanguage =
+    language ?: AppLanguage.forLocale(java.util.Locale.getDefault().language)
+
+/** Picture on a Simple Maslul button. */
+@Serializable
+enum class SimpleIcon {
+    HOME, FAMILY, HEART, FRIENDS, WORK, SCHOOL, SHOPPING, CAFE, RESTAURANT, HEALTH, PARK, POOL, GYM, SPORTS, STAR,
+}
+
+/** One of Simple Maslul's place buttons. A blank [label] shows the icon's name in the current language. */
+@Serializable
+data class SimpleButton(val icon: SimpleIcon, val label: String = "", val place: Place? = null)
+
+/** Home, the grandkids, work, the rest of the family and shopping, ready to be given addresses. */
+val DefaultSimpleButtons = listOf(
+    SimpleButton(SimpleIcon.HOME), SimpleButton(SimpleIcon.FAMILY), SimpleButton(SimpleIcon.WORK),
+    SimpleButton(SimpleIcon.HEART), SimpleButton(SimpleIcon.SHOPPING),
 )
 
 @Serializable
@@ -77,7 +118,23 @@ data class UserData(
     val favoriteStops: List<Place> = emptyList(),
     val shuttles: List<Shuttle> = emptyList(),
     val settings: Settings = Settings(),
+    val simpleButtons: List<SimpleButton> = DefaultSimpleButtons,
 )
+
+/** Simple Maslul's buttons, with Home and Work falling back to the places saved in the full app. */
+fun UserData.simpleSlots(): List<SimpleButton> = simpleButtons.map { b ->
+    if (b.place != null) b
+    else when (b.icon) {
+        SimpleIcon.HOME -> b.copy(place = home)
+        SimpleIcon.WORK -> b.copy(place = work)
+        else -> b
+    }
+}
+
+fun UserData.withSimpleButton(index: Int, b: SimpleButton): UserData {
+    if (index !in simpleButtons.indices) return this
+    return copy(simpleButtons = simpleButtons.toMutableList().also { it[index] = b })
+}
 
 /** Moves legacy unlabeled favourites into [UserData.favoritePlaces], labelled with the place name. */
 fun UserData.migrated(): UserData {
@@ -166,6 +223,8 @@ class UserStore(context: Context) {
     }
 
     fun updateSettings(f: (Settings) -> Settings) = edit { it.copy(settings = f(it.settings)) }
+
+    fun setSimpleButton(index: Int, b: SimpleButton) = edit { it.withSimpleButton(index, b) }
 
     /** Adds [s], or replaces the shuttle with its id. */
     fun saveShuttle(s: Shuttle) = edit { d ->
