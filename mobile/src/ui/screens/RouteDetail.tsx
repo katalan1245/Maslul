@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
-import { Alert, Platform, Pressable, Share, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, Share, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Combine } from '../../data/combine';
 import type { LiveApproach, LiveCall } from '../../data/eta';
@@ -18,14 +18,15 @@ import {
   platformLabel,
   rideKey,
   scheduledTime,
-  vehicle,
-  vehiclesOf,
+  kindOf,
+  vehicleKind,
   walkMeters,
 } from '../../data/models';
 import { Ranking, type Transfer, isTight } from '../../data/ranking';
 import { ShuttleSchedule } from '../../data/shuttles';
 import { type Instant, nowSec } from '../../data/time';
 import { WALK_SPEEDS } from '../../data/userStore';
+import { S } from '../../i18n';
 import { activeTrip, useActiveTrip } from '../../live/liveTrip';
 import { canNotify, scheduleReminder } from '../../live/notifications';
 import MaslulNative from '../../../modules/maslul-native/src/MaslulNativeModule';
@@ -33,11 +34,11 @@ import { location, useLastLocation } from '../../state/location';
 import { repo } from '../../state/services';
 import { store } from '../../state/store';
 import { Fmt, modeName, rideName } from '../fmt';
-import { Button, IconButton, LineBadge, Txt } from '../components/common';
+import { Button, IconButton, LineBadge, TextButton, Txt } from '../components/common';
 import { Icon, modeIcon } from '../components/icons';
 import { LiveLocationCard, LiveSignal, freshnessColor, useNow } from '../components/live';
 import { MapSheet } from '../components/MapSheet';
-import { showToast } from '../components/overlays';
+import { Dialog, showToast } from '../components/overlays';
 import { type RailSpec, TimelineRow } from '../components/timeline';
 import { type MapLine, type MapMarker, type MapVehicle, TransitMap, useMapController } from '../map/TransitMap';
 import { Model, useModel } from '../model';
@@ -51,6 +52,8 @@ class RouteDetailModel extends Model {
   readonly approach = new Map<number, LiveApproach>();
   /** Leg index whose live vehicle the map follows, after tapping its arrival. */
   following: number | null = null;
+  /** After a reminder was set without "Alarms & reminders": offer to allow it. */
+  askExactAlarm = false;
   /** The itinerary with the line picked on each combined leg (initially the best one). */
   itinerary: Itinerary;
   /** Rides found after each transfer leg's (by leg index), for the wait if it's missed; null while looking. */
@@ -192,30 +195,34 @@ class RouteDetailModel extends Model {
     const leaveAt = (call?.status === 'LIVE' && call.expected != null ? call.expected : (first?.start ?? itin.start)) - walkBefore;
     const at = leaveAt - minutes * 60;
     const text = first
-      ? `Leave at ${Fmt.time(leaveAt)} · ${first.shuttleId != null ? lineLabel(first) : rideName(first)} from ${first.from.name} at ${Fmt.time(first.start)}`
-      : `Leave at ${Fmt.time(leaveAt)}`;
-    const ok = await scheduleReminder(at, `Time to go to ${this.to.name}`, text).catch(() => false);
-    showToast(ok ? `Reminder set for ${Fmt.when(at, nowSec())} (${minutes} min before leaving)` : 'That departure is too soon for a reminder');
+      ? S.detail.reminder(Fmt.time(leaveAt), first.shuttleId != null ? lineLabel(first) : rideName(first), first.from.name, Fmt.time(first.start))
+      : S.detail.leaveAt(Fmt.time(leaveAt));
+    const ok = await scheduleReminder(at, S.detail.reminderTitle(this.to.name), text).catch(() => false);
+    showToast(ok ? S.detail.reminderSet(Fmt.when(at, nowSec()), minutes) : S.detail.reminderTooSoon);
     // Without "Alarms & reminders" Android may hold a reminder back by minutes, up to an hour.
     if (ok && MaslulNative?.canScheduleExactAlarms() === false) {
-      Alert.alert('Get reminders on time?', 'Android may send this reminder late. Allow Maslul under "Alarms & reminders" so reminders come on time.', [
-        { text: 'Not now', style: 'cancel' },
-        { text: 'Allow', onPress: () => MaslulNative?.openExactAlarmSettings() },
-      ]);
+      // The app's own dialog, not Alert: Android lays that out by the phone's language, not the app's.
+      this.askExactAlarm = true;
+      this.changed();
     }
+  }
+
+  closeExactAlarm() {
+    this.askExactAlarm = false;
+    this.changed();
   }
 
   share() {
     const e = this.expected();
-    const lines = [`My trip to ${this.to.name}: ${Fmt.when(e.start, nowSec())} → ${Fmt.time(e.end)} (${Fmt.duration(e.end - e.start)})`];
+    const lines = [S.detail.shareHeader(this.to.name, S.fmt.range(Fmt.when(e.start, nowSec()), Fmt.time(e.end)), Fmt.duration(e.end - e.start))];
     for (const l of this.itinerary.legs) {
       if (l.mode === 'WALK') {
-        if (legDurationSec(l) >= 60) lines.push(`• Walk ${Fmt.duration(legDurationSec(l))} to ${l.to.name.trim() || this.to.name}`);
+        if (legDurationSec(l) >= 60) lines.push(S.detail.shareWalk(Fmt.duration(legDurationSec(l)), l.to.name.trim() || this.to.name));
       } else {
-        lines.push(`• ${rideName(l)} from ${l.from.name} at ${Fmt.time(l.start)} → ${l.to.name} (${Fmt.time(l.end)})`);
+        lines.push(S.detail.shareRide(rideName(l), l.from.name, Fmt.time(l.start), l.to.name, Fmt.time(l.end)));
       }
     }
-    void Share.share({ message: lines.join('\n') + '\n', title: 'Share trip' });
+    void Share.share({ message: lines.join('\n') + '\n', title: S.detail.shareTitle });
   }
 }
 
@@ -232,7 +239,7 @@ export function RouteDetailScreen({ route }: NativeStackScreenProps<RootStack, '
     const ok = (await location.hasPermission()) || (await location.requestPermission());
     if (Platform.OS === 'android') await canNotify(true);
     if (ok) await activeTrip.start(model.itinerary, model.to.name);
-    else showToast('Live directions need location access');
+    else showToast(S.detail.needLocation);
   };
   const remind = async () => {
     await canNotify(true);
@@ -286,6 +293,26 @@ export function RouteDetailScreen({ route }: NativeStackScreenProps<RootStack, '
           <View style={{ height: 24 }} />
         </View>
       </MapSheet>
+      <Dialog
+        visible={model.askExactAlarm}
+        title={S.detail.exactAlarmTitle}
+        onDismiss={() => model.closeExactAlarm()}
+        testID="exact_alarm_dialog"
+        actions={
+          <>
+            <TextButton text={S.detail.notNow} onPress={() => model.closeExactAlarm()} />
+            <TextButton
+              text={S.detail.allow}
+              onPress={() => {
+                model.closeExactAlarm();
+                MaslulNative?.openExactAlarmSettings();
+              }}
+            />
+          </>
+        }
+      >
+        <Txt v="bodyMedium">{S.detail.exactAlarmBody}</Txt>
+      </Dialog>
     </View>
   );
 }
@@ -320,16 +347,16 @@ function Overlay({
   return (
     <>
       <View style={[styles.back, { top: insetsTop + 12 }]}>
-        <IconButton icon="arrow-back" label="Back" onPress={nav.pop} filled color={t.c.onSurface} />
+        <IconButton icon="arrow-back" label={S.common.back} onPress={nav.pop} filled color={t.c.onSurface} />
       </View>
       <View style={[styles.rightButtons, { top: insetsTop + 12 }]}>
-        <IconButton icon={mapOnly ? 'fullscreen-exit' : 'fullscreen'} label={mapOnly ? 'Show details' : 'Expand map'} onPress={onExpand} filled testID="map_expand" />
-        <IconButton icon="my-location" label="My location" onPress={onMyLocation} filled color={t.c.primary} testID="map_my_location" />
+        <IconButton icon={mapOnly ? 'fullscreen-exit' : 'fullscreen'} label={mapOnly ? S.detail.showDetails : S.detail.expandMap} onPress={onExpand} filled testID="map_expand" />
+        <IconButton icon="my-location" label={S.common.myLocation} onPress={onMyLocation} filled color={t.c.primary} testID="map_my_location" />
       </View>
       {followedLeg != null && followed?.status === 'LIVE' && followed.vehicle != null && (
         <View style={[styles.liveCard, { top: insetsTop + 12 }]}>
           <LiveLocationCard
-            title={`${lineLabel(model.itinerary.legs[followedLeg])} live location`}
+            title={S.detail.liveLocation(lineLabel(model.itinerary.legs[followedLeg]))}
             recordedAt={followed.vehicle.recordedAt}
             onClose={() => model.follow(null)}
           />
@@ -339,7 +366,7 @@ function Overlay({
         <Pressable onPress={onShow} style={[styles.fab, { backgroundColor: t.c.surface, bottom: insetsBottom + 16 }]} accessibilityRole="button">
           <Icon name="expand-less" color={t.c.onSurface} />
           <Txt v="labelLarge" style={{ marginLeft: 8 }}>
-            Trip details
+            {S.detail.tripDetails}
           </Txt>
         </Pressable>
       )}
@@ -427,19 +454,19 @@ function DetailHeader({ itin, active, onStart, onRemind, onShare }: { itin: Itin
   return (
     <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 8 }}>
       <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
-        <Txt v="headlineSmall" num>{`${Fmt.when(itin.start, nowSec())} → ${Fmt.time(itin.end)}`}</Txt>
+        <Txt v="headlineSmall" num>{S.fmt.span(Fmt.when(itin.start, nowSec()), Fmt.time(itin.end))}</Txt>
         <Txt v="titleMedium" color={t.x.subtle} style={{ marginLeft: 10, marginBottom: 2 }}>
           {Fmt.duration(itin.end - itin.start)}
         </Txt>
       </View>
       <Txt v="bodyMedium" color={t.x.subtle}>
-        {(itin.transfers === 0 ? 'No transfers' : `${itin.transfers} transfer${itin.transfers > 1 ? 's' : ''}`) +
-          (walkMeters(itin) > 0 ? ` · ${Fmt.distance(walkMeters(itin))} walking` : '')}
+        {(itin.transfers === 0 ? S.detail.noTransfers : S.detail.transfers(itin.transfers)) +
+          (walkMeters(itin) > 0 ? ` · ${S.detail.walking(Fmt.distance(walkMeters(itin)))}` : '')}
       </Txt>
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
-        <Button text={active ? 'End' : 'Start'} icon={active ? 'stop' : 'navigation'} onPress={onStart} testID="start_button" />
-        <Button text="Remind me" icon="alarm-add" kind="tonal" onPress={onRemind} testID="remind_button" />
-        <Button icon="share" kind="outlined" onPress={onShare} testID="share_button" />
+        <Button text={active ? S.detail.end : S.detail.start} icon={active ? 'stop' : 'navigation'} onPress={onStart} testID="start_button" />
+        <Button text={S.detail.remindMe} icon="alarm-add" kind="tonal" onPress={onRemind} testID="remind_button" />
+        <Button icon="share" kind="outlined" onPress={onShare} label={S.detail.shareTitle} testID="share_button" />
       </View>
     </View>
   );
@@ -459,7 +486,7 @@ function JourneyTimeline({ model, now }: { model: RouteDetailModel; now: Instant
       {/* Origin */}
       <TimelineRow above={null} below={railOf(legs[0])} node="ENDPOINT" nodeColor={t.c.onSurface} time={<TimeText scheduled={expected.start} />}>
         <Txt v="titleSmall" style={{ paddingTop: 12, paddingBottom: 10 }}>
-          {from.kind !== 'CURRENT_LOCATION' ? from.name : 'Your location'}
+          {from.kind !== 'CURRENT_LOCATION' ? from.name : S.common.yourLocation}
         </Txt>
       </TimelineRow>
       {legs.map((leg, i) => {
@@ -478,7 +505,7 @@ function JourneyTimeline({ model, now }: { model: RouteDetailModel; now: Instant
                   time={leg.mode === 'CAR' ? <TimeText scheduled={leg.end} /> : undefined}
                 >
                   <Txt v="bodyMedium" style={{ paddingTop: 12 }}>
-                    {leg.to.name.trim() || (leg.mode === 'CAR' ? 'Get out here' : '')}
+                    {leg.to.name.trim() || (leg.mode === 'CAR' ? S.detail.getOutHere : '')}
                   </Txt>
                 </TimelineRow>
               )}
@@ -505,7 +532,7 @@ function JourneyTimeline({ model, now }: { model: RouteDetailModel; now: Instant
                 {leg.from.name}
               </Txt>
               {leg.tripId != null && leg.tripId === model.from.tripId && (
-                <Txt v="bodySmall" color={t.x.subtle}>{`You're on this ${vehicle(leg.mode)}: stay on`}</Txt>
+                <Txt v="bodySmall" color={t.x.subtle}>{S.detail.stayOn(vehicleKind(leg.mode))}</Txt>
               )}
               {platformLabel(leg.from) != null && (
                 <Txt v="bodySmall" color={t.x.subtle}>
@@ -531,7 +558,7 @@ function JourneyTimeline({ model, now }: { model: RouteDetailModel; now: Instant
                 {leg.to.name}
               </Txt>
               <Txt v="bodySmall" color={t.x.subtle} style={{ marginBottom: 8 }}>
-                Get off
+                {S.detail.getOff}
               </Txt>
             </TimelineRow>
           </View>
@@ -571,7 +598,7 @@ function WalkSegment({ leg, rail }: { leg: Leg; rail: RailSpec }) {
       <Pressable disabled={leg.steps.length === 0} onPress={() => setOpen(!open)} style={styles.segmentRow} accessibilityRole="button">
         <Icon name={modeIcon('WALK')} size={18} color={t.x.subtle} />
         <Txt v="bodyMedium" color={t.x.subtle} style={{ marginLeft: 6 }}>
-          {`Walk ${Fmt.duration(legDurationSec(leg))}` + (leg.distanceM != null ? ` · ${Fmt.distance(leg.distanceM)}` : '')}
+          {S.cards.walk(Fmt.duration(legDurationSec(leg))) + (leg.distanceM != null ? ` · ${Fmt.distance(leg.distanceM)}` : '')}
         </Txt>
         {leg.steps.length > 0 && <Icon name={open ? 'expand-less' : 'expand-more'} color={t.x.subtle} />}
       </Pressable>
@@ -596,7 +623,7 @@ function CarSegment({ leg, rail }: { leg: Leg; rail: RailSpec }) {
       <View style={[styles.segmentRow, { paddingVertical: 14 }]}>
         <Icon name={modeIcon('CAR')} size={18} color={t.x.subtle} />
         <Txt v="bodyMedium" color={t.x.subtle} style={{ marginLeft: 6 }}>
-          {`Ride ${Fmt.duration(legDurationSec(leg))}` + (leg.distanceM != null ? ` · ${Fmt.distance(leg.distanceM)}` : '')}
+          {S.detail.rideFor(Fmt.duration(legDurationSec(leg))) + (leg.distanceM != null ? ` · ${Fmt.distance(leg.distanceM)}` : '')}
         </Txt>
       </View>
     </TimelineRow>
@@ -630,7 +657,7 @@ function TransitSegment({ model, index, leg, rail, live, now }: { model: RouteDe
         <LineBadge label={lineLabel(leg)} mode={leg.mode} color={lineColor(leg)} />
         <View style={{ flex: 1, marginLeft: 8 }}>
           <Txt v="bodyMedium" style={{ fontWeight: '500' }} numberOfLines={1}>
-            {leg.headsign != null ? `to ${leg.headsign}` : modeName(leg.mode)}
+            {leg.headsign != null ? S.common.toward(leg.headsign) : modeName(leg.mode)}
           </Txt>
           {leg.agencyName != null && (
             <Txt v="bodySmall" color={t.x.subtle}>
@@ -657,7 +684,7 @@ function TransitSegment({ model, index, leg, rail, live, now }: { model: RouteDe
         </View>
       ))}
       <Pressable disabled={leg.intermediateStops.length === 0} onPress={() => setOpen(!open)} style={styles.segmentRow} accessibilityRole="button">
-        <Txt v="bodySmall" color={t.x.subtle}>{`Ride ${n} stop${n > 1 ? 's' : ''} · ${Fmt.duration(legDurationSec(leg))}`}</Txt>
+        <Txt v="bodySmall" color={t.x.subtle}>{S.detail.rideStops(n, Fmt.duration(legDurationSec(leg)))}</Txt>
         {leg.intermediateStops.length > 0 && <Icon name={open ? 'expand-less' : 'expand-more'} size={18} color={t.x.subtle} />}
       </Pressable>
       {open && (
@@ -684,7 +711,7 @@ function MissedRides({ leg, rides }: { leg: Leg; rides: Leg[] }) {
   return (
     <View style={{ marginTop: 8 }} testID="missed_rides">
       <Txt v="labelMedium" color={t.x.subtle}>
-        {rides.length === 0 ? 'If you miss it: no other ride within the hour' : 'If you miss it, next:'}
+        {rides.length === 0 ? S.detail.missNone : S.detail.missNext}
       </Txt>
       {rides.length > 0 && (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 12, rowGap: 4, marginTop: 4 }}>
@@ -727,20 +754,20 @@ function LineOptions({
   const [expanded, setExpanded] = useState(false);
   const options = rides.map((o) => [o, rideLive.get(rideKey(o))] as const).sort((a, b) => Combine.boards(a[0], a[1]) - Combine.boards(b[0], b[1]));
   const lines = new Set(options.map(([o]) => Combine.lineKey(o))).size;
-  const vehicles = vehiclesOf(options.map(([o]) => o));
+  const kind = kindOf(options.map(([o]) => o));
   const heading =
     lines > 1
-      ? `${options.length} ${vehicles} go this way`
+      ? S.detail.goThisWay(options.length, kind)
       : // The user's own shuttle: "Next 2 shuttles", not "buses of Office shuttle".
         options.every(([o]) => o.shuttleId != null)
-        ? `Next ${options.length} shuttles`
-        : `Next ${options.length} ${vehicles} of ${lineLabel(leg)}`;
+        ? S.detail.nextShuttles(options.length)
+        : S.detail.nextOfLine(options.length, kind, lineLabel(leg));
   // The first few (and the chosen one); the rest behind "N more".
   const shown = expanded ? options : options.filter(([o], i) => i < SHOWN_RIDES || rideKey(o) === rideKey(leg));
   const hidden = options.length - shown.length;
   return (
     <View>
-      <Txt v="labelMedium" color={t.x.subtle}>{`${heading} · tap to choose`}</Txt>
+      <Txt v="labelMedium" color={t.x.subtle}>{S.detail.tapToChoose(heading)}</Txt>
       <View style={[styles.optionsBox, { backgroundColor: t.c.surfaceVariant }]} testID="line_options">
         {shown.map(([o, c]) => {
           const chosen = rideKey(o) === rideKey(leg);
@@ -761,9 +788,9 @@ function LineOptions({
               <View style={{ width: 8 }} />
               <LineBadge label={lineLabel(o)} mode={o.mode} color={color} showIcon={false} />
               <View style={{ flex: 1, marginLeft: 8 }}>
-                <Txt v="bodyMedium" num style={chosen ? { fontWeight: '600' } : undefined}>{`${Fmt.time(dep)} → ${Fmt.time(arr)}`}</Txt>
+                <Txt v="bodyMedium" num style={chosen ? { fontWeight: '600' } : undefined}>{S.fmt.range(Fmt.time(dep), Fmt.time(arr))}</Txt>
                 <Txt v="bodySmall" color={t.x.subtle} numberOfLines={1}>
-                  {[o.headsign != null ? `to ${o.headsign}` : modeName(o.mode), platformLabel(o.from)].filter((x) => x != null).join(' · ')}
+                  {[o.headsign != null ? S.common.toward(o.headsign) : modeName(o.mode), platformLabel(o.from)].filter((x) => x != null).join(' · ')}
                 </Txt>
               </View>
               {c?.status === 'LIVE' ? (
@@ -776,13 +803,13 @@ function LineOptions({
                   </View>
                   {hurry(o) && (
                     <Txt v="labelMedium" color={t.x.late} style={{ fontWeight: '600' }}>
-                      Hurry
+                      {S.cards.hurry}
                     </Txt>
                   )}
                 </View>
               ) : c?.status === 'PASSED' ? (
                 <Txt v="labelMedium" color={t.x.late} style={{ marginLeft: 6 }}>
-                  Passed
+                  {S.detail.passed}
                 </Txt>
               ) : (
                 <Txt v="labelLarge" num color={t.x.subtle} style={{ marginLeft: 6 }}>
@@ -795,7 +822,7 @@ function LineOptions({
         {(hidden > 0 || (expanded && options.length > SHOWN_RIDES)) && (
           <Pressable onPress={() => setExpanded(!expanded)} style={{ paddingHorizontal: 14, paddingVertical: 10 }} testID="more_rides">
             <Txt v="labelLarge" color={t.c.primary}>
-              {expanded ? 'Show fewer' : `${hidden} more`}
+              {expanded ? S.detail.showFewer : S.detail.more(hidden)}
             </Txt>
           </Pressable>
         )}
@@ -814,26 +841,26 @@ export function LiveStatusChip({ live, leg, now, onPress }: { live: LiveCall | n
     case 'LIVE': {
       const eta = live.expected ?? leg.start;
       const rel = Fmt.relative(eta, now);
-      const away = live.stopsAway != null && live.stopsAway >= 1 && live.stopsAway <= 40 ? ` · ${live.stopsAway} stop${live.stopsAway > 1 ? 's' : ''} away` : '';
-      text = `Arrives ${rel === 'Now' ? 'now' : `in ${rel}`}${away}`;
+      const away = live.stopsAway != null && live.stopsAway >= 1 && live.stopsAway <= 40 ? ` · ${S.cards.stopsAway(live.stopsAway)}` : '';
+      text = (rel === S.fmt.now ? S.detail.arrivesNow : S.detail.arrivesIn(rel)) + away;
       color = freshnessColor(freshness, t);
       dot = true;
       break;
     }
     case 'PASSED':
-      text = 'Already passed this stop — check the next one';
+      text = S.detail.passedStop;
       color = t.x.late;
       break;
     case 'UNTRACKED':
-      text = `No live data · scheduled ${Fmt.time(leg.start)}`;
+      text = S.detail.noLive(Fmt.time(leg.start));
       color = t.x.subtle;
       break;
     case 'SCHEDULED':
-      text = `Scheduled ${Fmt.time(leg.start)} · not departed yet`;
+      text = S.detail.notDeparted(Fmt.time(leg.start));
       color = t.x.subtle;
       break;
     default:
-      text = `Timetable ${Fmt.time(leg.start)}`;
+      text = S.detail.timetable(Fmt.time(leg.start));
       color = t.x.subtle;
   }
   // A live vehicle can be shown on the map; timetable-only rows aren't tappable.
@@ -842,7 +869,7 @@ export function LiveStatusChip({ live, leg, now, onPress }: { live: LiveCall | n
     <Pressable
       disabled={!tappable}
       onPress={onPress}
-      accessibilityHint={tappable ? 'Show on map' : undefined}
+      accessibilityHint={tappable ? S.cards.showOnMap : undefined}
       style={[styles.chip, { backgroundColor: alpha(color.startsWith('#') ? color : '#888888', 0.1) }]}
       testID="live_status"
     >

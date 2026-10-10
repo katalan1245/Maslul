@@ -3,6 +3,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { S } from '../../i18n';
 import { arrivalFreshness, progressFreshness } from '../../data/freshness';
 import { type LineRoute, type LineStop, type Ride, routeDestination, routeLabel, routeOrigin } from '../../data/models';
 import { type Instant, localParts } from '../../data/time';
@@ -66,7 +67,7 @@ class LineModel extends Model {
       await this.refreshLive();
     } catch (e) {
       if (gen !== this.gen) return;
-      this.error = e instanceof LineUnavailableException ? e.message : "Couldn't load this line. Check your connection and try again.";
+      this.error = e instanceof LineUnavailableException ? S.line.noStopData : S.line.loadFailed;
     }
     const v = await variants;
     if (gen !== this.gen) return;
@@ -131,7 +132,7 @@ class LineModel extends Model {
   openStop = async (s: LineStop) => {
     const match = await repo.transitStop(s);
     if (match) nav.push('Stop', { place: { ...match, name: s.name } });
-    else showToast('Stop board unavailable');
+    else showToast(S.line.boardUnavailable);
   };
 
   openRide = async (r: Ride) => {
@@ -155,16 +156,16 @@ export function LineScreen({ route }: NativeStackScreenProps<RootStack, 'Line'>)
   return (
     <View style={{ flex: 1, backgroundColor: t.c.background }} testID="line_screen">
       <View style={[styles.header, { backgroundColor: t.c.surface, paddingTop: insets.top + 4 }]}>
-        <IconButton icon="arrow-back" label="Back" onPress={nav.pop} />
+        <IconButton icon="arrow-back" label={S.common.back} onPress={nav.pop} />
         <LineBadge label={routeLabel(r)} mode={r.mode} color={color} large />
         <View style={{ flex: 1, marginLeft: 10 }}>
-          <Txt v="titleSmall" numberOfLines={2}>{`to ${routeDestination(r).trim() || r.longName}`}</Txt>
-          <Txt v="bodySmall" color={t.x.subtle} numberOfLines={1}>{`${r.agency} · from ${routeOrigin(r)}`}</Txt>
+          <Txt v="titleSmall" numberOfLines={2}>{S.common.toward(routeDestination(r).trim() || r.longName)}</Txt>
+          <Txt v="bodySmall" color={t.x.subtle} numberOfLines={1}>{S.line.operatorFrom(r.agency, routeOrigin(r))}</Txt>
         </View>
-        <IconButton icon={fav ? 'star' : 'star-border'} label="Favorite" color={fav ? FAVORITE_GOLD : t.c.onSurfaceVariant} onPress={() => store.toggleFavoriteLine(r)} testID="favorite_line" />
+        <IconButton icon={fav ? 'star' : 'star-border'} label={S.line.favorite} color={fav ? FAVORITE_GOLD : t.c.onSurfaceVariant} onPress={() => store.toggleFavoriteLine(r)} testID="favorite_line" />
         <IconButton
           icon="swap-horiz"
-          label="Change direction"
+          label={S.line.changeDirection}
           disabled={model.variants.length <= 1}
           onPress={() => (model.variants.length > 2 ? setMenu(true) : model.reverse())}
           testID="line_direction"
@@ -173,12 +174,12 @@ export function LineScreen({ route }: NativeStackScreenProps<RootStack, 'Line'>)
       <Menu
         visible={menu}
         onDismiss={() => setMenu(false)}
-        items={model.variants.map((v) => ({ text: `to ${routeDestination(v)} · from ${routeOrigin(v)}`, onPress: () => model.select(v) }))}
+        items={model.variants.map((v) => ({ text: S.line.variant(routeDestination(v), routeOrigin(v)), onPress: () => model.select(v) }))}
       />
       {d == null && model.loading ? (
-        <LoadingBox text="Loading line…" />
+        <LoadingBox text={S.line.loading} />
       ) : d == null ? (
-        <MessageBox title="Line unavailable" body={model.error} action="Retry" onAction={model.retry} />
+        <MessageBox title={S.line.unavailable} body={model.error} action={S.common.retry} onAction={model.retry} />
       ) : (
         <LineBody model={model} d={d} color={color} now={now} />
       )}
@@ -223,7 +224,7 @@ function LineBody({ model, d, color, now }: { model: LineModel; d: LineDetail; c
           {followed != null && (
             <View style={{ position: 'absolute', top: 8, left: 60, right: 60 }}>
               <LiveLocationCard
-                title={`${routeLabel(d.route)} live location` + (followed.ride ? ` · left ${Fmt.time(followed.ride.departure)}` : '')}
+                title={S.detail.liveLocation(routeLabel(d.route)) + (followed.ride ? S.line.left(Fmt.time(followed.ride.departure)) : '')}
                 recordedAt={followed.vehicle.recordedAt}
                 onClose={() => model.setFollowing(null)}
               />
@@ -235,13 +236,13 @@ function LineBody({ model, d, color, now }: { model: LineModel; d: LineDetail; c
         <>
           <FollowPeek following={model.following} peek={c.peek} />
           <View style={{ position: 'absolute', top: 8, right: 8 }}>
-            <IconButton icon={c.mapOnly ? 'fullscreen-exit' : 'fullscreen'} label={c.mapOnly ? 'Show stops' : 'Expand map'} onPress={() => (c.mapOnly ? c.show() : c.hide())} filled testID="line_map_expand" />
+            <IconButton icon={c.mapOnly ? 'fullscreen-exit' : 'fullscreen'} label={c.mapOnly ? S.line.showStops : S.detail.expandMap} onPress={() => (c.mapOnly ? c.show() : c.hide())} filled testID="line_map_expand" />
           </View>
           {c.mapOnly && (
             <Pressable onPress={c.show} style={[styles.fab, { backgroundColor: t.c.surface, bottom: insets.bottom + 16 }]} accessibilityRole="button">
               <Icon name="expand-less" color={t.c.onSurface} />
               <Txt v="labelLarge" style={{ marginLeft: 8 }}>
-                {model.tab === 0 ? 'Stops' : 'Timetable'}
+                {model.tab === 0 ? S.line.stops : S.line.timetable}
               </Txt>
             </Pressable>
           )}
@@ -250,7 +251,7 @@ function LineBody({ model, d, color, now }: { model: LineModel; d: LineDetail; c
     >
       <View style={{ flex: 1 }}>
         <View style={[styles.tabs, { borderBottomColor: t.x.divider }]}>
-          {(['Stops', 'Timetable'] as const).map((label, i) => (
+          {[S.line.stops, S.line.timetable].map((label, i) => (
             <Pressable key={label} onPress={() => model.setTab(i as 0 | 1)} style={styles.tab} accessibilityRole="tab" accessibilityState={{ selected: model.tab === i }}>
               <Txt v="titleSmall" color={model.tab === i ? t.c.primary : t.c.onSurfaceVariant}>
                 {label}
@@ -324,7 +325,7 @@ function StopsList({ model, d, color, now }: { model: LineModel; d: LineDetail; 
                     />
                     {!next.live && (
                       <Txt v="labelSmall" color={t.x.subtle}>
-                        scheduled
+                        {S.stopBoard.scheduled}
                       </Txt>
                     )}
                   </View>
@@ -337,7 +338,7 @@ function StopsList({ model, d, color, now }: { model: LineModel; d: LineDetail; 
                       const f = arrivalFreshness(a, now);
                       const pill = <Pill text={(a.live ? '● ' : '') + Fmt.time(a.time)} color={a.live ? freshnessColor(f, t) : t.x.subtle} />;
                       return a.live ? (
-                        <Pressable key={k} onPress={() => model.follow(a.journeyRef)} accessibilityHint="Show on map">
+                        <Pressable key={k} onPress={() => model.follow(a.journeyRef)} accessibilityHint={S.cards.showOnMap}>
                           {pill}
                         </Pressable>
                       ) : (
@@ -346,12 +347,12 @@ function StopsList({ model, d, color, now }: { model: LineModel; d: LineDetail; 
                     })}
                     {arrivals.length === 0 && (
                       <Txt v="bodySmall" color={t.x.subtle}>
-                        No more trips today
+                        {S.line.noMoreToday}
                       </Txt>
                     )}
                   </View>
                   <View style={{ alignItems: 'flex-start', marginLeft: -12 }}>
-                    <TextButton text="All departures from this stop" onPress={() => void model.openStop(s)} />
+                    <TextButton text={S.line.allDepartures} onPress={() => void model.openStop(s)} />
                   </View>
                 </View>
               )}
@@ -385,7 +386,7 @@ function VehicleRow({
   const accent = readableAccent(color, t);
   return (
     <TimelineRow above={rail} below={rail} node="VEHICLE" nodeColor={color} timeWidth={12} nodeY={18} onPress={onPress}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 6 }} accessibilityHint="Show on map">
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 6 }} accessibilityHint={S.cards.showOnMap}>
         <View style={[styles.vehicleTag, { backgroundColor: alpha(color, 0.12) }]}>
           <Icon name={modeIcon(mode)} size={16} color={accent} />
           <Txt v="labelMedium" color={accent} style={{ marginLeft: 4, fontWeight: '700' }}>
@@ -395,7 +396,7 @@ function VehicleRow({
         <View style={{ width: 14 }} />
         <LiveSignal freshness={f} size={12} />
         {f === 'STALE' && (
-          <Txt v="labelSmall" color={t.x.stale} style={{ marginLeft: 4 }}>{`last seen ${Fmt.time(v.vehicle.recordedAt)}`}</Txt>
+          <Txt v="labelSmall" color={t.x.stale} style={{ marginLeft: 4 }}>{S.line.lastSeen(Fmt.time(v.vehicle.recordedAt))}</Txt>
         )}
       </View>
     </TimelineRow>
@@ -433,8 +434,8 @@ function Timetable({ model, d, now }: { model: LineModel; d: LineDetail; now: In
       renderItem={({ item }: { item: Item }) =>
         item.kind === 'head' ? (
           <View>
-            <Txt v="titleSmall" style={{ marginBottom: 12 }}>{`Departures from ${d.stops[0].name} · ${Fmt.day(d.route.date)}`}</Txt>
-            {d.rides.length === 0 && <MessageBox title="No departures listed for today" />}
+            <Txt v="titleSmall" style={{ marginBottom: 12 }}>{S.line.departuresFrom(d.stops[0].name, Fmt.day(d.route.date))}</Txt>
+            {d.rides.length === 0 && <MessageBox title={S.line.noneToday} />}
           </View>
         ) : (
           <View style={{ flexDirection: 'row', paddingVertical: 6 }}>

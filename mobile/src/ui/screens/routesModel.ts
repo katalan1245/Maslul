@@ -23,6 +23,7 @@ import type { RideOffer } from '../../data/rides';
 import { ShuttleSchedule } from '../../data/shuttles';
 import { type Instant, nowSec } from '../../data/time';
 import { NoDriveException, TransitRepository, limiter } from '../../data/transitRepository';
+import { S } from '../../i18n';
 import type { PlanRequest } from '../../data/transitousApi';
 import { DEFAULT_SETTINGS, type Settings, WALK_SPEEDS } from '../../data/userStore';
 import { location } from '../../state/location';
@@ -270,8 +271,8 @@ export class RoutesModel extends Model {
     if (this.fromPoint == null || this.toPoint == null) {
       this.error =
         boardTrip != null
-          ? "Couldn't follow the ride you're on. Pick it again, or choose a starting point."
-          : "Your location isn't available. Allow location access or choose a starting point.";
+          ? S.routes.rideLost
+          : S.routes.noLocation;
       this.loading = false;
       this.changed();
       return;
@@ -295,21 +296,21 @@ export class RoutesModel extends Model {
       this.nextCursor = r.nextCursor;
       this.prevCursor = r.previousCursor;
       this.canPage = this.nextCursor != null || this.prevCursor != null;
-      if (found.length === 0 && this.walkOnly == null) this.error = 'No routes found for this time.';
+      if (found.length === 0 && this.walkOnly == null) this.error = S.routes.noneFound;
     } catch (e) {
       if (stale()) return;
       // Said apart, so a failure reported from a device names its cause.
       console.warn('Route search failed', e);
       this.error =
         e instanceof NoDriveException
-          ? e.message
+          ? S.routes.noDrive
           : e instanceof HttpException
-            ? `The route planner answered with an error (${e.code}). Try again in a moment.`
+            ? S.routes.plannerError(e.code)
             : (e as Error)?.name === 'AbortError'
-              ? 'The route planner took too long to answer. Try again.'
+              ? S.routes.plannerSlow
               : e instanceof TypeError && /network/i.test(e.message)
-                ? "Couldn't load routes. Check your connection."
-                : `Couldn't show the routes found (${(e as Error)?.message ?? e}).`;
+                ? S.routes.loadFailed
+                : S.routes.showFailed(String((e as Error)?.message ?? e));
     }
     this.loading = false;
     this.changed();
@@ -463,7 +464,7 @@ export class RoutesModel extends Model {
     const start = await repo.onBoardStart(tripId, here).catch(() => null);
     if (start == null) return null;
     this.boardStart = start;
-    this.from = { ...this.from, subtitle: `Next stop: ${start.next.name}` };
+    this.from = { ...this.from, subtitle: S.routes.nextStop(start.next.name) };
     return { lat: start.next.lat, lon: start.next.lon };
   }
 
@@ -479,7 +480,7 @@ export class RoutesModel extends Model {
       to: null,
       editing: 'TO',
       single: true,
-      title: "Where's the driver going?",
+      title: S.routes.driverDestination,
       onDone: (p) => {
         nav.pop();
         this.useRide({ kind: 'toPlace', dest: p });

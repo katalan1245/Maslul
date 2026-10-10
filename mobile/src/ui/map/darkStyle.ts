@@ -1,5 +1,6 @@
 import type { StyleSpecification } from '@maplibre/maplibre-react-native';
 import { USER_AGENT } from '../../data/http';
+import { type Lang, lang } from '../../i18n';
 
 export const LIGHT_STYLE = 'https://tiles.openfreemap.org/styles/positron';
 export const DARK_STYLE = 'https://tiles.openfreemap.org/styles/dark';
@@ -59,16 +60,33 @@ export function brightenDark(style: StyleSpecification): StyleSpecification {
   return { ...style, layers };
 }
 
-let dark: Promise<StyleSpecification | null> | null = null;
+/**
+ * Labels in the app's language. The styles show the Latin and the local name together; this shows
+ * one, falling back to the default name where the map has no name in that language.
+ */
+export function labelLanguage(style: StyleSpecification, l: Lang): StyleSpecification {
+  const field = l === 'he' ? ['coalesce', ['get', 'name:he'], ['get', 'name']] : ['coalesce', ['get', 'name:en'], ['get', 'name:latin'], ['get', 'name']];
+  const layers = style.layers.map((layer) => {
+    if (layer.type !== 'symbol' || !JSON.stringify(layer.layout?.['text-field'] ?? '').includes('name')) return layer;
+    return { ...layer, layout: { ...layer.layout, 'text-field': field } } as typeof layer;
+  });
+  return { ...style, layers };
+}
 
-/** The brightened dark style, fetched once; null (use the plain URL) if it can't be loaded. */
-export function darkStyle(): Promise<StyleSpecification | null> {
-  dark ??= fetch(DARK_STYLE, { headers: { 'User-Agent': USER_AGENT } })
-    .then((r) => (r.ok ? (r.json() as Promise<StyleSpecification>) : null))
-    .then((s) => (s ? brightenDark(s) : null))
-    .catch(() => {
-      dark = null;
-      return null;
-    });
-  return dark;
+const loaded = new Map<boolean, Promise<StyleSpecification | null>>();
+
+/** The style for [dark], fetched once and adapted; null (use the plain URL) if it can't be loaded. */
+export function mapStyle(dark: boolean): Promise<StyleSpecification | null> {
+  let p = loaded.get(dark);
+  if (!p) {
+    p = fetch(dark ? DARK_STYLE : LIGHT_STYLE, { headers: { 'User-Agent': USER_AGENT } })
+      .then((r) => (r.ok ? (r.json() as Promise<StyleSpecification>) : null))
+      .then((s) => (s ? labelLanguage(dark ? brightenDark(s) : s, lang()) : null))
+      .catch(() => {
+        loaded.delete(dark);
+        return null;
+      });
+    loaded.set(dark, p);
+  }
+  return p;
 }

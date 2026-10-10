@@ -1,6 +1,8 @@
 import { fixed, sumOf } from './util';
 import type { Instant, LocalDate } from './time';
 import { TripIds } from './geo';
+import { S } from '../i18n';
+import type { VehicleKind } from '../i18n/en';
 
 export interface GeoPoint {
   lat: number;
@@ -15,38 +17,35 @@ export type TransitMode = (typeof TRANSIT_MODES)[number];
 
 export const isTransit = (m: TransitMode) => m !== 'WALK' && m !== 'CAR';
 
-/** One vehicle of this mode, as riders say it: "train is close". */
-export function vehicle(m: TransitMode): string {
+/** The kind of vehicle riders call this mode by: a light rail is a "train". */
+export function vehicleKind(m: TransitMode): VehicleKind {
   switch (m) {
     case 'BUS':
-      return 'bus';
+    case 'CABLE_CAR':
+    case 'FERRY':
+    case 'CAR':
+      return m;
     case 'TRAIN':
     case 'LIGHT_RAIL':
     case 'METRO':
-      return 'train';
-    case 'CABLE_CAR':
-      return 'cable car';
-    case 'FERRY':
-      return 'ferry';
-    case 'CAR':
-      return 'car';
+      return 'TRAIN';
     default:
-      return 'ride';
+      return 'RIDE';
   }
 }
 
-/** Several vehicles of this mode: "Next trains". */
-export function vehicles(m: TransitMode): string {
-  if (m === 'BUS') return 'buses';
-  if (m === 'FERRY') return 'ferries';
-  return vehicle(m) + 's';
+/** For a mix of rides: their mode's kind when they share one, else RIDE. */
+export function kindOf(rides: readonly Leg[]): VehicleKind {
+  const modes = new Set(rides.map((r) => r.mode));
+  return modes.size === 1 ? vehicleKind([...modes][0]) : 'RIDE';
 }
 
+/** One vehicle of this mode, as riders say it: "train is close". */
+export const vehicle = (m: TransitMode) => S.vehicle[vehicleKind(m)];
+/** Several vehicles of this mode: "Next trains". */
+export const vehicles = (m: TransitMode) => S.vehicles[vehicleKind(m)];
 /** [vehicles] for a mix of rides: their mode's word when they share one, else "rides". */
-export function vehiclesOf(rides: readonly Leg[]): string {
-  const modes = new Set(rides.map((r) => r.mode));
-  return modes.size === 1 ? vehicles([...modes][0]) : 'rides';
-}
+export const vehiclesOf = (rides: readonly Leg[]) => S.vehicles[kindOf(rides)];
 
 /** Maps a MOTIS mode string to the modes that exist in Israel. */
 export function modeFromMotis(mode: string | null | undefined): TransitMode {
@@ -147,8 +146,8 @@ export const callPoint = (s: StopCall): GeoPoint => ({ lat: s.lat, lon: s.lon })
 /** "Platform 13", "Platform 5, floor 6" — where to stand at a big station. */
 export function platformLabel(s: StopCall): string | null {
   const parts: string[] = [];
-  if (s.track != null) parts.push(`Platform ${s.track}`);
-  if (s.floor != null) parts.push(s.track != null ? `floor ${s.floor}` : `Floor ${s.floor}`);
+  if (s.track != null) parts.push(S.stop.platform(s.track));
+  if (s.floor != null) parts.push(s.track != null ? S.stop.floorAfterPlatform(s.floor) : S.stop.floor(s.floor));
   return parts.length ? parts.join(', ') : null;
 }
 
@@ -227,7 +226,7 @@ export function legOptions(l: Leg): Leg[] {
 export function lineLabel(l: Leg): string {
   const s = l.routeShortName;
   if (s != null && s.trim() !== '' && s !== 'NaN') return s;
-  return l.mode === 'TRAIN' ? 'Train' : l.mode === 'CABLE_CAR' ? 'Cable' : '—';
+  return l.mode === 'TRAIN' ? S.stop.trainLine : l.mode === 'CABLE_CAR' ? S.stop.cableLine : '—';
 }
 
 /** Stable identity of one ride, for live-state maps. */
@@ -292,7 +291,7 @@ export const routeOrigin = (r: LineRoute) => LongName.parse(r.longName)[0];
 export const routeDestination = (r: LineRoute) => LongName.parse(r.longName)[1];
 export function routeLabel(r: LineRoute): string {
   if (r.shortName.trim() !== '' && r.shortName !== 'NaN') return r.shortName;
-  return r.mode === 'TRAIN' ? 'Train' : '—';
+  return r.mode === 'TRAIN' ? S.stop.trainLine : '—';
 }
 
 /** A line groups all its directions/alternatives (same operator + mkt); the first is the main one. */

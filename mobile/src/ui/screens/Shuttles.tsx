@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type Place, placePoint } from '../../data/models';
+import { S } from '../../i18n';
 import { ShuttleSchedule } from '../../data/shuttles';
 import { type Shuttle, WORK_WEEK } from '../../data/userStore';
 import { store, useUserData } from '../../state/store';
@@ -26,13 +27,12 @@ export function ShuttlesScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: t.c.background }} testID="shuttles_screen">
       <View style={[styles.header, { paddingTop: insets.top + 4 }]}>
-        <IconButton icon="arrow-back" label="Back" onPress={nav.pop} />
-        <Txt v="titleLarge">My shuttles</Txt>
+        <IconButton icon="arrow-back" label={S.common.back} onPress={nav.pop} />
+        <Txt v="titleLarge">{S.settings.myShuttles}</Txt>
       </View>
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}>
         <Txt v="bodyMedium" color={t.x.subtle} style={{ paddingHorizontal: 20, paddingVertical: 8 }}>
-          Add a shuttle that runs on a fixed timetable, like your company's bus to the train station. Trip planning then offers it on its own or combined
-          with buses and trains.
+          {S.shuttles.intro}
         </Txt>
         {data.shuttles.map((s) => (
           // Its timetable; the stops (often in Hebrew, which mixes badly with times on one line) are in the editor.
@@ -45,13 +45,11 @@ export function ShuttlesScreen() {
             onPress={() => nav.push('ShuttleEdit', { existing: s })}
           />
         ))}
-        <PlaceRow title="Add shuttle" icon="add" iconTint={t.c.primary} onPress={() => nav.push('ShuttleEdit', { existing: null })} testID="add_shuttle" />
+        <PlaceRow title={S.shuttles.add} icon="add" iconTint={t.c.primary} onPress={() => nav.push('ShuttleEdit', { existing: null })} testID="add_shuttle" />
       </ScrollView>
     </View>
   );
 }
-
-const DAY_NAMES = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const newId = () =>
   'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -88,7 +86,7 @@ export function ShuttleEditScreen({ route }: NativeStackScreenProps<RootStack, '
       to: null,
       editing: 'TO',
       single: true,
-      title: isFrom ? 'Where the shuttle leaves from' : 'Where the shuttle goes',
+      title: isFrom ? S.shuttles.pickFrom : S.shuttles.pickTo,
       onDone: (p) => {
         nav.pop();
         if (isFrom) setFrom(p);
@@ -127,27 +125,27 @@ export function ShuttleEditScreen({ route }: NativeStackScreenProps<RootStack, '
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: t.c.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} testID="shuttle_edit_screen">
       <View style={[styles.header, { paddingTop: insets.top + 4 }]}>
-        <IconButton icon="arrow-back" label="Back" onPress={nav.pop} />
-        <Txt v="titleLarge">{isNew ? 'New shuttle' : 'Edit shuttle'}</Txt>
+        <IconButton icon="arrow-back" label={S.common.back} onPress={nav.pop} />
+        <Txt v="titleLarge">{isNew ? S.shuttles.newTitle : S.shuttles.editTitle}</Txt>
       </View>
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 24 }} keyboardShouldPersistTaps="handled">
         <Txt v="labelMedium" color={showMissing && name.trim() === '' ? err : t.x.subtle} style={styles.label}>
-          Name
+          {S.shuttles.name}
         </Txt>
         <TextInput
           value={name}
           onChangeText={(v) => setName(v.slice(0, 24))}
-          placeholder="e.g. Office shuttle"
+          placeholder={S.shuttles.namePlaceholder}
           placeholderTextColor={t.x.subtle}
           autoCapitalize="sentences"
           style={[input, { borderColor: showMissing && name.trim() === '' ? err : t.c.outline }]}
-          accessibilityLabel="Name"
+          accessibilityLabel={S.shuttles.name}
           testID="shuttle_name"
         />
         <View style={{ height: 6 }} />
         <PlaceRow
-          title="From"
-          subtitle={from?.name ?? 'Choose where it leaves from'}
+          title={S.shuttles.from}
+          subtitle={from?.name ?? S.shuttles.fromHint}
           icon="trip-origin"
           iconTint={t.c.primary}
           subtitleColor={showMissing && from == null ? err : t.x.subtle}
@@ -155,8 +153,8 @@ export function ShuttleEditScreen({ route }: NativeStackScreenProps<RootStack, '
           testID="shuttle_from"
         />
         <PlaceRow
-          title="To"
-          subtitle={to?.name ?? 'Choose where it goes'}
+          title={S.shuttles.to}
+          subtitle={to?.name ?? S.shuttles.toHint}
           icon="flag"
           iconTint={t.c.primary}
           subtitleColor={showMissing && (to == null || sameStop) ? err : t.x.subtle}
@@ -164,7 +162,7 @@ export function ShuttleEditScreen({ route }: NativeStackScreenProps<RootStack, '
           testID="shuttle_to"
         />
         <Txt v="labelMedium" color={bad ? err : t.x.subtle} style={[styles.label, { marginTop: 8 }]}>
-          Departure times
+          {S.shuttles.times}
         </Txt>
         <TextInput
           value={times}
@@ -174,24 +172,24 @@ export function ShuttleEditScreen({ route }: NativeStackScreenProps<RootStack, '
           keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'default'}
           autoCapitalize="none"
           style={[input, { borderColor: bad ? err : t.c.outline }]}
-          accessibilityLabel="Departure times"
+          accessibilityLabel={S.shuttles.times}
           testID="shuttle_times"
         />
         <Txt v="bodySmall" color={bad ? err : t.x.subtle} style={{ paddingHorizontal: 36, paddingTop: 4 }}>
           {bad && ShuttleSchedule.isEmptyTimes(times)
-            ? 'Add at least one departure time'
+            ? S.shuttles.timesNone
             : bad
-              ? 'Use 24-hour times separated by commas, like 07:30, 17:00'
+              ? S.shuttles.timesBad
               : parsed != null
-                ? `${parsed.length} departure${parsed.length > 1 ? 's' : ''} a day`
-                : 'When it leaves from the first stop'}
+                ? S.shuttles.timesCount(parsed.length)
+                : S.shuttles.timesHint}
         </Txt>
         <View style={[styles.rideRow, { marginTop: 8 }]}>
           <Txt v="titleSmall" color={rideMissing ? err : t.c.onSurface} style={{ flex: 1 }}>
-            Ride takes
+            {S.shuttles.rideTakes}
           </Txt>
           <Txt v="bodyMedium" num color={rideMissing ? err : rideMinutes == null ? t.x.subtle : t.c.onSurface} testID="shuttle_ride">
-            {rideMinutes != null ? `${rideMinutes} min` : 'Not set'}
+            {rideMinutes != null ? S.fmt.min(rideMinutes) : S.common.notSet}
           </Txt>
         </View>
         <View style={{ paddingHorizontal: 12 }}>
@@ -205,23 +203,23 @@ export function ShuttleEditScreen({ route }: NativeStackScreenProps<RootStack, '
             maximumTrackTintColor={t.c.outlineVariant}
             thumbTintColor={rideMinutes == null ? t.x.subtle : t.c.primary}
             onValueChange={(v) => setRideMinutes(Math.min(Math.max(Math.round(v / 5) * 5, 5), 120))}
-            accessibilityLabel="Ride takes"
+            accessibilityLabel={S.shuttles.rideTakes}
             testID="shuttle_ride_slider"
           />
         </View>
         {rideMinutes == null && (
           <Txt v="bodySmall" color={rideMissing ? err : t.x.subtle} style={{ paddingHorizontal: 20, paddingBottom: 10 }}>
-            Slide to set how long it takes from stop to stop
+            {S.shuttles.rideHint}
           </Txt>
         )}
         <Txt v="titleSmall" color={showMissing && days.length === 0 ? err : t.c.onSurface} style={{ paddingHorizontal: 20 }}>
-          Runs on
+          {S.shuttles.runsOn}
         </Txt>
         <View style={styles.days}>
           {/* Sunday first, as the week goes in Israel. */}
           {[7, 1, 2, 3, 4, 5, 6].map((d) => {
             const on = days.includes(d);
-            return <Chip key={d} label={DAY_NAMES[d]} selected={on} onPress={() => setDays(on ? days.filter((x) => x !== d) : [...days, d])} />;
+            return <Chip key={d} label={S.shuttles.days[d]} selected={on} onPress={() => setDays(on ? days.filter((x) => x !== d) : [...days, d])} />;
           })}
         </View>
         {/* Save can always be tapped: with something missing it says what, rather than doing nothing. */}
@@ -230,25 +228,25 @@ export function ShuttleEditScreen({ route }: NativeStackScreenProps<RootStack, '
             {ShuttleSchedule.missingText(missing)}
           </Txt>
         )}
-        <Button text="Save" onPress={save} style={{ marginHorizontal: 20, height: 50 }} testID="shuttle_save" />
+        <Button text={S.common.save} onPress={save} style={{ marginHorizontal: 20, height: 50 }} testID="shuttle_save" />
         <View style={{ flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 4 }}>
-          <TextButton text="Save and add the way back" onPress={addReturn} />
+          <TextButton text={S.shuttles.saveReturn} onPress={addReturn} />
           <View style={{ flex: 1 }} />
           {!isNew && (
-            <TextButton text="Delete" color={err} onPress={() => setConfirmDelete(true)} testID="shuttle_delete" />
+            <TextButton text={S.common.delete} color={err} onPress={() => setConfirmDelete(true)} testID="shuttle_delete" />
           )}
         </View>
         {/* Not in the Kotlin app: a shuttle's times take a while to type in, and there's no undo. */}
         <Dialog
           visible={confirmDelete}
-          title={`Delete ${name.trim() || 'this shuttle'}?`}
+          title={S.shuttles.deleteTitle(name.trim() || null)}
           onDismiss={() => setConfirmDelete(false)}
           testID="shuttle_delete_dialog"
           actions={
             <>
-              <TextButton text="Cancel" onPress={() => setConfirmDelete(false)} />
+              <TextButton text={S.common.cancel} onPress={() => setConfirmDelete(false)} />
               <TextButton
-                text="Delete"
+                text={S.common.delete}
                 color={err}
                 onPress={() => {
                   setConfirmDelete(false);
@@ -261,7 +259,7 @@ export function ShuttleEditScreen({ route }: NativeStackScreenProps<RootStack, '
           }
         >
           <Txt v="bodyMedium" color={t.x.subtle}>
-            Its times and days will be gone.
+            {S.shuttles.deleteBody}
           </Txt>
         </Dialog>
       </ScrollView>

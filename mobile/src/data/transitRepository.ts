@@ -217,7 +217,7 @@ export class TransitRepository {
 
   async searchPlaces(text: string, near: GeoPoint | null): Promise<Place[]> {
     const q = AddressSearch.parse(text);
-    const a = orDefault(this.transitous.geocode(q.text, near, this.language), [] as Place[]);
+    const a = orDefault(this.transitous.geocode(q.text, near), [] as Place[]);
     const b = orDefault(this.photon.search(q.text, near), [] as Place[]);
     // With a house number, also look up the bare street in case the number isn't mapped.
     const c = q.number != null ? orDefault(this.photon.search(q.rest, near), [] as Place[]) : null;
@@ -240,7 +240,7 @@ export class TransitRepository {
 
   /** Stops and stations matching [text], biased towards [near]. */
   async searchStops(text: string, near: GeoPoint | null): Promise<Place[]> {
-    return (await this.transitous.geocode(text, near, this.language, 'STOP')).filter((p) => p.kind === 'STOP' && p.stopId != null);
+    return (await this.transitous.geocode(text, near, null, 'STOP')).filter((p) => p.kind === 'STOP' && p.stopId != null);
   }
 
   // ---- Routing --------------------------------------------------------------------

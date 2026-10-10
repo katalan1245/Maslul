@@ -1,6 +1,7 @@
 import type { LiveCall } from '../data/eta';
 import { GeoMath } from '../data/geo';
-import { type GeoPoint, type Itinerary, callPoint, isTransit, lineLabel, samePoint, scheduledTime } from '../data/models';
+import { type GeoPoint, type Itinerary, callPoint, isTransit, lineLabel, samePoint, scheduledTime, vehicleKind } from '../data/models';
+import { S } from '../i18n';
 import type { Instant } from '../data/time';
 import { Fmt, modeName } from '../ui/fmt';
 
@@ -93,11 +94,10 @@ export class TripGuide {
     const dest = callPoint(legs[legs.length - 1].to);
     this.arrived ||= pos != null && (GeoMath.distance(pos, dest) < 60 || this.lastAlong >= total - 40);
     if (this.arrived) {
-      return { legIndex, title: "You've arrived", text: this.destination, alert: 'ARRIVED', alertKey: 'arrived', progress: 1, finished: true };
+      return { legIndex, title: S.guide.arrived, text: this.destination, alert: 'ARRIVED', alertKey: 'arrived', progress: 1, finished: true };
     }
 
     if (!isTransit(leg.mode)) {
-      const verb = leg.mode === 'CAR' ? 'Ride to' : 'Walk to';
       let nextIdx = -1;
       for (let k = legIndex + 1; k < legs.length; k++) {
         if (isTransit(legs[k].mode)) {
@@ -109,8 +109,8 @@ export class TripGuide {
         const remaining = Math.max(total - this.lastAlong, 0);
         return {
           legIndex,
-          title: `${verb} ${this.destination}`,
-          text: `${Fmt.distance(remaining)} to go`,
+          title: leg.mode === 'CAR' ? S.guide.rideTo(this.destination) : S.guide.walkTo(this.destination),
+          text: S.guide.toGo(Fmt.distance(remaining)),
           alert: null,
           alertKey: null,
           progress,
@@ -122,18 +122,17 @@ export class TripGuide {
       const isLive = call?.status === 'LIVE';
       const eta = isLive ? call!.expected : next.start;
       const mins = eta != null ? Math.trunc((eta - now + 30) / 60) : null;
-      const liveTag = isLive ? ' (live)' : '';
+      const ride = `${modeName(next.mode)} ${lineLabel(next)}`;
       const text =
-        `${modeName(next.mode)} ${lineLabel(next)} ` +
         (mins == null || mins > 60
-          ? `at ${Fmt.when(eta ?? next.start, now)}${liveTag}` // "in 1208 min" reads as a bug; after the last bus it's tomorrow's
+          ? S.guide.rideAt(ride, Fmt.when(eta ?? next.start, now)) // "in 1208 min" reads as a bug; after the last bus it's tomorrow's
           : mins <= 0
-            ? `is arriving${liveTag}`
-            : `in ${mins} min${liveTag}`);
+            ? S.guide.rideArriving(ride, vehicleKind(next.mode))
+            : S.guide.rideIn(ride, mins)) + (isLive ? S.guide.liveTag : '');
       const soon = mins != null && mins >= 0 && mins <= 3;
       return {
         legIndex,
-        title: leg.mode === 'CAR' ? `Get dropped off near ${next.from.name}` : `Walk to ${next.from.name}`,
+        title: leg.mode === 'CAR' ? S.cards.dropOffNear(next.from.name) : S.guide.walkTo(next.from.name),
         text,
         alert: soon ? 'BOARD_SOON' : null,
         alertKey: soon ? `board-${nextIdx}` : null,
@@ -151,7 +150,7 @@ export class TripGuide {
         : // Without location, estimate by schedule.
           all.slice(1).filter((s) => (scheduledTime(s) ?? leg.end) > now).length;
     const arriveAt = live.get(legIndex)?.alightExpected ?? leg.end;
-    const title = `${modeName(leg.mode)} ${lineLabel(leg)} → ${leg.to.name}`;
+    const title = S.guide.rideTitle(`${modeName(leg.mode)} ${lineLabel(leg)}`, leg.to.name);
     // Past the last stop and away from it, but off the walking path (so the walk leg never matched): off the bus.
     if (remaining <= 0 && pos != null && legIndex + 1 < legs.length && GeoMath.distance(pos, callPoint(leg.to)) > 100) {
       this.lastAlong = Math.max(this.lastAlong, this.legStart[legIndex + 1]);
@@ -159,12 +158,12 @@ export class TripGuide {
     }
     if (remaining <= 0) {
       if (!this.offAt.has(legIndex)) this.offAt.set(legIndex, now);
-      return { legIndex, title: 'Get off now', text: leg.to.name, alert: 'GET_OFF_NOW', alertKey: `off-${legIndex}`, progress, finished: false };
+      return { legIndex, title: S.guide.getOffNow, text: leg.to.name, alert: 'GET_OFF_NOW', alertKey: `off-${legIndex}`, progress, finished: false };
     }
     if (remaining === 1) {
       return {
         legIndex,
-        title: 'Get off at the next stop',
+        title: S.cards.getOffNext,
         text: leg.to.name,
         alert: 'GET_OFF_NEXT',
         alertKey: `next-${legIndex}`,
@@ -175,7 +174,7 @@ export class TripGuide {
     return {
       legIndex,
       title,
-      text: `${remaining} stops · get off ${Fmt.time(arriveAt)}`,
+      text: S.guide.stopsLeft(remaining, Fmt.time(arriveAt)),
       alert: null,
       alertKey: null,
       progress,

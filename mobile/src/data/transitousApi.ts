@@ -1,4 +1,5 @@
 import { GeoMath, Polyline } from './geo';
+import { S } from '../i18n';
 import { Http, buildUrl, type Query } from './http';
 import {
   type Departure,
@@ -221,23 +222,9 @@ export interface LegDto {
 
 function describeStep(s: StepDto): string {
   const street = s.streetName?.trim() ? s.streetName : null;
-  const dirs: Record<string, string> = {
-    LEFT: 'Turn left',
-    RIGHT: 'Turn right',
-    SLIGHTLY_LEFT: 'Bear left',
-    SLIGHTLY_RIGHT: 'Bear right',
-    HARD_LEFT: 'Sharp left',
-    HARD_RIGHT: 'Sharp right',
-    UTURN_LEFT: 'Make a U-turn',
-    UTURN_RIGHT: 'Make a U-turn',
-    DEPART: 'Head out',
-    ELEVATOR: 'Take the elevator',
-    STAIRS: 'Take the stairs',
-    CIRCLE_CLOCKWISE: 'Take the roundabout',
-    CIRCLE_COUNTERCLOCKWISE: 'Take the roundabout',
-  };
-  const dir = (s.relativeDirection != null && dirs[s.relativeDirection]) || 'Continue';
-  return street != null ? `${dir} on ${street}` : dir;
+  const known = S.steps[s.relativeDirection as keyof typeof S.steps];
+  const dir = typeof known === 'string' ? known : S.steps.CONTINUE;
+  return street != null ? S.steps.on(dir, street) : dir;
 }
 
 export function legToDomain(d: LegDto): Leg {
@@ -260,7 +247,8 @@ export function legToDomain(d: LegDto): Leg {
     // A walk after a car drop-off can come back a few seconds "shorter than nothing".
     end: !isTransit(mode) && end < start ? start : end,
     distanceM: d.distance ?? (cum ? cum[cum.length - 1] : null),
-    headsign: d.headsign != null ? cleanHeadsign(d.headsign) : null,
+    // A train's headsign is only its number ("114"), which says nothing about where it goes.
+    headsign: d.headsign != null && !/^\d+$/.test(d.headsign.trim()) ? cleanHeadsign(d.headsign) : null,
     routeShortName: d.routeShortName ?? d.displayName ?? null,
     routeLongName: d.routeLongName ?? null,
     routeColor: parseColor(d.routeColor),
@@ -364,7 +352,7 @@ export function stopTimeToDomain(d: StopTimeDto): Departure | null {
   if (time == null) return null;
   const mode = modeFromMotis(d.mode ?? 'BUS');
   const short = d.routeShortName ?? d.displayName;
-  const label = short != null && short.trim() !== '' && short !== 'NaN' ? short : mode === 'TRAIN' ? 'Train' : '—';
+  const label = short != null && short.trim() !== '' && short !== 'NaN' ? short : mode === 'TRAIN' ? S.stop.trainLine : '—';
   return {
     tripId: d.tripId ?? '',
     routeId: d.routeId ?? null,

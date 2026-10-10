@@ -1,5 +1,6 @@
 import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { S } from '../../i18n';
 import { type Line, type LineRoute, type TransitMode, routeDestination, routeLabel, routeOrigin } from '../../data/models';
 import { Operators } from '../../data/operators';
 import type { Instant } from '../../data/time';
@@ -68,7 +69,7 @@ class LinesHomeModel extends Model {
           if (job === this.job) this.results = r;
         } catch {
           if (job === this.job) {
-            this.error = "Couldn't load lines. Check your connection.";
+            this.error = S.lines.loadFailed;
             this.results = [];
           }
         }
@@ -101,7 +102,7 @@ class LinesHomeModel extends Model {
   openLine = async (l: NearbyLine) => {
     const r = await repo.lineRoute(l.departure.routeId).catch(() => null);
     if (r) nav.push('Line', { route: r });
-    else showToast('Line details unavailable');
+    else showToast(S.lines.detailsUnavailable);
   };
 }
 
@@ -124,23 +125,23 @@ export function LinesHomeScreen() {
   const now = useNow(20_000);
   const rows: Row[] = [];
   if (model.showsResults) {
-    if (model.error != null) rows.push({ kind: 'message', key: 'err', title: 'Something went wrong', body: model.error });
+    if (model.error != null) rows.push({ kind: 'message', key: 'err', title: S.common.somethingWrong, body: model.error });
     else if (!model.loading && model.results.length === 0) {
-      rows.push({ kind: 'message', key: 'none', title: 'No lines found', body: 'Search by line number (e.g. 1, 480, 5א) or by a city or station name.', icon: 'search-off' });
+      rows.push({ kind: 'message', key: 'none', title: S.lines.noneFound, body: S.lines.noneFoundHint, icon: 'search-off' });
     }
     model.results.forEach((l) =>
       rows.push({ kind: 'line', key: `${l.routes[0].operatorRef}-${l.routes[0].mkt}-${l.routes[0].gtfsRouteId}`, route: l.routes[0], variants: l.routes.length, favorite: false }),
     );
   } else {
     if (data.favoriteLines.length) {
-      rows.push({ kind: 'header', key: 'hf', text: 'Favorite lines' });
+      rows.push({ kind: 'header', key: 'hf', text: S.lines.favorites });
       data.favoriteLines.forEach((r) => rows.push({ kind: 'line', key: `fav-${r.operatorRef}-${r.mkt}`, route: r, variants: 1, favorite: true }));
     }
     const lines = model.nearbyLines.filter((l) => model.mode == null || l.departure.mode === model.mode);
-    rows.push({ kind: 'header', key: 'hn', text: 'Nearby lines', refresh: true });
+    rows.push({ kind: 'header', key: 'hn', text: S.lines.nearby, refresh: true });
     if (lines.length === 0) {
       if (model.nearbyLoading || model.linesLoading) rows.push({ kind: 'loading', key: 'loading' });
-      else rows.push({ kind: 'message', key: 'nonear', title: 'No lines nearby', body: 'Allow location access to see lines around you.', icon: 'near-me' });
+      else rows.push({ kind: 'message', key: 'nonear', title: S.lines.noneNearby, body: S.lines.noneNearbyHint, icon: 'near-me' });
     }
     lines.slice(0, 10).forEach((l) => rows.push({ kind: 'nearby', key: `nl-${l.departure.routeId}-${l.departure.headsign}`, line: l }));
   }
@@ -152,7 +153,7 @@ export function LinesHomeScreen() {
       case 'loading':
         return <LoadingBox />;
       case 'header':
-        return <SectionHeader text={item.text} action={item.refresh ? 'Refresh' : undefined} onAction={item.refresh ? model.loadNearby : undefined} />;
+        return <SectionHeader text={item.text} action={item.refresh ? S.common.refresh : undefined} onAction={item.refresh ? model.loadNearby : undefined} />;
       case 'line':
         return <LineRow route={item.route} variants={item.variants} favorite={item.favorite} onPress={() => nav.push('Line', { route: item.route })} />;
       case 'nearby':
@@ -164,9 +165,9 @@ export function LinesHomeScreen() {
     <View style={{ flex: 1, backgroundColor: t.c.background }} testID="lines_screen">
       <View style={{ backgroundColor: t.c.surface, paddingTop: insets.top }}>
         <Txt v="headlineSmall" style={styles.title} accessibilityRole="header">
-          Lines
+          {S.lines.title}
         </Txt>
-        <SearchBox query={model.query} onQuery={model.onQuery} placeholder="Line number or name, e.g. 480" testID="line_search" />
+        <SearchBox query={model.query} onQuery={model.onQuery} placeholder={S.lines.searchHint} testID="line_search" />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
           {(['BUS', 'TRAIN', 'LIGHT_RAIL', 'CABLE_CAR'] as const).map((m) => (
             <Chip key={m} label={modeName(m)} icon={modeIcon(m)} iconColor={ModeColors[m]} selected={model.mode === m} onPress={() => model.onMode(m)} />
@@ -188,7 +189,7 @@ function NearbyLineRow({ line, now, onPress }: { line: NearbyLine; now: Instant;
         <LineBadge label={d.lineLabel} mode={d.mode} color={lineColorOf(d.mode, d.routeColor, d.agencyId, d.agency)} />
       </View>
       <View style={{ flex: 1, marginLeft: 12 }}>
-        <Txt v="bodyMedium" numberOfLines={1}>{`to ${d.headsign}`}</Txt>
+        <Txt v="bodyMedium" numberOfLines={1}>{S.common.toward(d.headsign)}</Txt>
         <Txt v="bodySmall" color={t.x.subtle} numberOfLines={1}>{`${Fmt.distance(line.distanceM)} · ${line.stop.name}`}</Txt>
       </View>
       <View style={{ alignItems: 'flex-end', marginLeft: 8 }}>
@@ -196,7 +197,7 @@ function NearbyLineRow({ line, now, onPress }: { line: NearbyLine; now: Instant;
           {Fmt.relative(line.next[0], now)}
         </Txt>
         {line.next[1] != null && (
-          <Txt v="labelSmall" num color={t.x.subtle}>{`then ${Fmt.time(line.next[1])}`}</Txt>
+          <Txt v="labelSmall" num color={t.x.subtle}>{S.common.then(Fmt.time(line.next[1]))}</Txt>
         )}
       </View>
     </Pressable>

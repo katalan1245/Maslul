@@ -24,7 +24,7 @@ public class MaslulNativeModule: Module {
     }
 
     // iOS has no ongoing notification to update (live directions show in the app and alert by notification).
-    AsyncFunction("updateTripNotification") { (taskName: String, title: String, text: String, progress: Double, endUrl: String) -> Bool in
+    AsyncFunction("updateTripNotification") { (taskName: String, title: String, text: String, progress: Double, endUrl: String, endLabel: String) -> Bool in
       false
     }
 

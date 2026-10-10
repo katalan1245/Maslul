@@ -6,6 +6,7 @@ import { RIDE_MINUTES, type RideOffer } from '../../data/rides';
 import { type Instant, localParts, nowSec, plusDays, today, zoned } from '../../data/time';
 import { RAIL_PREFERENCES, type RailPreference, WALK_SPEEDS, type WalkSpeed } from '../../data/userStore';
 import { store, useUserData } from '../../state/store';
+import { S } from '../../i18n';
 import { Fmt, modeName } from '../fmt';
 import { Button, Chip, Segmented, SettingSwitch, TextButton, Txt } from '../components/common';
 import { Icon, modeIcon } from '../components/icons';
@@ -40,12 +41,12 @@ export function TimeSheet({
   const field = [type.headlineSmall, styles.timeField, { color: t.c.onSurface, backgroundColor: t.c.surfaceVariant }];
   return (
     <Sheet visible onDismiss={onDismiss} testID="time_sheet">
-      <Txt v="titleLarge">When?</Txt>
+      <Txt v="titleLarge">{S.sheets.when}</Txt>
       <View style={{ height: 16 }} />
       <Segmented
         options={[
-          { value: 'DEPART', label: 'Depart at' },
-          { value: 'ARRIVE', label: 'Arrive by' },
+          { value: 'DEPART', label: S.sheets.departAt },
+          { value: 'ARRIVE', label: S.sheets.arriveBy },
         ]}
         value={sel}
         onChange={setSel}
@@ -57,7 +58,7 @@ export function TimeSheet({
         })}
       </ScrollView>
       <View style={styles.timeRow}>
-        <TextInput value={hour} onChangeText={setHour} keyboardType="number-pad" maxLength={2} selectTextOnFocus style={field} accessibilityLabel="Hour" testID="time_hour" />
+        <TextInput value={hour} onChangeText={setHour} keyboardType="number-pad" maxLength={2} selectTextOnFocus style={field} accessibilityLabel={S.sheets.hour} testID="time_hour" />
         <Txt v="headlineSmall" style={{ marginHorizontal: 8 }}>
           :
         </Txt>
@@ -68,17 +69,17 @@ export function TimeSheet({
           maxLength={2}
           selectTextOnFocus
           style={field}
-          accessibilityLabel="Minute"
+          accessibilityLabel={S.sheets.minute}
           testID="time_minute"
         />
       </View>
       <View style={styles.buttons}>
         <Pressable onPress={() => onApply('NOW', null)} style={styles.half} accessibilityRole="button">
           <Txt v="labelLarge" color={t.c.primary}>
-            Leave now
+            {S.cards.leaveNow}
           </Txt>
         </Pressable>
-        <Button text="Set time" disabled={!valid} onPress={() => onApply(sel, zoned(date, h, m))} style={[styles.half, { height: 50 }]} testID="set_time" />
+        <Button text={S.sheets.setTime} disabled={!valid} onPress={() => onApply(sel, zoned(date, h, m))} style={[styles.half, { height: 50 }]} testID="set_time" />
       </View>
     </Sheet>
   );
@@ -103,9 +104,9 @@ export function RideSheet({
   const [minutes, setMinutes] = useState(current?.kind === 'within' ? current.minutes : 10);
   return (
     <Sheet visible onDismiss={onDismiss} testID="ride_sheet">
-      <Txt v="titleLarge">Getting a ride (טרמפ)?</Txt>
+      <Txt v="titleLarge">{S.sheets.rideTitle}</Txt>
       <Txt v="bodySmall" color={t.x.subtle}>
-        Someone's driving you part of the way. Find the best place to get out and go on by bus or train.
+        {S.sheets.rideIntro}
       </Txt>
       <Pressable
         onPress={onPickDestination}
@@ -115,9 +116,9 @@ export function RideSheet({
       >
         <Icon name="place" color={t.c.primary} />
         <View style={{ flex: 1, marginLeft: 12 }}>
-          <Txt v="titleSmall">The driver is going somewhere</Txt>
+          <Txt v="titleSmall">{S.sheets.driverGoing}</Txt>
           <Txt v="bodySmall" color={t.x.subtle}>
-            {current?.kind === 'toPlace' ? `To ${current.dest.name} · tap to change` : 'Choose where they\'re heading; get out wherever on the way is best'}
+            {current?.kind === 'toPlace' ? S.sheets.toPlace(current.dest.name) : S.sheets.toPlaceHint}
           </Txt>
         </View>
         <Icon name="chevron-right" color={t.x.subtle} />
@@ -126,22 +127,22 @@ export function RideSheet({
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Icon name="schedule" color={t.c.primary} />
           <View style={{ flex: 1, marginLeft: 12 }}>
-            <Txt v="titleSmall">The driver can take me up to…</Txt>
+            <Txt v="titleSmall">{S.sheets.driverUpTo}</Txt>
             <Txt v="bodySmall" color={t.x.subtle}>
-              Get dropped off wherever is best within that drive
+              {S.sheets.upToHint}
             </Txt>
           </View>
         </View>
         <View style={styles.chips}>
           {RIDE_MINUTES.map((m) => (
-            <Chip key={m} label={`${m} min`} selected={minutes === m} onPress={() => setMinutes(m)} />
+            <Chip key={m} label={S.fmt.min(m)} selected={minutes === m} onPress={() => setMinutes(m)} />
           ))}
         </View>
-        <Button text="Find where to get out" onPress={() => onApply({ kind: 'within', minutes })} testID="ride_within" />
+        <Button text={S.sheets.findDropOff} onPress={() => onApply({ kind: 'within', minutes })} testID="ride_within" />
       </View>
       {current != null && (
         <View style={{ alignItems: 'center', marginTop: 8 }}>
-          <TextButton text="No ride, plan as usual" onPress={() => onApply(null)} />
+          <TextButton text={S.sheets.noRide} onPress={() => onApply(null)} />
         </View>
       )}
     </Sheet>
@@ -156,9 +157,9 @@ export function OptionsSheet({ onDismiss }: { onDismiss: () => void }) {
   const s = useUserData().settings;
   return (
     <Sheet visible onDismiss={onDismiss} testID="options_sheet">
-      <Txt v="titleLarge">Route options</Txt>
+      <Txt v="titleLarge">{S.sheets.optionsTitle}</Txt>
       <Txt v="titleSmall" style={{ marginTop: 16, marginBottom: 8 }}>
-        Transport
+        {S.sheets.transport}
       </Txt>
       <View style={styles.chipsWrap}>
         {MODES.map((m) => {
@@ -181,9 +182,9 @@ export function OptionsSheet({ onDismiss }: { onDismiss: () => void }) {
       </View>
       <View style={[styles.rowBetween, { marginTop: 18 }]}>
         <Txt v="titleSmall" style={{ flex: 1 }}>
-          Max walk to/from stops
+          {S.sheets.maxWalk}
         </Txt>
-        <Txt v="bodyMedium" num>{`${s.maxWalkMinutes} min`}</Txt>
+        <Txt v="bodyMedium" num>{S.fmt.min(s.maxWalkMinutes)}</Txt>
       </View>
       <Slider
         value={s.maxWalkMinutes}
@@ -194,38 +195,38 @@ export function OptionsSheet({ onDismiss }: { onDismiss: () => void }) {
         maximumTrackTintColor={t.c.surfaceContainerHighest}
         thumbTintColor={t.c.primary}
         onValueChange={(v) => store.updateSettings((st) => ({ ...st, maxWalkMinutes: Math.max(Math.trunc(v / 5), 1) * 5 }))}
-        accessibilityLabel="Max walk to or from stops"
+        accessibilityLabel={S.sheets.maxWalkA11y}
         testID="max_walk"
       />
       <Txt v="titleSmall" style={{ marginTop: 8, marginBottom: 8 }}>
-        Walking speed
+        {S.sheets.walkSpeed}
       </Txt>
       <Segmented
-        options={(Object.keys(WALK_SPEEDS) as WalkSpeed[]).map((w) => ({ value: w, label: WALK_SPEEDS[w].label }))}
+        options={(Object.keys(WALK_SPEEDS) as WalkSpeed[]).map((w) => ({ value: w, label: S.sheets.walkSpeeds[w] }))}
         value={s.walkSpeed}
         onChange={(w) => store.updateSettings((st) => ({ ...st, walkSpeed: w }))}
       />
       <Txt v="titleSmall" style={{ marginTop: 14 }}>
-        Prefer trains & light rail
+        {S.sheets.preferRail}
       </Txt>
       <Txt v="bodySmall" color={t.x.subtle} style={{ marginBottom: 8 }}>
-        Favor rail over buses, e.g. if buses make you feel sick
+        {S.sheets.preferRailHint}
       </Txt>
       <Segmented
-        options={(Object.keys(RAIL_PREFERENCES) as RailPreference[]).map((r) => ({ value: r, label: RAIL_PREFERENCES[r].label }))}
+        options={(Object.keys(RAIL_PREFERENCES) as RailPreference[]).map((r) => ({ value: r, label: S.sheets.railPreferences[r] }))}
         value={s.railPreference}
         onChange={(r) => store.updateSettings((st) => ({ ...st, railPreference: r }))}
         testID="rail_preference"
       />
       <View style={{ marginHorizontal: -20, marginTop: 6 }}>
         <SettingSwitch
-          title="Wheelchair accessible"
-          subtitle="Avoid stairs; prefer step-free routes"
+          title={S.sheets.wheelchair}
+          subtitle={S.sheets.wheelchairHint}
           value={s.wheelchair}
           onChange={(c) => store.updateSettings((st) => ({ ...st, wheelchair: c }))}
         />
       </View>
-      <Button text="Show routes" onPress={onDismiss} style={{ marginTop: 18, height: 50 }} testID="options_done" />
+      <Button text={S.sheets.showRoutes} onPress={onDismiss} style={{ marginTop: 18, height: 50 }} testID="options_done" />
     </Sheet>
   );
 }

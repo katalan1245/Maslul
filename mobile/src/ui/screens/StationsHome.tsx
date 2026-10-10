@@ -1,5 +1,6 @@
 import { FlatList, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { S } from '../../i18n';
 import { GeoMath } from '../../data/geo';
 import { type GeoPoint, type Place, placePoint } from '../../data/models';
 import { location, useLastLocation } from '../../state/location';
@@ -43,7 +44,7 @@ class StationsHomeModel extends Model {
         if (job === this.job) this.results = r;
       } catch {
         if (job === this.job) {
-          this.error = "Couldn't search stations. Check your connection.";
+          this.error = S.stations.loadFailed;
           this.results = [];
         }
       }
@@ -85,18 +86,18 @@ export function StationsHomeScreen() {
   });
   const rows: Row[] = [];
   if (model.query.trim() !== '') {
-    if (model.error != null) rows.push({ kind: 'message', key: 'err', title: 'Something went wrong', body: model.error });
-    else if (!model.loading && model.results.length === 0) rows.push({ kind: 'message', key: 'none', title: 'No stations found', body: 'Search by stop name, station or stop number.' });
+    if (model.error != null) rows.push({ kind: 'message', key: 'err', title: S.common.somethingWrong, body: model.error });
+    else if (!model.loading && model.results.length === 0) rows.push({ kind: 'message', key: 'none', title: S.stations.noneFound, body: S.stations.noneFoundHint });
     model.results.forEach((p) => rows.push({ kind: 'station', key: `sr-${p.stopId}`, place: p }));
   } else {
     if (data.favoriteStops.length) {
-      rows.push({ kind: 'header', key: 'hf', text: 'Favorite stops' });
+      rows.push({ kind: 'header', key: 'hf', text: S.stations.favorites });
       data.favoriteStops.forEach((p) => rows.push({ kind: 'favorite', key: `fs-${p.stopId}`, place: p }));
     }
-    rows.push({ kind: 'header', key: 'hn', text: 'Nearby stations', refresh: true });
+    rows.push({ kind: 'header', key: 'hn', text: S.stations.nearby, refresh: true });
     if (model.nearby.length === 0) {
       if (model.nearbyLoading) rows.push({ kind: 'loading', key: 'loading' });
-      else rows.push({ kind: 'message', key: 'nonear', title: 'No stops nearby', body: 'Allow location access to see stations around you.', icon: 'near-me' });
+      else rows.push({ kind: 'message', key: 'nonear', title: S.stations.noneNearby, body: S.stations.noneNearbyHint, icon: 'near-me' });
     }
     model.nearby.forEach((p) => rows.push({ kind: 'station', key: `nb-${p.stopId}`, place: p }));
   }
@@ -108,7 +109,7 @@ export function StationsHomeScreen() {
       case 'loading':
         return <LoadingBox />;
       case 'header':
-        return <SectionHeader text={item.text} action={item.refresh ? 'Refresh' : undefined} onAction={item.refresh ? model.loadNearby : undefined} />;
+        return <SectionHeader text={item.text} action={item.refresh ? S.common.refresh : undefined} onAction={item.refresh ? model.loadNearby : undefined} />;
       case 'favorite':
         return <PlaceRow title={item.place.name} subtitle={item.place.subtitle} icon="star" iconTint={ModeColors.BUS} onPress={() => open(item.place)} />;
       case 'station':
@@ -119,9 +120,9 @@ export function StationsHomeScreen() {
     <View style={{ flex: 1, backgroundColor: t.c.background }} testID="stations_screen">
       <View style={{ backgroundColor: t.c.surface, paddingTop: insets.top, paddingBottom: 10 }}>
         <Txt v="headlineSmall" style={{ paddingLeft: 20, paddingTop: 14, paddingBottom: 10 }} accessibilityRole="header">
-          Stations
+          {S.stations.title}
         </Txt>
-        <SearchBox query={model.query} onQuery={model.onQuery} placeholder="Stop or station name" testID="station_search" />
+        <SearchBox query={model.query} onQuery={model.onQuery} placeholder={S.stations.searchHint} testID="station_search" />
       </View>
       <ProgressBar active={model.loading} />
       <FlatList data={rows} keyExtractor={(r) => r.key} renderItem={renderRow} contentContainerStyle={{ paddingBottom: 16 }} keyboardShouldPersistTaps="handled" />

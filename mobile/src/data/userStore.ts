@@ -9,6 +9,7 @@ import {
 } from './models';
 import { DEFAULT_MAX_WALK_MINUTES } from './transitousApi';
 import { distinctBy } from './util';
+import { LANGUAGES, type LanguageSetting } from '../i18n';
 
 export { DEFAULT_MAX_WALK_MINUTES };
 
@@ -16,9 +17,9 @@ export const THEME_MODES = ['SYSTEM', 'LIGHT', 'DARK'] as const;
 export type ThemeMode = (typeof THEME_MODES)[number];
 
 export const WALK_SPEEDS = {
-  SLOW: { mps: 1.0, label: 'Relaxed' },
-  NORMAL: { mps: 1.3, label: 'Normal' },
-  FAST: { mps: 1.6, label: 'Brisk' },
+  SLOW: { mps: 1.0 },
+  NORMAL: { mps: 1.3 },
+  FAST: { mps: 1.6 },
 } as const;
 export type WalkSpeed = keyof typeof WALK_SPEEDS;
 
@@ -28,9 +29,9 @@ export type WalkSpeed = keyof typeof WALK_SPEEDS;
  * per bus boarded.
  */
 export const RAIL_PREFERENCES = {
-  NONE: { label: 'No', busMinuteCost: 0.0, busLegSec: 0.0 },
-  PREFER: { label: 'Yes', busMinuteCost: 0.35, busLegSec: 240.0 },
-  STRONG: { label: 'Strongly', busMinuteCost: 0.75, busLegSec: 450.0 },
+  NONE: { busMinuteCost: 0.0, busLegSec: 0.0 },
+  PREFER: { busMinuteCost: 0.35, busLegSec: 240.0 },
+  STRONG: { busMinuteCost: 0.75, busLegSec: 450.0 },
 } as const;
 export type RailPreference = keyof typeof RAIL_PREFERENCES;
 
@@ -42,6 +43,8 @@ export type FavoriteIcon = (typeof FAVORITE_ICONS)[number];
 
 export interface Settings {
   theme: ThemeMode;
+  /** Not in the Kotlin app, which was English only. SYSTEM follows the phone. */
+  language: LanguageSetting;
   walkSpeed: WalkSpeed;
   maxWalkMinutes: number;
   modes: TransitMode[];
@@ -58,6 +61,7 @@ export const DEFAULT_MODES: TransitMode[] = ['BUS', 'TRAIN', 'LIGHT_RAIL', 'METR
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: 'SYSTEM',
+  language: 'SYSTEM',
   walkSpeed: 'NORMAL',
   maxWalkMinutes: DEFAULT_MAX_WALK_MINUTES,
   modes: DEFAULT_MODES,
@@ -245,6 +249,7 @@ export function readSettings(v: unknown): Settings {
   const d = DEFAULT_SETTINGS;
   return {
     theme: oneOf(THEME_MODES, v.theme) ?? d.theme,
+    language: oneOf(LANGUAGES, v.language) ?? d.language,
     walkSpeed: oneOf(Object.keys(WALK_SPEEDS) as WalkSpeed[], v.walkSpeed) ?? d.walkSpeed,
     maxWalkMinutes: int(v.maxWalkMinutes) ?? d.maxWalkMinutes,
     modes: Array.isArray(v.modes) ? distinctBy(list(v.modes, (m) => oneOf(TRANSIT_MODES, m)), (m) => m) : d.modes,

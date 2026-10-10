@@ -13,6 +13,9 @@ import type { Place } from './data/models';
 import { END_TRIP_URL, activeTrip, useActiveTrip } from './live/liveTrip';
 import { setUpNotifications } from './live/notifications';
 import { readLegacyStore } from './native';
+import { S, lang } from './i18n';
+import { applyLanguage } from './i18n/device';
+import { repo } from './state/services';
 import { store, useUserData } from './state/store';
 import { Txt } from './ui/components/common';
 import { Icon, type IconName } from './ui/components/icons';
@@ -58,9 +61,9 @@ function TabsScreen() {
         tabBarStyle: { backgroundColor: t.c.surface, borderTopColor: t.x.divider },
       }}
     >
-      <Tab.Screen name="Navigate" component={NavHomeScreen} options={{ tabBarIcon: tabIcon('directions'), tabBarButtonTestID: 'tab_navigate' }} />
-      <Tab.Screen name="Lines" component={LinesHomeScreen} options={{ tabBarIcon: tabIcon('timeline'), tabBarButtonTestID: 'tab_lines' }} />
-      <Tab.Screen name="Stations" component={StationsHomeScreen} options={{ tabBarIcon: tabIcon('place'), tabBarButtonTestID: 'tab_stations' }} />
+      <Tab.Screen name="Navigate" component={NavHomeScreen} options={{ tabBarIcon: tabIcon('directions'), tabBarLabel: S.tabs.navigate, tabBarButtonTestID: 'tab_navigate' }} />
+      <Tab.Screen name="Lines" component={LinesHomeScreen} options={{ tabBarIcon: tabIcon('timeline'), tabBarLabel: S.lines.title, tabBarButtonTestID: 'tab_lines' }} />
+      <Tab.Screen name="Stations" component={StationsHomeScreen} options={{ tabBarIcon: tabIcon('place'), tabBarLabel: S.stations.title, tabBarButtonTestID: 'tab_stations' }} />
     </Tab.Navigator>
   );
 }
@@ -75,7 +78,7 @@ function LiveTripBanner({ routeName }: { routeName: string | undefined }) {
     const legs = s.itinerary.legs;
     const first = legs[0].from;
     const last = legs[legs.length - 1].to;
-    const from: Place = { name: first.name.trim() || 'Start', lat: first.lat, lon: first.lon, kind: 'PIN' };
+    const from: Place = { name: first.name.trim() || S.common.start, lat: first.lat, lon: first.lon, kind: 'PIN' };
     const to: Place = { name: s.destination, lat: last.lat, lon: last.lon, kind: 'PIN' };
     nav.push('RouteDetail', { itinerary: s.itinerary, from, to });
   };
@@ -89,7 +92,7 @@ function LiveTripBanner({ routeName }: { routeName: string | undefined }) {
       <Icon name="navigation" color={t.c.onPrimary} />
       <View style={{ flex: 1, marginLeft: 10 }}>
         <Txt v="titleSmall" color={t.c.onPrimary} numberOfLines={1}>
-          {s.state?.title ?? 'Live directions'}
+          {s.state?.title ?? S.notify.liveDirections}
         </Txt>
         <Txt v="bodySmall" color={t.c.onPrimary} numberOfLines={1} style={{ opacity: 0.85 }}>
           {s.state?.text ?? s.destination}
@@ -143,6 +146,9 @@ export default function App() {
     (async () => {
       // The first launch after the Kotlin app moves its saved places and settings over.
       await store.load(AsyncStorage, readLegacyStore).catch(() => {});
+      // Before anything is drawn; when the layout direction has to change, the app reloads (splash stays up).
+      if (await applyLanguage(store.value.settings.language)) return;
+      repo.language = lang();
       setUpNotifications();
       await activeTrip.restore().catch(() => {});
       setReady(true);

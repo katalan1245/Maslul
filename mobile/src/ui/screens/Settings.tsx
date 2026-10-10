@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Image, Linking, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Animated, Easing, I18nManager, Image, Linking, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Line as SvgLine, Path, Rect } from 'react-native-svg';
 import { THEME_MODES, type ThemeMode, favoriteKey } from '../../data/userStore';
+import { LANGUAGES, type LanguageSetting, S } from '../../i18n';
+import { changeLanguage } from '../../i18n/device';
 import { store, useUserData } from '../../state/store';
 import { APP_VERSION } from '../../version';
 import { Chip, IconButton, PlaceRow, SectionHeader, Segmented, SettingSwitch, TextButton, Txt } from '../components/common';
@@ -14,17 +16,6 @@ import { pickHomeOrWork } from './NavHome';
 
 const SOURCE_URL = 'https://github.com/Tom-stack3/Maslul';
 
-/** The data sources, as credited in Settings → About (the Kotlin app's wording). */
-export const ABOUT =
-  'Maslul is a free, open-source transit app for Israel, licensed under the GNU AGPL v3.\n\n' +
-  '• Routes & timetables: Israel Ministry of Transport GTFS, routed by Transitous (transitous.org).\n' +
-  '• Live vehicles: Ministry of Transport SIRI feed, published by Open Bus / The Public Knowledge Workshop (Hasadna).\n' +
-  '• Line search & daily schedules: Open Bus Stride API.\n' +
-  '• Search: Transitous, Photon (komoot) and Nominatim, OpenStreetMap data.\n' +
-  '• Maps: OpenFreeMap, © OpenStreetMap contributors.\n\n' +
-  'Live arrival times are estimated from each vehicle\'s reported position and are typically 30–90 s behind real time.';
-
-const titleCase = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
 
 export function SettingsScreen() {
   const t = useTheme();
@@ -41,7 +32,7 @@ export function SettingsScreen() {
       to: null,
       editing: 'TO',
       single: true,
-      title: 'Add favorite',
+      title: S.settings.addFavorite,
       onDone: (p) => {
         nav.pop();
         setDraft(draftFor(p));
@@ -51,29 +42,29 @@ export function SettingsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: t.c.background }} testID="settings_screen">
       <View style={[styles.header, { paddingTop: insets.top + 4 }]}>
-        <IconButton icon="arrow-back" label="Back" onPress={nav.pop} />
+        <IconButton icon="arrow-back" label={S.common.back} onPress={nav.pop} />
         <Txt v="titleLarge" accessibilityRole="header">
-          Settings
+          {S.settings.title}
         </Txt>
       </View>
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
-        <SectionHeader text="Places" />
+        <SectionHeader text={S.settings.places} />
         <PlaceRow
-          title="Home"
-          subtitle={data.home?.name ?? 'Not set'}
+          title={S.settings.home}
+          subtitle={data.home?.name ?? S.common.notSet}
           icon="home"
-          trailing={data.home ? <IconButton icon="close" label="Clear" onPress={() => store.setHome(null)} /> : undefined}
+          trailing={data.home ? <IconButton icon="close" label={S.common.clear} onPress={() => store.setHome(null)} /> : undefined}
           onPress={() => pickHomeOrWork(true)}
         />
         <PlaceRow
-          title="Work"
-          subtitle={data.work?.name ?? 'Not set'}
+          title={S.settings.work}
+          subtitle={data.work?.name ?? S.common.notSet}
           icon="work"
-          trailing={data.work ? <IconButton icon="close" label="Clear" onPress={() => store.setWork(null)} /> : undefined}
+          trailing={data.work ? <IconButton icon="close" label={S.common.clear} onPress={() => store.setWork(null)} /> : undefined}
           onPress={() => pickHomeOrWork(false)}
         />
 
-        <SectionHeader text="Favorite places" />
+        <SectionHeader text={S.settings.favoritePlaces} />
         {data.favoritePlaces.map((f, i) => (
           <PlaceRow
             key={favoriteKey(f)}
@@ -83,10 +74,10 @@ export function SettingsScreen() {
             iconTint={t.c.primary}
             trailing={
               <View style={{ flexDirection: 'row' }}>
-                <IconButton icon="keyboard-arrow-up" label="Move up" disabled={i === 0} onPress={() => store.moveFavorite(favoriteKey(f), -1)} />
+                <IconButton icon="keyboard-arrow-up" label={S.common.moveUp} disabled={i === 0} onPress={() => store.moveFavorite(favoriteKey(f), -1)} />
                 <IconButton
                   icon="keyboard-arrow-down"
-                  label="Move down"
+                  label={S.common.moveDown}
                   disabled={i === data.favoritePlaces.length - 1}
                   onPress={() => store.moveFavorite(favoriteKey(f), 1)}
                 />
@@ -95,51 +86,64 @@ export function SettingsScreen() {
             onPress={() => setDraft({ place: f.place, existing: f })}
           />
         ))}
-        <PlaceRow title="Add favorite place" subtitle="Tap a favorite above to edit or remove it" icon="add" iconTint={t.c.primary} onPress={addFavorite} />
+        <PlaceRow title={S.settings.addFavoritePlace} subtitle={S.settings.addFavoriteHint} icon="add" iconTint={t.c.primary} onPress={addFavorite} />
 
-        <SectionHeader text="Appearance" />
+        <SectionHeader text={S.settings.appearance} />
         <View style={{ paddingHorizontal: 20 }}>
           <Segmented<ThemeMode>
-            options={THEME_MODES.map((m) => ({ value: m, label: titleCase(m) }))}
+            options={THEME_MODES.map((m) => ({ value: m, label: S.settings.themes[m] }))}
             value={s.theme}
             onChange={(m) => store.updateSettings((st) => ({ ...st, theme: m }))}
             testID="theme"
           />
         </View>
 
-        <SectionHeader text="Departure reminders" />
+        <SectionHeader text={S.settings.language} />
+        <View style={{ paddingHorizontal: 20 }}>
+          <Segmented<LanguageSetting>
+            options={LANGUAGES.map((m) => ({ value: m, label: S.settings.languages[m] }))}
+            value={s.language}
+            onChange={(m) => {
+              store.updateSettings((st) => ({ ...st, language: m }));
+              void changeLanguage(m);
+            }}
+            testID="language"
+          />
+        </View>
+
+        <SectionHeader text={S.settings.reminders} />
         <Txt v="bodyMedium" color={t.x.subtle} style={{ paddingHorizontal: 20 }}>
-          Notify me this long before I need to leave
+          {S.settings.remindersHint}
         </Txt>
         <View style={styles.chips}>
           {[2, 5, 10, 15].map((m) => (
-            <Chip key={m} label={`${m} min`} selected={s.reminderMinutes === m} onPress={() => store.updateSettings((st) => ({ ...st, reminderMinutes: m }))} />
+            <Chip key={m} label={S.fmt.min(m)} selected={s.reminderMinutes === m} onPress={() => store.updateSettings((st) => ({ ...st, reminderMinutes: m }))} />
           ))}
         </View>
 
-        <SectionHeader text="Advanced" />
+        <SectionHeader text={S.settings.advanced} />
         <SettingSwitch
-          title="Getting a ride (טרמפ)"
-          subtitle="Find the best place to be dropped off and go on by bus or train"
+          title={S.settings.rides}
+          subtitle={S.settings.ridesHint}
           value={s.rides}
           onChange={(c) => store.updateSettings((st) => ({ ...st, rides: c }))}
           testID="rides_switch"
         />
         <SettingSwitch
-          title="Already on a bus"
-          subtitle="Plan the rest of the trip from the bus or train you're on"
+          title={S.settings.onBoard}
+          subtitle={S.settings.onBoardHint}
           value={s.onBoard}
           onChange={(c) => store.updateSettings((st) => ({ ...st, onBoard: c }))}
           testID="on_board_switch"
         />
         <PlaceRow
-          title="My shuttles"
+          title={S.settings.myShuttles}
           subtitle={
             data.shuttles.length === 0
-              ? 'Company or private shuttles with a fixed timetable'
+              ? S.settings.shuttlesNone
               : data.shuttles.length === 1
                 ? data.shuttles[0].name
-                : `${data.shuttles.length} shuttles`
+                : S.settings.shuttlesCount(data.shuttles.length)
           }
           icon="directions-bus"
           iconTint={t.c.primary}
@@ -147,7 +151,7 @@ export function SettingsScreen() {
           testID="my_shuttles"
         />
 
-        <SectionHeader text="About" />
+        <SectionHeader text={S.settings.about} />
         <Pressable
           onPress={() => {
             const n = taps + 1;
@@ -162,20 +166,20 @@ export function SettingsScreen() {
           </View>
           <View style={{ marginLeft: 12 }}>
             <Txt v="titleMedium">Maslul</Txt>
-            <Txt v="bodySmall" color={t.x.subtle}>{`Version ${APP_VERSION}`}</Txt>
+            <Txt v="bodySmall" color={t.x.subtle}>{S.settings.version(APP_VERSION)}</Txt>
           </View>
         </Pressable>
         <Txt v="bodyMedium" color={t.x.subtle} style={{ paddingHorizontal: 20, paddingVertical: 8 }} testID="about_credits">
-          {ABOUT}
+          {S.settings.credits}
         </Txt>
         <Pressable onPress={() => Linking.openURL(SOURCE_URL)} style={styles.source} accessibilityRole="link">
           <Icon name="code" size={18} color={t.c.primary} />
           <Txt v="labelLarge" color={t.c.primary} style={{ marginLeft: 8 }}>
-            Source code on GitHub
+            {S.settings.sourceCode}
           </Txt>
         </Pressable>
         <View style={{ alignItems: 'flex-start', paddingHorizontal: 8 }}>
-          <TextButton text="Made with ♥ by Tommy and contributors" color={t.x.subtle} onPress={() => Linking.openURL(`${SOURCE_URL}/graphs/contributors`)} />
+          <TextButton text={S.settings.madeBy} color={t.x.subtle} onPress={() => Linking.openURL(`${SOURCE_URL}/graphs/contributors`)} />
         </View>
       </ScrollView>
       {drives > 0 && <DrivingBus key={drives} bottom={insets.bottom + 12} />}
@@ -221,7 +225,19 @@ function DrivingBus({ bottom }: { bottom: number }) {
     </Animated.View>
   );
   return (
-    <Animated.View pointerEvents="none" style={{ position: 'absolute', left: 0, bottom, width: w, height: h, transform: [{ translateX: x }, { translateY: bob }] }}>
+    // Right to left in Hebrew, facing that way; its parts stay laid out as drawn.
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        left: 0,
+        bottom,
+        width: w,
+        height: h,
+        direction: 'ltr',
+        transform: I18nManager.isRTL ? [{ translateX: Animated.multiply(x, -1) }, { translateY: bob }, { scaleX: -1 }] : [{ translateX: x }, { translateY: bob }],
+      }}
+    >
       <Svg width={w} height={h}>
         {/* Body, with a slanted windscreen at the front (right). */}
         <Rect x={0} y={0} width={24 * u} height={10 * u} rx={2.5 * u} fill={BRAND} />

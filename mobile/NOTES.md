@@ -57,6 +57,21 @@ Found by the emulator tests (`TESTING.md`); everything else follows Kotlin.
 - **A failed route search** says whether the planner answered with an error, took too long, or couldn't be reached, and logs the error (`console.warn`), instead of always "Check your connection".
 - **Route details** show the day in the header and the shared text when the trip isn't today.
 
+## Languages: English and Hebrew (`src/i18n/`)
+
+- **Choosing.** Settings → Language: System (the phone's language; Hebrew if it's `he`/`iw`, otherwise English), עברית or English. The app name stays Maslul in both.
+- **Strings.** `en.ts` holds every piece of app text and `he.ts` its Hebrew, typed against it, so a key missing from either breaks `tsc`. Code reads `S.section.key` when the text is shown, never at module load. Text that takes a number, name or vehicle is a function, so each language words it its own way.
+- **Hebrew grammar.** Plurals ("החלפה אחת", "2 החלפות") and gender ("האוטובוס קרוב" / "הרכבת קרובה") come from helpers in `he.ts`. Sentences about a vehicle take its `VehicleKind` (`vehicleKind()` in `models.ts`) rather than an English word.
+- **Right to left.** Hebrew forces RTL through `I18nManager.forceRTL`, which only shows after a restart, so `applyLanguage` (`device.ts`) reloads the app once. A guard key (`direction_reload_v1`) stops a reload loop if the platform doesn't take the new direction. Changing the language in Settings always reloads. React Native swaps left/right styles and row order by itself. Code mirrors what it doesn't: directional icons (`icons.tsx`), the progress bar's sweep, and the bus on the About screen. Times and ranges carry a right-to-left mark (`S.fmt.range`, `S.fmt.span`), so "14:05 ← 14:40" reads in order.
+- **Names follow the app language.** Search, planning and stop times ask Transitous, Photon and Nominatim for it (`repo.language`), and map labels use `name:he` or `name:en` (`labelLanguage` in `darkStyle.ts`).
+- **Background trips.** The live trip saves its language with the session, so a headless restart words the notification the same way. The native trip notification takes the "End trip" label from JS.
+- **Limits.**
+  - In English, stop and line names often stay Hebrew: Transitous has no English names for most Israeli stops.
+  - Photon has no Hebrew, so its results come back in whatever the map data holds.
+  - Names saved before a switch (a dropped pin, a saved trip's place) keep the language they were saved in.
+  - Android notification channel names update only after the reload.
+- `__tests__/hebrew.test.tsx` renders the main screens in Hebrew and fails on any English string from `en.ts` that shows up.
+
 ## Map
 
 - **MapLibre React Native 11** draws the map with OpenFreeMap styles: positron for light, and dark with the Kotlin app's `brightenDark` overrides, fetched once with the app's User-Agent.

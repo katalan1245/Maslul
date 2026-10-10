@@ -1,5 +1,6 @@
 import type { StyleSpecification } from '@maplibre/maplibre-react-native';
-import { brightenDark } from '../src/ui/map/darkStyle';
+import type { Lang } from '../src/i18n';
+import { brightenDark, labelLanguage } from '../src/ui/map/darkStyle';
 
 // The layers of OpenFreeMap's dark style that brightenDark touches, one of each kind.
 const style = {
@@ -20,4 +21,21 @@ test('brightens the land and the labels', () => {
   // Street names and place names: light text on a slate halo (they stayed near-black before).
   expect(paint.highway_name_other).toEqual({ 'text-color': '#AEB5BF', 'text-halo-color': '#1E232B' });
   expect(paint.place_city).toEqual({ 'text-color': '#D5DAE0', 'text-halo-color': '#1E232B' });
+});
+
+test('labels show one name, in the app language', () => {
+  const bilingual = ['case', ['has', 'name:nonlatin'], ['concat', ['get', 'name:latin'], '\n', ['get', 'name:nonlatin']], ['get', 'name']];
+  const labelled = {
+    version: 8,
+    sources: {},
+    layers: [
+      { id: 'place_city', type: 'symbol', source: 'x', layout: { 'text-field': bilingual, 'text-size': 14 } },
+      { id: 'highway_shield', type: 'symbol', source: 'x', layout: { 'text-field': ['to-string', ['get', 'ref']] } },
+    ],
+  } as unknown as StyleSpecification;
+  const layout = (l: Lang) => labelLanguage(labelled, l).layers.map((x) => (x as { layout: Record<string, unknown> }).layout);
+  expect(layout('he')[0]).toEqual({ 'text-field': ['coalesce', ['get', 'name:he'], ['get', 'name']], 'text-size': 14 });
+  expect(layout('en')[0]['text-field']).toEqual(['coalesce', ['get', 'name:en'], ['get', 'name:latin'], ['get', 'name']]);
+  // Road numbers aren't names: untouched.
+  expect(layout('he')[1]['text-field']).toEqual(['to-string', ['get', 'ref']]);
 });

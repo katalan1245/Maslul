@@ -3,6 +3,7 @@ import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { Freshness } from '../../data/freshness';
 import { type Instant, nowSec } from '../../data/time';
+import { S } from '../../i18n';
 import { Fmt } from '../fmt';
 import { type Theme, type, useTheme } from '../theme';
 import { Icon } from './icons';
@@ -73,7 +74,7 @@ export function LiveSignal({ freshness, size = 12, color }: { freshness: Freshne
     });
   };
   return (
-    <View style={{ width: size, height: size }} accessibilityLabel={live ? 'Live' : 'Live data delayed'}>
+    <View style={{ width: size, height: size }} accessibilityLabel={live ? S.live.live : S.live.delayed}>
       {[0, 1, 2].map((i) => (
         <Animated.View key={i} style={[StyleSheet.absoluteFill, { opacity: opacity(i) }]}>
           <SignalPart part={i} size={size} color={c} />
@@ -116,7 +117,7 @@ export function ArrivalTime({
   );
   if (!onPress) return <View testID={testID}>{body}</View>;
   return (
-    <Pressable onPress={onPress} accessibilityHint="Show on map" accessibilityRole="button" style={{ paddingHorizontal: 4, borderRadius: 8 }} testID={testID}>
+    <Pressable onPress={onPress} accessibilityHint={S.cards.showOnMap} accessibilityRole="button" style={{ paddingHorizontal: 4, borderRadius: 8 }} testID={testID}>
       {body}
     </Pressable>
   );
@@ -138,11 +139,11 @@ export function LiveLocationCard({ title, recordedAt, onClose }: { title: string
           {title}
         </Txt>
         <Txt v="labelSmall" num color={f === 'LIVE' ? t.x.subtle : t.x.stale} numberOfLines={1}>
-          {Fmt.ago(recordedAt, now) + (f === 'LIVE' ? ' · refreshes automatically' : ' · not reporting, may be delayed')}
+          {Fmt.ago(recordedAt, now) + (f === 'LIVE' ? S.live.refreshes : S.live.notReporting)}
         </Txt>
       </View>
       {onClose && (
-        <Pressable onPress={onClose} accessibilityLabel="Stop following" hitSlop={8} style={{ padding: 8 }}>
+        <Pressable onPress={onClose} accessibilityLabel={S.live.stopFollowing} hitSlop={8} style={{ padding: 8 }}>
           <Icon name="close" size={18} color={t.x.subtle} />
         </Pressable>
       )}

@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
   Animated,
+  I18nManager,
   Pressable,
   type StyleProp,
   StyleSheet,
@@ -14,6 +15,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import type { TransitMode } from '../../data/models';
+import { S } from '../../i18n';
 import { ModeColors, alpha, contentColorOn, numeric, type, useTheme } from '../theme';
 import { Icon, type IconName, modeIcon } from './icons';
 
@@ -49,7 +51,7 @@ export function LineBadge({
   return (
     <View
       style={[s.badge, { backgroundColor: color, borderRadius: large ? 10 : 8, paddingHorizontal: large ? 10 : 7, paddingVertical: large ? 5 : 3 }]}
-      accessibilityLabel={`Line ${label}`}
+      accessibilityLabel={S.common.line(label)}
     >
       {showIcon && (
         <View style={{ marginRight: 3 }}>
@@ -272,10 +274,13 @@ export function Button({
   testID,
   style,
   disabled,
+  label,
 }: {
   text?: string;
   onPress: () => void;
   icon?: IconName;
+  /** What a screen reader says, for a button with only an icon. */
+  label?: string;
   kind?: 'filled' | 'tonal' | 'outlined';
   testID?: string;
   style?: StyleProp<ViewStyle>;
@@ -289,7 +294,7 @@ export function Button({
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
-      accessibilityLabel={text ?? undefined}
+      accessibilityLabel={label ?? text}
       testID={testID}
       style={({ pressed }) => [
         s.button,
@@ -449,7 +454,7 @@ export function SearchBox({
         testID={testID}
         accessibilityLabel={placeholder}
       />
-      {query !== '' && <IconButton icon="close" label="Clear" size={18} onPress={() => onQuery('')} />}
+      {query !== '' && <IconButton icon="close" label={S.common.clear} size={18} onPress={() => onQuery('')} />}
     </View>
   );
 }
@@ -472,7 +477,8 @@ export function ProgressBar({ active, testID }: { active: boolean; testID?: stri
           width: '40%',
           height: 2,
           backgroundColor: t.c.primary,
-          transform: [{ translateX: x.interpolate({ inputRange: [0, 1], outputRange: [-200, 500] }) }],
+          // Runs the way the text does: right to left in Hebrew.
+          transform: [{ translateX: x.interpolate({ inputRange: [0, 1], outputRange: I18nManager.isRTL ? [200, -500] : [-200, 500] }) }],
         }}
       />
     </View>
