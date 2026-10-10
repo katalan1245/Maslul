@@ -168,7 +168,8 @@ class RouteDetailModel extends Model {
    */
   private pickBest() {
     const now = nowSec();
-    if (this.keepRides || this.itinerary.start > now + 90 * 60) return;
+    // Once started, the live guide follows the rides it was started with: so do the steps.
+    if (this.keepRides || activeTrip.session?.itinerary.id === this.itinerary.id || this.itinerary.start > now + 90 * 60) return;
     this.itinerary.legs.forEach((_, i) => {
       if (this.picked.has(i)) return;
       const b = Combine.bestOption(this.itinerary, i, now, this.liveOf);

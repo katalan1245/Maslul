@@ -357,3 +357,30 @@ it("shares the times the route screen shows, live ones included (P3)", async () 
     share.mockRestore();
   }
 });
+
+it('keeps the steps on the bus the live guide was started with (T2)', async () => {
+  const { live } = require('./helpers') as typeof import('./helpers');
+  const { Combine } = require('../src/data/combine') as typeof import('../src/data/combine');
+  const { activeTrip } = require('../src/live/liveTrip') as typeof import('../src/live/liveTrip');
+  const { worthLive, legLive } = fake;
+  // Started on the 5; then it runs 25 min late and the 61 behind it would get there first.
+  const trip = Combine.merge((await fake.plan({})).itineraries)[0];
+  fake.worthLive = async () => true;
+  fake.legLive = (async (l: { tripId: string; start: number; end: number }) =>
+    l.tripId === 'trip-a' ? live('LIVE', l.start, l.start + 1500, { alightExpected: l.end + 1500 }) : live('LIVE', l.start, l.start, { alightExpected: l.end })) as never;
+  try {
+    await activeTrip.start(trip, 'Dizengoff Center');
+    await start();
+    await fireEvent.press(await screen.findByTestId('live_trip_banner'));
+    await screen.findByTestId('route_detail_screen');
+    const options = await screen.findByTestId('line_options');
+    // Live data has come in for both buses.
+    await waitFor(() => expect(within(options).getAllByText(/min$/).length).toBe(2));
+    const chosen = within(options).getAllByRole('radio').find((r) => r.props.accessibilityState?.checked);
+    expect(within(chosen!).getByText('5')).toBeTruthy();
+  } finally {
+    await activeTrip.stop();
+    fake.worthLive = worthLive;
+    fake.legLive = legLive;
+  }
+});
