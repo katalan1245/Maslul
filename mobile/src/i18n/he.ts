@@ -59,6 +59,8 @@ export const he: Strings = {
     best: 'מומלץ',
     fastest: 'הכי מהיר',
     leastWalking: 'הכי מעט הליכה',
+    lastTag: 'אחרון להיום',
+    lastToday: (time, stop) => `האחרון להיום יוצא ב-${time} מהתחנה ${stop}`,
     finding: 'מחפשים מסלולים…',
     noRoutes: 'אין מסלולים',
     tryAgain: 'לנסות שוב',

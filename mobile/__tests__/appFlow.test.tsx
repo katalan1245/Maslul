@@ -188,3 +188,45 @@ it('picks a destination on the map', async () => {
   await fireEvent.press(screen.getByTestId('choose_location'));
   await screen.findByTestId('routes_list');
 });
+
+it('marks the last bus of the night, found on the next page, and says so when it is close', async () => {
+  const { zoned } = require('../src/data/time') as typeof import('../src/data/time');
+  const { makeLeg } = require('../src/data/models') as typeof import('../src/data/models');
+  const { call, itinOf } = require('./helpers') as typeof import('./helpers');
+  const route = (id: string, t: number) => {
+    const a = call('s1', 'Arlozorov/Ibn Gabirol', 32.0866, 34.7818, t, t);
+    const b = call('s2', 'Dizengoff Center', 32.0756, 34.775, t + 600, t + 600);
+    return itinOf(id, makeLeg({ mode: 'WALK', from: call(null, 'Start', 32.0853, 34.7818), to: a, start: t - 240, end: t }), makeLeg({ mode: 'BUS', from: a, to: b, start: t, end: t + 600, routeShortName: '5', tripId: `trip-${id}` }));
+  };
+  const night = zoned('2026-10-08', 23); // a Thursday
+  jest.spyOn(Date, 'now').mockReturnValue(night * 1000);
+  const plan = fake.plan;
+  fake.plan = async (req: unknown) => {
+    fake.planCalls.push(req);
+    return (req as { pageCursor?: string }).pageCursor === 'next'
+      ? { itineraries: [route('morning', zoned('2026-10-09', 5, 30))], walkOnly: null, nextCursor: null, previousCursor: null }
+      : { itineraries: [route('a', night + 1200), route('b', night + 2400)], walkOnly: null, nextCursor: 'next', previousCursor: null };
+  };
+  try {
+    await planToDizengoff();
+    await screen.findByTestId('last_bus_banner');
+    expect(screen.getByText('The last one today leaves at 23:40 from Arlozorov/Ibn Gabirol')).toBeTruthy();
+    expect(screen.getAllByText('Last today')).toHaveLength(1);
+    expect(fake.planCalls.filter((r) => (r as { pageCursor?: string }).pageCursor === 'next')).toHaveLength(1);
+  } finally {
+    fake.plan = plan;
+    jest.restoreAllMocks();
+  }
+});
+
+it('looks for no last bus in the daytime', async () => {
+  const { zoned } = require('../src/data/time') as typeof import('../src/data/time');
+  jest.spyOn(Date, 'now').mockReturnValue(zoned('2026-10-08', 10) * 1000);
+  try {
+    await planToDizengoff();
+    expect(screen.queryByText('Last today')).toBeNull();
+    expect(screen.queryByTestId('last_bus_banner')).toBeNull();
+  } finally {
+    jest.restoreAllMocks();
+  }
+});

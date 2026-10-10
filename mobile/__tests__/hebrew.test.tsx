@@ -121,6 +121,7 @@ it('words Hebrew counts and days naturally', () => {
   expect(he.shuttles.stillNeeded(['שם', 'שעות יציאה'])).toBe('עוד חסר: שם ושעות יציאה.');
   // Sunday first, as the week goes in Israel.
   expect(he.shuttles.days[7]).toBe('א׳');
+  expect(he.routes.lastToday('23:40', 'ארלוזורוב')).toBe('האחרון להיום יוצא ב-23:40 מהתחנה ארלוזורוב');
   expect(en.cards.transfers(1)).toBe('1 transfer');
 });
 

@@ -9,9 +9,10 @@ import { S } from '../../i18n';
 import { useUserData } from '../../state/store';
 import { Chip, IconButton, LoadingBox, MessageBox, ProgressBar, TextButton, Txt } from '../components/common';
 import { FAVORITE_GOLD, type FavoriteDraft, FavoriteDialogHost, draftFor } from '../components/favorites';
-import { FAVORITE_ICON_NAMES } from '../components/icons';
+import { FAVORITE_ICON_NAMES, Icon } from '../components/icons';
 import { useNow } from '../components/live';
 import { Menu } from '../components/overlays';
+import { Fmt } from '../fmt';
 import { useModel } from '../model';
 import { type RootStack, nav } from '../nav';
 import { useTheme } from '../theme';
@@ -19,7 +20,7 @@ import { ItineraryCard, WalkOnlyCard, rideLabel, timeLabel } from './routeCards'
 import { OptionsSheet, RideSheet, TimeSheet } from './routeSheets';
 import { RoutesModel } from './routesModel';
 
-type Item = { kind: 'earlier' } | { kind: 'walk'; itin: Itinerary } | { kind: 'itin'; itin: Itinerary } | { kind: 'later' } | { kind: 'credit' };
+type Item = { kind: 'last'; ride: Leg } | { kind: 'earlier' } | { kind: 'walk'; itin: Itinerary } | { kind: 'itin'; itin: Itinerary } | { kind: 'later' } | { kind: 'credit' };
 
 export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Routes'>) {
   const t = useTheme();
@@ -55,6 +56,8 @@ export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Route
     s.modes.length < 6 || s.maxWalkMinutes !== DEFAULT_MAX_WALK_MINUTES || s.wheelchair || s.walkSpeed !== 'NORMAL' || s.railPreference !== 'NONE';
 
   const items: Item[] = [
+    // Said up top once it's close: a card further down could be missed.
+    ...(model.last != null && model.last.ride.start - now < 3600 ? [{ kind: 'last', ride: model.last.ride } as const] : []),
     ...(model.canPage ? [{ kind: 'earlier' } as const] : []),
     ...(model.walkOnly ? [{ kind: 'walk', itin: model.walkOnly } as const] : []),
     ...itineraries.map((itin) => ({ kind: 'itin', itin }) as const),
@@ -64,6 +67,15 @@ export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Route
 
   const renderItem = ({ item }: { item: Item }) => {
     switch (item.kind) {
+      case 'last':
+        return (
+          <View style={styles.last} testID="last_bus_banner">
+            <Icon name="schedule" size={20} color={t.c.error} />
+            <Txt v="bodyMedium" color={t.c.error} style={{ flex: 1, marginStart: 10 }}>
+              {S.routes.lastToday(Fmt.time(item.ride.start), item.ride.from.name)}
+            </Txt>
+          </View>
+        );
       case 'earlier':
         return (
           <View style={{ alignItems: 'flex-start', paddingLeft: 8 }}>
@@ -93,6 +105,7 @@ export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Route
         if (itin === itineraries[0] && itineraries.length > 1) tags.push(S.routes.best);
         if (itin.id === fastest) tags.push(S.routes.fastest);
         if (itin.id === leastWalk && itin.id !== fastest) tags.push(S.routes.leastWalking);
+        if (itin.id === model.last?.itinId) tags.push(S.routes.lastTag);
         // Transfer slack as the rides are expected to run, late ones included.
         const risk = model.riskiest(expectedOf(itin));
         return (
@@ -251,6 +264,7 @@ function EndpointRow({ text, hollow, onPress, testID }: { text: string; hollow?:
 }
 
 const styles = StyleSheet.create({
+  last: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 8 },
   header: { paddingBottom: 10, elevation: 2, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 3, shadowOffset: { width: 0, height: 1 } },
   headerRow: { flexDirection: 'row', alignItems: 'center', paddingRight: 4 },
   endpoints: { flex: 1, borderRadius: 14, paddingVertical: 4 },

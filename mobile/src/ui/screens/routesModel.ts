@@ -17,6 +17,7 @@ import {
   transitLegs,
 } from '../../data/models';
 import { HttpException } from '../../data/http';
+import { lastTonight, lateSearch, nightEnd } from '../../data/lastBus';
 import type { OnBoardStart } from '../../data/onBoard';
 import { Ranking, type Transfer } from '../../data/ranking';
 import type { RideOffer } from '../../data/rides';
@@ -59,6 +60,8 @@ export class RoutesModel extends Model {
   ride: RideOffer | null = null;
   /** Whether there are earlier / later results to page to. */
   canPage = false;
+  /** Late at night, when the routes show the service ending: the route with the last departure, and that ride. */
+  last: { itinId: string; ride: Leg } | null = null;
 
   private nextCursor: string | null = null;
   private prevCursor: string | null = null;
@@ -190,6 +193,21 @@ export class RoutesModel extends Model {
   /** The next ride if [t]'s connection is missed, if one is known. */
   nextIfMissed = (t: Transfer): Leg | null => Combine.ridesAfter(t.next, this.after.get(rideKey(t.next)) ?? [], 1)[0] ?? null;
 
+  /** Looks for tonight's last departure: in the routes found, else on the planner's next page (one more call). */
+  private async findLast(gen: number) {
+    const at = this.timeMode === 'NOW' || this.time == null ? nowSec() : this.time;
+    if (this.timeMode === 'ARRIVE' || this.ride != null || this.onBoardTripId != null || !lateSearch(at)) return;
+    const end = nightEnd(at);
+    let last = lastTonight(this.itineraries, [], end);
+    if (last == null && this.nextCursor != null) {
+      const page = await repo.plan(this.request(this.nextCursor)!).catch(() => null);
+      if (gen !== this.gen || this.disposed || page == null) return;
+      last = lastTonight(this.itineraries, page.itineraries, end);
+    }
+    this.last = last && { itinId: last.itin.id, ride: last.ride };
+    this.changed();
+  }
+
   private async resolve(p: Place): Promise<GeoPoint | null> {
     if (p.kind !== 'CURRENT_LOCATION') return placePoint(p);
     return (await location.current().catch(() => null)) ?? location.last;
@@ -262,6 +280,7 @@ export class RoutesModel extends Model {
     this.rideLive.clear();
     this.searchedAt = nowSec();
     this.canPage = false;
+    this.last = null;
     this.boardStart = null;
     this.changed();
     const boardTrip = this.onBoardTripId;
@@ -297,6 +316,7 @@ export class RoutesModel extends Model {
       this.prevCursor = r.previousCursor;
       this.canPage = this.nextCursor != null || this.prevCursor != null;
       if (found.length === 0 && this.walkOnly == null) this.error = S.routes.noneFound;
+      else void this.findLast(gen);
     } catch (e) {
       if (stale()) return;
       // Said apart, so a failure reported from a device names its cause.
