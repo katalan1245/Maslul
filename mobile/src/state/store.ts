@@ -5,6 +5,7 @@ import {
   Edits,
   type FavoriteIcon,
   type SavedTrip,
+  type SimpleButton,
   type Settings,
   type Shuttle,
   type UserData,
@@ -70,6 +71,7 @@ export class UserStore {
   updateSettings = (f: (s: Settings) => Settings) => this.edit((d) => Edits.updateSettings(d, f));
   saveShuttle = (s: Shuttle) => this.edit((d) => Edits.saveShuttle(d, s));
   removeShuttle = (id: string) => this.edit((d) => Edits.removeShuttle(d, id));
+  setSimpleButton = (i: number, b: SimpleButton) => this.edit((d) => Edits.setSimpleButton(d, i, b));
 }
 
 export const store = new UserStore();

@@ -2,6 +2,7 @@ import { StackActions, createNavigationContainerRef } from '@react-navigation/na
 import type { Itinerary, LineRoute, Place } from '../data/models';
 import { S } from '../i18n';
 import type { Shuttle } from '../data/userStore';
+import type { RoutesModel } from './screens/routesModel';
 
 export type SearchField = 'FROM' | 'TO';
 
@@ -39,6 +40,12 @@ export type RootStack = {
   Line: { route: LineRoute };
   Stop: { place: Place };
   Trip: { tripId: string; boardStopId?: string | null; alightStopId?: string | null; focusVehicle?: boolean };
+  // Simple Maslul (no tab bar): its own home, search, routes, steps and settings.
+  SimpleHome: undefined;
+  SimpleSearch: { title: string | null; onPick: (p: Place) => void };
+  SimpleRoutes: { to: Place; title: string };
+  SimpleTrip: { planner: RoutesModel; initial: Itinerary };
+  SimpleSettings: undefined;
 };
 
 export type Tabs = { Navigate: undefined; Lines: undefined; Stations: undefined };

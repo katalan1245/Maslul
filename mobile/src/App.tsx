@@ -34,6 +34,7 @@ import { ShuttleEditScreen, ShuttlesScreen } from './ui/screens/Shuttles';
 import { StationsHomeScreen } from './ui/screens/StationsHome';
 import { StopScreen } from './ui/screens/Stop';
 import { TripScreen } from './ui/screens/Trip';
+import { SimpleHomeScreen, SimpleRoutesScreen, SimpleSearchScreen, SimpleSettingsScreen, SimpleTripScreen } from './ui/simple/SimpleScreens';
 import { ThemeContext, darkTheme, lightTheme, useTheme } from './ui/theme';
 
 // Screens hand each other callbacks (a search's onDone, like the Kotlin app's models did); the
@@ -105,6 +106,7 @@ function LiveTripBanner({ routeName }: { routeName: string | undefined }) {
 function Root() {
   const data = useUserData();
   const system = useColorScheme();
+  const simple = data.settings.simpleMode;
   const dark = data.settings.theme === 'SYSTEM' ? system === 'dark' : data.settings.theme === 'DARK';
   const theme = dark ? darkTheme : lightTheme;
   const [routeName, setRouteName] = useState<string | undefined>(undefined);
@@ -119,22 +121,36 @@ function Root() {
     <ThemeContext.Provider value={theme}>
       <StatusBar style={dark ? 'light' : 'dark'} />
       <NavigationContainer ref={navigationRef} theme={navTheme} onStateChange={() => setRouteName(navigationRef.getCurrentRoute()?.name)}>
-        <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
-          <Stack.Screen name="Tabs" component={TabsScreen} />
-          <Stack.Screen name="Search" component={SearchScreen} />
-          <Stack.Screen name="PickOnMap" component={PickOnMapScreen} />
-          <Stack.Screen name="Routes" component={RoutesScreen} />
-          <Stack.Screen name="RouteDetail" component={RouteDetailScreen} />
-          <Stack.Screen name="Settings" component={SettingsScreen} />
-          <Stack.Screen name="OnBoard" component={OnBoardScreen} />
-          <Stack.Screen name="Shuttles" component={ShuttlesScreen} />
-          <Stack.Screen name="ShuttleEdit" component={ShuttleEditScreen} />
-          <Stack.Screen name="Line" component={LineScreen} />
-          <Stack.Screen name="Stop" component={StopScreen} />
-          <Stack.Screen name="Trip" component={TripScreen} />
+        {/* Simple Maslul is its own app, without the tab bar: switching remounts the navigator at its home. */}
+        <Stack.Navigator key={simple ? 'simple' : 'full'} screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+          {simple ? (
+            <>
+              <Stack.Screen name="SimpleHome" component={SimpleHomeScreen} />
+              <Stack.Screen name="SimpleSearch" component={SimpleSearchScreen} />
+              <Stack.Screen name="SimpleRoutes" component={SimpleRoutesScreen} />
+              <Stack.Screen name="SimpleTrip" component={SimpleTripScreen} />
+              <Stack.Screen name="SimpleSettings" component={SimpleSettingsScreen} />
+            </>
+          ) : (
+            <>
+              <Stack.Screen name="Tabs" component={TabsScreen} />
+              <Stack.Screen name="Search" component={SearchScreen} />
+              <Stack.Screen name="PickOnMap" component={PickOnMapScreen} />
+              <Stack.Screen name="Routes" component={RoutesScreen} />
+              <Stack.Screen name="RouteDetail" component={RouteDetailScreen} />
+              <Stack.Screen name="Settings" component={SettingsScreen} />
+              <Stack.Screen name="OnBoard" component={OnBoardScreen} />
+              <Stack.Screen name="Shuttles" component={ShuttlesScreen} />
+              <Stack.Screen name="ShuttleEdit" component={ShuttleEditScreen} />
+              <Stack.Screen name="Line" component={LineScreen} />
+              <Stack.Screen name="Stop" component={StopScreen} />
+              <Stack.Screen name="Trip" component={TripScreen} />
+            </>
+          )}
         </Stack.Navigator>
       </NavigationContainer>
-      <LiveTripBanner routeName={routeName === 'Navigate' || routeName === 'Lines' || routeName === 'Stations' ? 'Tabs' : routeName} />
+      {/* Its route screen is the full app's. */}
+      {!simple && <LiveTripBanner routeName={routeName === 'Navigate' || routeName === 'Lines' || routeName === 'Stations' ? 'Tabs' : routeName} />}
       <ToastHost />
     </ThemeContext.Provider>
   );

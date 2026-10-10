@@ -131,6 +131,16 @@ This round is a **complete re-test before release**: every area, from scratch, e
 
 **V1.** On a stop screen some times turn green; on line 1 or 480 bus icons appear on the map within about 30 s and move. If no bus ever appears while buses run, say so even without an error on screen.
 
+### X. From the Kotlin app's 1.1.1–1.2.1 (branch `feature/upstream-1.2.1` only)
+
+**X1. Simple Maslul.** Settings → Simple Maslul switch: a confirmation first; Cancel leaves it off, Switch opens "Where are you going?" with five coloured buttons and "Other address", two per row, no tab bar; Android Back there leaves the app. Location is asked for if not yet granted. Tap an unset button: "Where is “Grandkids”?", search, pick: back on the buttons, and it's set. Tap it: "To Grandkids", up to 3 options ("Best" on the first, "Leave in N min", line badges, "Arrive at"), "More options" for the rest; a walk of up to 20 min is its own card. Open one: numbered plain steps (walk to the stop, take bus N, towards, leaves at, get off at, ride N stops, you're there).
+**X2.** Simple Settings: the language buttons (English, עברית, Русский) switch the app's language (one reload when the direction changes; Hebrew right to left); edit a button's name, picture and address, and clear it; "Switch to full Maslul" asks first, then the full app with its tabs is back. Kill and reopen while in Simple Maslul: it opens in Simple Maslul.
+**X3. Russian.** Settings → Language → Русский: no reload (left to right), the whole app in Russian. Walk the main screens as in H2 and record any English UI text. Light rail is "трамвай".
+**X4. Upgrade from the Kotlin 1.2.1 app.** As U1 but with the Kotlin 1.2.1 APK: pick Russian and Simple Maslul there and set a button's address. After installing this build over it: Russian, Simple Maslul, the button's address are all kept.
+**X5. Longer walks.** On Friday after about 16:00 or on Shabbat, plan a trip where nothing runs near you: if a line a longer walk away runs, its routes show with a note above the cards ("Nothing leaves soon within a 20 min walk…") and a "Longer walk" tag; routes leaving another day say which ("Tomorrow"). Options sheet: under the walk slider, a line explains the few extra minutes and the longer walks.
+**X6. Lifts.** Advanced → Getting a ride → within N min: no route has two car legs; a route driving a little over N minutes says "Longer ride".
+**X7. Route cards.** At a busy stop, a combined ride shows at most 3 line badges and "+N"; "+N more" under the times opens all of them and "Show fewer" closes them. A train's direction is a city ("Towards Nahariya"), not a number. A tight transfer onto an unnumbered train says "to catch the train", and "If missed, the next train at …".
+
 ### M. Automated flows (Maestro)
 
 **M1.** App and emulator in English. Stop mobile-mcp's agent (`adb shell pkill -f com.mobilenext`), location in Tel Aviv (`adb emu geo fix 34.7818 32.0853`), then `maestro --device emulator-5554 test maestro/ --format junit --output maestro-report.xml`. All 11 should pass.

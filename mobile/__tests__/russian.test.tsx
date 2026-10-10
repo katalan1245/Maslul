@@ -99,3 +99,15 @@ it('words Russian counts by its plural rules', () => {
   expect(ru.detail.goThisWay(5, 'BUS')).toBe('5 автобусов в эту сторону');
   expect(ru.cards.stopsAway(2)).toBe('в 2 остановках отсюда');
 });
+
+it('shows Simple Maslul in Russian without English UI text', async () => {
+  await launch(JSON.stringify({ settings: { language: 'RU', simpleMode: true } }));
+  await screen.findByText(ru.simple.whereTo);
+  expect(leaks()).toEqual([]);
+  await fireEvent.press(screen.getByTestId('simple_search'));
+  await fireEvent.changeText(screen.getByTestId('simple_search_field'), 'dizengoff');
+  await fireEvent.press(await screen.findByText('Dizengoff Center', {}, { timeout: 2000 }));
+  await fireEvent.press((await screen.findAllByTestId('simple_option'))[0]);
+  await screen.findByText(ru.simple.howToGetThere);
+  expect(leaks()).toEqual([]);
+});

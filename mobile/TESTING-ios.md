@@ -71,6 +71,10 @@ Screenshot each check (`⌘S` in the Simulator) and name it after the check, e.g
 
 **I12. Fixes from the last look.** In the search fields (From/To) the typed text and the placeholder sit vertically centred, level with the dot and the ✕, in English and in Hebrew. The same in the line search, the time sheet's hour and minute, the favourite name and the shuttle fields. With the Home map full screen, the "Places" button sits on the same row as the two square buttons.
 
+**I13. From the Kotlin app's 1.2.x** (branch `feature/upstream-1.2.1` only).
+1. *Simple Maslul:* Settings → Simple Maslul → Switch. Big buttons, no tab bar; the location prompt if not yet allowed. Set a button's address, plan to it, open an option: plain numbered steps. Simple Settings → Русский and עברית (right to left after one reload), edit a button, then "Switch to full Maslul": the tabs are back. Nothing hidden under the notch or the home indicator on these screens; big text fits on a small iPhone.
+2. *Russian:* Settings → Language → Русский: Russian everywhere, left to right; delete and reinstall with the phone in Russian: the location prompt is in Russian.
+
 ## Report
 
 Write `ios-report.md` (in the format below) with screenshots in an `evidence/` folder, and bring them back however is easiest.

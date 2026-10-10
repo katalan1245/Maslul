@@ -53,7 +53,7 @@ const leaks = () => shown().filter((s) => ENGLISH.has(s));
 async function launchHebrew(reloadedJustNow: boolean, data: object = {}) {
   await AsyncStorage.clear();
   await AsyncStorage.setItem(MIGRATED_KEY, '1');
-  await AsyncStorage.setItem(STORE_KEY, JSON.stringify({ ...data, settings: { language: 'HE' } }));
+  await AsyncStorage.setItem(STORE_KEY, JSON.stringify({ ...data, settings: { ...(data as { settings?: object }).settings, language: 'HE' } }));
   // As after the reload that turned the layout right-to-left (the test renderer can't flip it).
   if (reloadedJustNow) await AsyncStorage.setItem('direction_reload_v1', `rtl:${Date.now()}`);
   await render(<App />);
@@ -175,5 +175,21 @@ it('offers the stop reminder in Hebrew', async () => {
   await fireEvent.press(await screen.findByText('Arlozorov/Ibn Gabirol'));
   await fireEvent(await screen.findByTestId('board_row'), 'longPress');
   await screen.findByText(he.stopBoard.remindLeave);
+  expect(leaks()).toEqual([]);
+});
+
+it('shows Simple Maslul without English UI text', async () => {
+  await launchHebrew(true, { settings: { language: 'HE', simpleMode: true } });
+  await screen.findByText(he.simple.whereTo);
+  expect(leaks()).toEqual([]);
+  await fireEvent.press(screen.getByTestId('simple_settings'));
+  await screen.findByTestId('simple_full_app');
+  expect(leaks()).toEqual([]);
+  await fireEvent.press(screen.getByTestId('simple_back'));
+  await fireEvent.press(await screen.findByTestId('simple_search'));
+  await fireEvent.changeText(screen.getByTestId('simple_search_field'), 'dizengoff');
+  await fireEvent.press(await screen.findByText('Dizengoff Center', {}, { timeout: 2000 }));
+  await fireEvent.press((await screen.findAllByTestId('simple_option'))[0]);
+  await screen.findByText(he.simple.howToGetThere);
   expect(leaks()).toEqual([]);
 });

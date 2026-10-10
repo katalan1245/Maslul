@@ -10,7 +10,7 @@ Read this first. A fresh session should be able to start from this file alone. T
 
 ## The project
 
-- **What it is:** the original Kotlin Android app (`/workspace/app`) rewritten in Expo SDK 57, React Native 0.86 and TypeScript in `/workspace/mobile`. It runs on Android and iOS, in English and Hebrew (full right-to-left).
+- **What it is:** the original Kotlin Android app (`/workspace/app`) rewritten in Expo SDK 57, React Native 0.86 and TypeScript in `/workspace/mobile`. It runs on Android and iOS, in English, Hebrew (full right-to-left) and Russian.
 - **It replaces the old app as an update:**
   - Same app id: `com.maslul.app`.
   - On first launch, `src/state/persist.ts` and the native `readLegacyStore` migrate the old app's data once. That can't be undone on users' phones, so the migration has to be right before release.
@@ -23,9 +23,10 @@ Read this first. A fresh session should be able to start from this file alone. T
 | Branch | Local | Fork (`origin`) | What |
 |---|---|---|---|
 | `rewrite/react-native` | see `git log` | pushed | The rewrite, Hebrew, iOS prep, and the five "daily rider" features. 220 tests |
-| `master` | the fork's copy of the original | same | Behind upstream by 1.1.1 and 1.2.0 |
+| `feature/upstream-1.2.1` | see `git log` | not pushed | Upstream 1.1.1–1.2.1 merged in and ported (Russian, Simple Maslul, grace, wider walk). 253 tests |
+| `master` | upstream's 1.2.1 (`076af78`) | 3 commits behind | Fast-forwarded to `upstream/master`, not pushed |
 
-- Everything is pushed to the fork. Push again only when the user says yes. The Mac clones the fork.
+- `rewrite/react-native` is pushed to the fork; `feature/upstream-1.2.1` and `master` are local only. Push again only when the user says yes. The Mac clones the fork.
 - **Remotes:**
   - `origin` is the user's fork, `katalan1245/Maslul`.
   - `upstream` is `Tom-stack3/Maslul`. **Never push there.**
@@ -96,11 +97,11 @@ They should also check the wording of `FEATURES.md`.
 
 - **Checks here:**
   - `npx tsc --noEmit` is clean.
-  - `npx jest --selectProjects app` passes 220 tests.
+  - `npx jest --selectProjects app` passes 253 tests (220 on `rewrite/react-native`).
   - The `live` project calls real services; run it only on purpose.
 - **Android, full pass:**
   - `TESTING.md` covers the whole app in sections U (upgrade from `maslul-kotlin-v4.apk`), N, P, L, T, R, S, A, H, V and M (11 Maestro flows).
-  - Its APK, built from `6d8ff22`, is in `/share/maslul-test`, with an empty `report.md` and `evidence/`.
+  - Its APK, built from `f8f829a` (`rewrite/react-native`, without the upstream port),  is in `/share/maslul-test`, with an empty `report.md` and `evidence/`.
   - The tester is a separate Claude session on the Windows host, with mobile-mcp. It can't see `/workspace`, only `/share`.
 - **iOS:**
   - The user has a Mac and an iPhone 17, and runs `TESTING-ios.md` (I1–I12) there with a Claude session. The report comes back through the user.
@@ -115,40 +116,21 @@ They should also check the wording of `FEATURES.md`.
    - Wait for the Android report (`/share/maslul-test/report.md` and `evidence/`) and the iOS report. Read them before fixing anything.
    - Fix on `rewrite/react-native`, add tests, commit, rebuild, and re-test only what failed.
    - Between rounds, archive the old report as described under "Build and environment".
-2. **Port upstream 1.1.1 and 1.2.0.** This must happen before release and before any PR to the original. See the next section.
+2. **Upstream 1.1.1–1.2.1 port:** done on `feature/upstream-1.2.1`. Needs a device pass (`TESTING.md` section X, `TESTING-ios.md` I13), and the user to check the Russian and the new Hebrew. Then merge into `rewrite/react-native` when the user says so.
 3. **Full code review,** when the user says so.
 4. **A real weekday ride** with the release-like build.
 5. **Release:** the user builds and signs it.
 6. **PR to `Tom-stack3/Maslul`,** only when the user asks.
 
-## Porting upstream (the original moved on)
+## Porting upstream (done, untested on devices)
 
-The original released two versions on 2026-10-09, both for the Kotlin app only.
+Upstream released 1.1.1, 1.2.0 (Simple Maslul) and 1.2.1 (the whole app in Russian, grace, wider walk, one-drive lifts). [UPSTREAM-PORT.md](UPSTREAM-PORT.md) maps every change, file by file, to where it lands here and marks the deliberate differences; `NOTES.md` has the summary.
 
-**1.1.1:**
-- Route cards show at most 3 lines per ride.
-- "Getting a ride" and "Already on a bus" are on by default: `rides` and `onBoard` default to `true`. Check what the migration does with users who never touched them.
-
-**1.2.0, Simple Maslul:** an optional mode for older users ("made for grandparents"), turned on in Settings.
-- A home screen with six big buttons for places, and plain step-by-step directions.
-- Its own language setting: English, Hebrew or **Russian**. Russian exists only in Simple Maslul.
-- New stored fields: `simpleMode`, `simpleLanguage` and the buttons (`SimpleIcon`).
-- About 1,500 lines of Kotlin in `app/src/main/java/com/maslul/app/ui/simple/`. `SimpleStrings.kt` has all three languages.
-
-**What it means for the rewrite:**
-- **versionCode** must be **7 or more**. The original's is 6 and ours is 5 (`mobile/version.json`). Android refuses an update with a lower code.
-- **The migration** (`persist.ts` and the native `readLegacyStore`) must carry the Simple Maslul fields and the new defaults. Add tests next to the existing migration tests.
-- **Russian** is left to right. The i18n setup (`src/i18n/`, with typed key parity between `en.ts` and `he.ts`) can take a third language. There are two options; ask the user which:
-  - **Simple Maslul only**, as the original does: copy the strings from `SimpleStrings.kt`. This is small.
-  - **The whole app:** about 490 strings, plus Russian plurals (one/few/many: 1 остановка, 3 остановки, 5 остановок). A Russian speaker should check the wording.
-- **Hebrew and RTL:** the Simple screens need the same RTL care and leak tests (`hebrew.test.tsx`) as the rest.
-- **iOS:** the Simple screens must work there too, so add checks to `TESTING-ios.md` and to `TESTING.md`.
-
-**How to bring it in:**
-1. `git fetch upstream`, then fast-forward the local `master` to `upstream/master`. Pushing `master` to the fork needs a yes.
-2. *Merge* (don't rebase) `master` into `rewrite/react-native`. Our branch doesn't touch `app/`, so there should be no conflicts.
-3. Read the Kotlin diff (`git diff <old master>..master -- app/`) and port it to React Native on a branch such as `feature/simple-maslul`. 1.1.1 is small and can go straight on `rewrite/react-native`.
-4. Don't add them to `FEATURES.md`: they come from upstream, so they aren't new compared with the original. Note the port in `NOTES.md` instead.
+- **versionCode** is 8 (upstream's 1.2.1 is 7).
+- **Russian** covers the whole app, translated here: a Russian speaker should read `src/i18n/ru.ts`. Where upstream had the same phrase (`StringsRu.kt`, `SimpleStrings.kt`) its wording is used.
+- **Simple Maslul** lives in `src/ui/simple/` and follows the app's language (upstream gives it its own).
+- **Not covered by automated tests:** the location-permission prompt on Simple's home (E5), real layout on phones, iOS.
+- Not in `FEATURES.md`: these come from upstream.
 
 ## Later ideas (not decided)
 
@@ -179,4 +161,5 @@ The original released two versions on 2026-10-09, both for the Kotlin app only.
 - **Tests:**
   - The fake repo is `__tests__/support/fakeRepo.ts`. Override it per test by assigning `fake.plan`, `fake.stopBoard` and so on.
   - App flows are in `appFlow.test.tsx`, Hebrew in `hebrew.test.tsx` (`launchHebrew`).
-  - The i18n types enforce key parity between `en.ts` and `he.ts`.
+  - The i18n types enforce key parity between `en.ts`, `he.ts` and `ru.ts`.
+  - Russian in `russian.test.tsx`, Simple Maslul in `simple.test.tsx`.

@@ -10,6 +10,7 @@ import { APP_VERSION } from '../../version';
 import { Chip, IconButton, PlaceRow, SectionHeader, Segmented, SettingSwitch, TextButton, Txt } from '../components/common';
 import { type FavoriteDraft, FavoriteDialogHost, draftFor } from '../components/favorites';
 import { FAVORITE_ICON_NAMES, Icon } from '../components/icons';
+import { Dialog } from '../components/overlays';
 import { nav } from '../nav';
 import { BRAND, useTheme } from '../theme';
 import { pickHomeOrWork } from './NavHome';
@@ -25,6 +26,7 @@ export function SettingsScreen() {
   const [draft, setDraft] = useState<FavoriteDraft | null>(null);
   const [taps, setTaps] = useState(0);
   const [drives, setDrives] = useState(0);
+  const [confirmSimple, setConfirmSimple] = useState(false);
 
   const addFavorite = () =>
     nav.push('Search', {
@@ -151,6 +153,15 @@ export function SettingsScreen() {
           testID="my_shuttles"
         />
 
+        <SectionHeader text={S.settings.simpleMaslul} />
+        <SettingSwitch
+          title={S.settings.simpleMaslul}
+          subtitle={S.settings.simpleMaslulHint}
+          value={s.simpleMode}
+          onChange={(c) => c && setConfirmSimple(true)}
+          testID="simple_switch"
+        />
+
         <SectionHeader text={S.settings.about} />
         <Pressable
           onPress={() => {
@@ -184,6 +195,26 @@ export function SettingsScreen() {
       </ScrollView>
       {drives > 0 && <DrivingBus key={drives} bottom={insets.bottom + 12} />}
       <FavoriteDialogHost draft={draft} onClose={() => setDraft(null)} />
+      <Dialog
+        visible={confirmSimple}
+        title={S.settings.switchToSimpleQ}
+        onDismiss={() => setConfirmSimple(false)}
+        actions={
+          <>
+            <TextButton text={S.common.cancel} onPress={() => setConfirmSimple(false)} />
+            <TextButton
+              text={S.settings.switchAction}
+              onPress={() => {
+                setConfirmSimple(false);
+                store.updateSettings((st) => ({ ...st, simpleMode: true }));
+              }}
+              testID="simple_confirm"
+            />
+          </>
+        }
+      >
+        <Txt>{S.settings.switchToSimpleBody}</Txt>
+      </Dialog>
     </View>
   );
 }

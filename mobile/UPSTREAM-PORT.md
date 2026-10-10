@@ -70,26 +70,30 @@ Status: **Done**, **To do**, **Different** (deliberately not the same; the reaso
 
 | # | Upstream change | Where upstream | Where here | Status |
 |---|---|---|---|---|
-| E1 | Settings: a "Simple Maslul" switch with a confirmation dialog | `Settings.kt` | `Settings.tsx` | To do |
-| E2 | With Simple Maslul on, the app opens in it, with no tab bar; back on its home leaves the app | `MainActivity.kt`, `AppState.kt` | `App.tsx` | To do |
-| E3 | Home: "Where are you going?", 5 place buttons in strong colours plus "Other address", 2 per row; a small Settings link | `SimpleHome.kt` | new `src/ui/simple/` | To do |
-| E4 | A button with no place asks for its address first ("Where is “Grandkids”?"), then saves it to the button | `SimpleHome.kt` | | To do |
-| E5 | Asks for location permission on opening | `SimpleHome.kt` | | To do |
-| E6 | Search: one big field, recents (6) when empty, results, "Nothing found", "No internet" | `SimpleSearch.kt` | | To do |
-| E7 | Routes from the current location: up to 3 options (then "More options"), the first marked "Best"; no car rides; ones that left drop out; "Leave now / in N min / at 14:05 / tomorrow at 17:59 / on Sunday at 08:00"; Live mark; line badges; "Arrive at"; changes count | `SimpleRoutes.kt` | | To do |
-| E8 | A walk of up to 20 min is offered as its own card, before or after the rides depending on which arrives first | `SimpleRoutes.kt` | | To do |
-| E9 | When every option has left, it searches again; errors in plain words with "Try again" | `SimpleRoutes.kt` | | To do |
-| E10 | Trip: numbered plain steps (walk to the stop, take bus 18, towards, leaves at, platform, "Or: 22", get off at, ride N stops, you're there), live | `SimpleRoutes.kt` `SimpleTripScreen`, `SimpleSteps.kt` | | To do |
-| E11 | Simple Settings: language (English, עברית, Русский), the buttons (name, picture, address, clear), "Switch to full Maslul" with a confirmation | `SimpleSettings.kt` | | To do |
-| E12 | Simple Maslul's own plainer words in 3 languages | `SimpleStrings.kt` | `en/he/ru.ts` `simple` section | To do |
-| E13 | Hebrew right to left in Simple Maslul | `SimpleFrame` | | To do |
-| E14 | iOS: Simple Maslul must work there too | — | `TESTING-ios.md` | To do |
+| E1 | Settings: a "Simple Maslul" switch with a confirmation dialog | `Settings.kt` | `Settings.tsx` (`simple_switch`, `simple_confirm`); `simple.test.tsx` | Done |
+| E2 | With Simple Maslul on, the app opens in it, with no tab bar; back on its home leaves the app | `MainActivity.kt`, `AppState.kt` | `App.tsx`: its own navigator, remounted when the setting changes; Android Back on its home leaves the app (stack root). The live-trip banner is hidden there (it opens a full-app screen) | Done |
+| E3 | Home: "Where are you going?", 5 place buttons in strong colours plus "Other address", 2 per row; a small Settings link | `SimpleHome.kt` | `src/ui/simple/SimpleScreens.tsx` `SimpleHomeScreen` | Done |
+| E4 | A button with no place asks for its address first ("Where is “Grandkids”?"), then saves it to the button | `SimpleHome.kt` | `SimpleHomeScreen` `open`; `simple.test.tsx` | Done |
+| E5 | Asks for location permission on opening | `SimpleHome.kt` | `SimpleHomeScreen` (`location.requestPermission`) | Done |
+| E6 | Search: one big field, recents (6) when empty, results, "Nothing found", "No internet" | `SimpleSearch.kt` | `SimpleSearchScreen` | Done |
+| E7 | Routes from the current location: up to 3 options (then "More options"), the first marked "Best"; no car rides; ones that left drop out; "Leave now / in N min / at 14:05 / tomorrow at 17:59 / on Sunday at 08:00"; Live mark; line badges; "Arrive at"; changes count | `SimpleRoutes.kt` | `SimpleRoutesScreen`, `leaveText`; `simple.test.tsx` | Done |
+| E8 | A walk of up to 20 min is offered as its own card, before or after the rides depending on which arrives first | `SimpleRoutes.kt` | `SimpleRoutesScreen` `WalkCard` | Done |
+| E9 | When every option has left, it searches again; errors in plain words with "Try again" | `SimpleRoutes.kt` | `SimpleRoutesScreen` (uses `errorKind`, D11) | Done |
+| E10 | Trip: numbered plain steps (walk to the stop, take bus 18, towards, leaves at, platform, "Or: 22", get off at, ride N stops, you're there), live | `SimpleRoutes.kt` `SimpleTripScreen`, `SimpleSteps.kt` | `SimpleTripScreen`, `src/ui/simple/steps.ts`; `simple.test.tsx` | Done |
+| E11 | Simple Settings: language (English, עברית, Русский), the buttons (name, picture, address, clear), "Switch to full Maslul" with a confirmation | `SimpleSettings.kt` | `SimpleSettingsScreen`. The language buttons set the app's language (no "phone" choice, as upstream). The edit dialog hides while its address search is open on top | Done |
+| E12 | Simple Maslul's own plainer words in 3 languages | `SimpleStrings.kt` | `en/he/ru.ts` `simple` section, upstream's wording; Hebrew and Russian leak tests cover the Simple screens | Done |
+| E13 | Hebrew right to left in Simple Maslul | `SimpleFrame` | The whole app is right to left in Hebrew (one reload), so Simple Maslul is too | Done |
+| E14 | iOS: Simple Maslul must work there too | — | `TESTING-ios.md` I13; `TESTING.md` X1–X7 | Done (untested on a device) |
 
 ## Found while mapping (not new upstream)
 
 | # | What | Status |
 |---|---|---|
 | F1 | The Kotlin app (1.1.0 already) shows "If you miss it: checking the next rides…" while it looks up the rides after a transfer; the port shows nothing until they arrive | Was already there, but in English only: now in `S.detail.missChecking` | Done |
+
+## Checked file by file
+
+Every file in `git diff --stat fab01ac 076af78 -- app/` (60 files) was checked against the rows above. The ones without a row of their own changed only to take their text from i18n (row C8): `AddressSearch.kt`, `Shuttles.kt`, `Fmt.kt`, `Common.kt`, `Live.kt`, `TransitMap.kt`, every screen in `ui/lines/` and `ui/nav/` apart from `Routes.kt` and `Settings.kt`, and `live/`. `docs/screenshots/simple/` are upstream's README pictures.
 
 ## Tests ported
 
@@ -98,8 +102,9 @@ Status: **Done**, **To do**, **Different** (deliberately not the same; the reaso
 | `RideOptionsTest` (3 badges, +N, expand and collapse) | `routeCards.test.tsx` |
 | `GraceTest` | `grace.test.ts` |
 | `WiderWalkTest` | `grace.test.ts`; on screen, `appFlow.test.tsx` |
-| `SimpleModeTest` | To do |
+| `SimpleModeTest` | `simple.test.tsx` (plus the whole flow, offline) |
 | `LocalizationTest` (language carries over, plurals, current-location key) | `legacyMigration.test.ts`, `russian.test.tsx` |
 | `ParsingTest` (train headsigns) | `parsing.test.ts` |
 | `RideShuttleSmokeTest.aLiftIsOneDrive` (live) | Offline instead: `parsing.test.ts` feeds the plan filter a two-drive itinerary |
+| `TransitModeTest` (vehicle words by language, "the train") | `transitMode.test.ts` |
 | `AppFlowTest.switchingLanguageRedrawsTheApp` | The app reloads on a language change (by design); covered by `hebrew.test.tsx` and `russian.test.tsx` |

@@ -4,7 +4,7 @@ Decisions behind the React Native port, for whoever picks it up next. What has a
 
 ## Replacing the Kotlin app
 
-- **Same identity.** The package is `com.maslul.app` with versionCode 5 and up (from `version.json`), so the store and sideloads treat this app as an update. An update only installs over the old app when both are signed with the same key. Releases therefore use the Kotlin app's `keystore.properties`, through `plugins/withReleaseSigning.js`. The same plugin points debug builds at `~/.android/debug.keystore`, the key the Kotlin app's debug builds use, instead of the Expo template's bundled one, so the upgrade can be tested with two debug builds.
+- **Same identity.** The package is `com.maslul.app` with versionCode 8 and up (from `version.json`; the Kotlin app ended at 7, its 1.2.1), so the store and sideloads treat this app as an update. An update only installs over the old app when both are signed with the same key. Releases therefore use the Kotlin app's `keystore.properties`, through `plugins/withReleaseSigning.js`. The same plugin points debug builds at `~/.android/debug.keystore`, the key the Kotlin app's debug builds use, instead of the Expo template's bundled one, so the upgrade can be tested with two debug builds.
 - **Data migration** (`src/state/persist.ts`). On first launch the native module reads the old store once: SharedPreferences `maslul`, key `store_v1`. It's kotlinx JSON with defaults left out, nulls left out, enums by name and Sets as arrays. `readUserData` applies every Kotlin default and drops broken entries one by one instead of failing the whole store, then `migrated()` runs as it did in Kotlin. Details:
   - The result is saved under the same key in AsyncStorage, and `legacy_migrated_v1` marks the migration as done.
   - The old SharedPreferences are never written or deleted, so a bad migration loses nothing.
@@ -65,9 +65,10 @@ Found by the emulator tests (`TESTING.md`); everything else follows Kotlin.
 - **Last bus warning** (`src/data/lastBus.ts`). From 20:00 (noon on Fridays) until 04:00, a route search tags the night's last departure "Last today", and a banner names it once it's within the hour. It's only claimed when the planner shows a route after 04:00 with nothing in between, checking the next page (one more call) if needed. Not for arrive-by, lift or on-board searches.
 - **Reminder to leave from a stop** (`src/ui/components/reminders.tsx`). Long-press a departure on the stop screen or Home's starred stops. It fires the walk to the stop (straight line × 1.3 at the user's walk speed) plus the reminder minutes before the bus. The route reminder shares the same code.
 
-## Languages: English and Hebrew (`src/i18n/`)
+## Languages: English, Hebrew and Russian (`src/i18n/`)
 
-- **Choosing.** Settings → Language: System (the phone's language; Hebrew if it's `he`/`iw`, otherwise English), עברית or English. The app name stays Maslul in both.
+- **Choosing.** Settings → Language: System (the phone's language; Hebrew if it's `he`/`iw`, Russian if `ru`, otherwise English), English, עברית or Русский. The app name stays Maslul.
+- **Russian** (`ru.ts`, from upstream 1.2.1) is left to right, so choosing it needs no reload unless coming from Hebrew. Plurals go by Russian rules (`plural`: 1 остановка, 3 остановки, 5 остановок). The wording follows the Kotlin app's `StringsRu.kt` where the phrase is the same; the rest is new and wants a Russian speaker's look. Light rail is its own vehicle kind so Russian can say "трамвай" (English and Hebrew still say train).
 - **Strings.** `en.ts` holds every piece of app text and `he.ts` its Hebrew, typed against it, so a key missing from either breaks `tsc`. Code reads `S.section.key` when the text is shown, never at module load. Text that takes a number, name or vehicle is a function, so each language words it its own way.
 - **Hebrew grammar.** Plurals ("החלפה אחת", "2 החלפות") and gender ("האוטובוס קרוב" / "הרכבת קרובה") come from helpers in `he.ts`. Sentences about a vehicle take its `VehicleKind` (`vehicleKind()` in `models.ts`) rather than an English word.
 - **Right to left.** Hebrew forces RTL through `I18nManager.forceRTL`, which only shows after a restart, so `applyLanguage` (`device.ts`) reloads the app once. A guard key (`direction_reload_v1`) stops a reload loop if the platform doesn't take the new direction. Changing the language in Settings always reloads. React Native swaps left/right styles and row order by itself. Code mirrors what it doesn't: directional icons (`icons.tsx`), the progress bar's sweep, and the bus on the About screen. Times and ranges carry a right-to-left mark (`S.fmt.range`, `S.fmt.span`), so "14:05 ← 14:40" reads in order.
@@ -79,6 +80,14 @@ Found by the emulator tests (`TESTING.md`); everything else follows Kotlin.
   - Names saved before a switch (a dropped pin, a saved trip's place) keep the language they were saved in.
   - Android notification channel names update only after the reload.
 - `__tests__/hebrew.test.tsx` renders the main screens in Hebrew and fails on any English string from `en.ts` that shows up.
+
+## Ported from the Kotlin app's 1.1.1–1.2.1
+
+The original kept going after the port began. [UPSTREAM-PORT.md](UPSTREAM-PORT.md) maps every change in those versions to its place here; these are the parts worth knowing:
+
+- **Simple Maslul** (`src/ui/simple/`): its own navigator in `App.tsx`, shown instead of the tabs while `settings.simpleMode` is on. It plans with the full app's `RoutesModel` (from the current location) and reads its own plainer words from the `simple` section of each language. Unlike upstream it doesn't have its own language: it follows the app's, and the app's layout direction.
+- **Grace and the wider walk** (`src/data/grace.ts`): each search also plans with the limits raised by 3 minutes (sent after the main request, as Transitous may answer one at a time), keeping what's over only when it's 10 minutes sooner. When nothing leaves within 2 hours, one more plan with a 50-minute walk. Both are extra planner calls.
+- **Differences kept on purpose:** the whole app asks the geocoder in its language (upstream: only Simple Maslul); map labels follow the language; a train headsign that's only a number shows nothing when the plan doesn't say where the trip ends (upstream shows the number).
 
 ## Map
 

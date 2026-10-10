@@ -9,6 +9,9 @@ const transfers = (n: number) => (n === 1 ? '1 transfer' : `${n} transfers`);
  * The app's English text, the source for every language: he.ts must have the same keys. Entries
  * that take numbers or names are functions, so each language can word them its own way.
  */
+import type { TransitMode } from '../data/models';
+import type { SimpleIcon } from '../data/userStore';
+
 export const en = {
   fmt: {
     /** Indexed by ISO day of week, 1 = Monday. */
@@ -494,6 +497,12 @@ export const en = {
     ridesHint: 'Find the best place to be dropped off and go on by bus or train',
     onBoard: 'Already on a bus',
     onBoardHint: "Plan the rest of the trip from the bus or train you're on",
+    simpleMaslul: 'Simple Maslul',
+    simpleMaslulHint: 'Big buttons for a few places and plain step-by-step directions, in English, Hebrew or Russian. Good for grandparents.',
+    switchToSimpleQ: 'Switch to Simple Maslul?',
+    switchToSimpleBody:
+      'Maslul becomes six big buttons and plain step-by-step directions, without maps, lines or stations. To come back, open Settings in Simple Maslul and choose “Switch to full Maslul”.',
+    switchAction: 'Switch',
     myShuttles: 'My shuttles',
     shuttlesNone: 'Company or private shuttles with a fixed timetable',
     shuttlesCount: (n: number) => `${n} shuttles`,
@@ -510,5 +519,72 @@ export const en = {
       '• Search: Transitous, Photon (komoot) and Nominatim, OpenStreetMap data.\n' +
       '• Maps: OpenFreeMap, © OpenStreetMap contributors.\n\n' +
       "Live arrival times are estimated from each vehicle's reported position and are typically 30–90 s behind real time.",
+  },
+
+  /** Simple Maslul: fewer, plainer and bigger words than the full app's (SimpleStrings in Kotlin). */
+  simple: {
+    whereTo: 'Where are you going?',
+    otherAddress: 'Other address',
+    tapToSet: 'Tap to choose the address',
+    settings: 'Settings',
+    back: 'Back',
+    searchHint: 'Type an address or place',
+    searchTitle: 'Where to?',
+    whereIs: (label: string) => `Where is “${label}”?`,
+    recent: 'Recent',
+    noResults: 'Nothing found. Try writing it another way.',
+    searchFailed: 'No internet connection. Try again.',
+    toPlace: (name: string) => `To ${name}`,
+    finding: 'Finding the best way…',
+    leaveNow: 'Leave now',
+    leaveIn: (min: number) => `Leave in ${min} min`,
+    leaveAt: (time: string) => `Leave at ${time}`,
+    /** "tomorrow", or "on Sunday"; day is ISO (1 = Monday), null for tomorrow. */
+    onDay: (day: number | null) =>
+      day == null ? 'tomorrow' : `on ${['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][day]}`,
+    leaveOn: (day: number | null, time: string) => `Leave ${en.simple.onDay(day)} at ${time}`,
+    arriveAt: (time: string) => `Arrive at ${time}`,
+    changes: (n: number) => (n === 0 ? 'No changes' : n === 1 ? '1 change' : `${n} changes`),
+    walkThere: (min: number) => `Walk there: ${min} min`,
+    best: 'Best',
+    moreOptions: 'More options',
+    live: 'Live',
+    errLocation: "Can't tell where you are. Turn on location and try again.",
+    errNoRoutes: 'No way to get there right now.',
+    errNetwork: 'No internet connection. Try again.',
+    tryAgain: 'Try again',
+    howToGetThere: 'How to get there',
+    walkToStop: (stop: string) => `Walk to the stop “${stop}”`,
+    walkToDestination: "Walk to where you're going",
+    aboutMin: (min: number) => `About ${min} min`,
+    take: (mode: TransitMode, line: string) => `Take ${en.simple.mode[mode].toLowerCase()} ${line}`.trim(),
+    orLines: (lines: string) => `Or: ${lines}`,
+    towards: (headsign: string) => `Towards ${headsign}`,
+    leavesAt: (time: string) => `Leaves at ${time}`,
+    platform: (p: string) => `Platform ${p}`,
+    rideStops: (n: number) => (n === 1 ? 'Ride 1 stop' : `Ride ${n} stops`),
+    getOffAt: (stop: string) => `Get off at “${stop}”`,
+    arrived: "You're there!",
+    buttons: 'Buttons',
+    editHint: 'Tap a button to change its name, picture or address.',
+    language: 'Language',
+    name: 'Name',
+    picture: 'Picture',
+    address: 'Address',
+    notSet: 'Not set',
+    changeAddress: 'Change address',
+    clear: 'Clear',
+    save: 'Save',
+    cancel: 'Cancel',
+    fullApp: 'Switch to full Maslul',
+    fullAppBody: 'The full app has maps, lines, stations and more options, with smaller text.',
+    fullAppConfirm: 'Switch',
+    iconName: {
+      HOME: 'Home', FAMILY: 'Grandkids', WORK: 'Work', HEALTH: 'Doctor', SHOPPING: 'Shopping', FRIENDS: 'Friends', PARK: 'Park', STAR: 'Favorite',
+      HEART: 'Family', SCHOOL: 'School', CAFE: 'Café', POOL: 'Pool', RESTAURANT: 'Restaurant', GYM: 'Gym', SPORTS: 'Sports',
+    } as Record<SimpleIcon, string>,
+    mode: {
+      BUS: 'Bus', TRAIN: 'Train', LIGHT_RAIL: 'Light rail', METRO: 'Carmelit', CABLE_CAR: 'Cable car', FERRY: 'Ferry', CAR: 'Car', WALK: 'Walk', OTHER: '',
+    } as Record<TransitMode, string>,
   },
 };
