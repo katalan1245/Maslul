@@ -17,7 +17,7 @@ Read this first. A fresh session should be able to start from this file alone. T
   - On first launch, `src/state/persist.ts` and the native `readLegacyStore` migrate the old app's data once. That can't be undone on users' phones, so the migration has to be right before release.
 - **Native code:** `modules/maslul-native`, Kotlin for Android and Swift for iOS. It reads the old store, downloads and parses the live-bus snapshot off the JS thread, updates the trip notification, and checks exact alarms.
 - **Licence:** AGPL-3.0. The About credits and the OSM/OpenFreeMap credit must stay.
-- **Upstream:** the original developer's repo is `Tom-stack3/Maslul`. The user's goal is to test everything fully, port upstream's new versions, and eventually offer all of this to the original developer as a PR.
+- **Upstream:** the original developer's repo is `Tom-stack3/Maslul`. The user's goal is to test everything fully, port upstream's new versions, and eventually offer all of this to the original developer as a PR. That PR **restructures the repo**: the React Native app moves out of `mobile/` to the repo root and the Kotlin `app/` (with its Gradle files) is removed. Until then everything stays in `mobile/`.
 
 ## Git state (2026-10-10)
 
@@ -122,7 +122,7 @@ They should also check the wording of `FEATURES.md`.
 3. **Full code review,** when the user says so.
 4. **A real weekday ride** with the release-like build.
 5. **Release:** the user builds and signs it.
-6. **PR to `Tom-stack3/Maslul`,** only when the user asks.
+6. **PR to `Tom-stack3/Maslul`,** only when the user asks. It moves `mobile/` to the root and deletes the Kotlin app. Paths to fix then: the docs' `mobile/` and `/workspace/app` references, `scripts/publish-test.sh` (`../app` for the old Kotlin APK), the README, any CI, and `.gitignore`.
 
 ## Porting upstream (done, untested on devices)
 
