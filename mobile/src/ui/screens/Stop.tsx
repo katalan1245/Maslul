@@ -135,6 +135,7 @@ export function StopScreen({ route }: NativeStackScreenProps<RootStack, 'Stop'>)
         <IconButton
           icon={fav ? 'star' : 'star-border'}
           label={S.stopBoard.favorite}
+          selected={fav}
           color={fav ? FAVORITE_GOLD : t.c.onSurfaceVariant}
           onPress={() => store.toggleFavoriteStop(place)}
           testID="favorite_stop"
@@ -231,6 +232,8 @@ export function BoardRow({
       onPress={onPress}
       onLongPress={onLongPress}
       accessibilityHint={onLongPress ? S.stopBoard.remindHint : undefined}
+      // Spelled out: the live time inside is its own button, which left this row unlabelled for TalkBack.
+      accessibilityLabel={[d.lineLabel, d.headsign, Fmt.relative(time, now), sub].join(', ')}
       style={styles.row}
       accessibilityRole="button"
       testID="board_row"

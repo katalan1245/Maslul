@@ -162,7 +162,7 @@ export function LineScreen({ route }: NativeStackScreenProps<RootStack, 'Line'>)
           <Txt v="titleSmall" numberOfLines={2}>{S.common.toward(routeDestination(r).trim() || r.longName)}</Txt>
           <Txt v="bodySmall" color={t.x.subtle} numberOfLines={1}>{S.line.operatorFrom(r.agency, routeOrigin(r))}</Txt>
         </View>
-        <IconButton icon={fav ? 'star' : 'star-border'} label={S.line.favorite} color={fav ? FAVORITE_GOLD : t.c.onSurfaceVariant} onPress={() => store.toggleFavoriteLine(r)} testID="favorite_line" />
+        <IconButton icon={fav ? 'star' : 'star-border'} label={S.line.favorite} selected={fav} color={fav ? FAVORITE_GOLD : t.c.onSurfaceVariant} onPress={() => store.toggleFavoriteLine(r)} testID="favorite_line" />
         <IconButton
           icon="swap-horiz"
           label={S.line.changeDirection}

@@ -248,11 +248,15 @@ it('shows the next departures at a starred stop on Home, and opens the stop from
   expect(screen.queryByTestId('home_stop')).toBeNull();
   await fireEvent.press(screen.getByTestId('tab_stations'));
   await fireEvent.press(await screen.findByText('Arlozorov/Ibn Gabirol'));
-  await fireEvent.press(await screen.findByTestId('favorite_stop'));
+  expect(await screen.findByTestId('favorite_stop')).not.toBeSelected();
+  await fireEvent.press(screen.getByTestId('favorite_stop'));
+  expect(screen.getByTestId('favorite_stop')).toBeSelected();
   await fireEvent.press(screen.getByLabelText('Back'));
   await fireEvent.press(screen.getByTestId('tab_navigate'));
   const home = await screen.findByTestId('home_stop');
   await waitFor(() => expect(within(home).getByTestId('board_row')).toHaveTextContent(/Bat Yam/));
+  // TalkBack reads the row (F15): its line, where it goes and when.
+  expect(within(home).getByTestId('board_row').props.accessibilityLabel).toMatch(/Bat Yam, (now|\d+ min)/);
   await fireEvent.press(within(home).getByText('Arlozorov/Ibn Gabirol'));
   await screen.findByTestId('stop_screen');
 });

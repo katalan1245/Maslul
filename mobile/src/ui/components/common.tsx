@@ -215,6 +215,7 @@ export function IconButton({
   size = 24,
   disabled,
   filled,
+  selected,
   testID,
 }: {
   icon: IconName;
@@ -225,6 +226,8 @@ export function IconButton({
   disabled?: boolean;
   /** A tonal round button floating over a map. */
   filled?: boolean;
+  /** An on/off button (a star): screen readers say whether it is on. */
+  selected?: boolean;
   testID?: string;
 }) {
   const t = useTheme();
@@ -234,7 +237,7 @@ export function IconButton({
       disabled={disabled}
       accessibilityLabel={label}
       accessibilityRole="button"
-      accessibilityState={{ disabled: !!disabled }}
+      accessibilityState={{ disabled: !!disabled, selected }}
       hitSlop={6}
       testID={testID}
       style={({ pressed }) => [
