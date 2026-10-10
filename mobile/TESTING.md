@@ -69,7 +69,7 @@ Use `adb` from a shell if you have one. If a command isn't available to you, mar
 
 ## What to test now, in this order
 
-Round 6 re-tests what was fixed after round 5. This build has **native changes**, so install it fresh over the old one: `adb install -r maslul-latest.apk`. Use 4 GB RAM. Screenshot every check; a layout finding needs its screenshot. Start with the app in English (Settings → Language → English) and the emulator in English. If it's Shabbat or night, mark the checks that need running buses **couldn't test (Shabbat)**.
+Round 7 does two things: it re-tests what was fixed after round 5 (B1–B5, which were round 6, never run), and it tests five new features (C1–C5). This build has **native changes**, so install it fresh over the old one: `adb install -r maslul-latest.apk`. Use 4 GB RAM. Screenshot every check; a layout finding needs its screenshot. Start with the app in English (Settings → Language → English) and the emulator in English. If it's Shabbat or night, mark the checks that need running buses **couldn't test (Shabbat)**.
 
 **B1. Place search in English** (was finding 1). App in English. Where to? → type `ויצמן 5`, then ` כ`: a "…כפר סבא" result comes to the top. Clear it and type `haifa center`: "Haifa Center HaShemona" is listed. Then switch to עברית and do the same: the same places, at the top.
 
@@ -85,6 +85,18 @@ Round 6 re-tests what was fixed after round 5. This build has **native changes**
 **B4. Automated flows (Maestro)**, app and emulator in English. Stop mobile-mcp's agent (`adb shell pkill -f com.mobilenext`), put the location in Tel Aviv (`adb emu geo fix 34.7818 32.0853`), then `maestro --device emulator-5554 test maestro/ --format junit --output maestro-report.xml`. All 11 should pass. ride_within now reaches the ride search for the first time since round 4's fix (the search used to time out after 30 s): if it fails, quote the message and save `adb logcat -d -t 3000 ReactNativeJS:V '*:S'`.
 
 **B5. Live buses**, only outside Shabbat and night (not seen in any round yet): on a stop screen some times turn green, and on line 1 or 480 bus icons appear on the map within about 30 s and move. A reminder set for a time during the session: its notification text (in the app's language).
+
+**C. New features.** App and emulator in English unless a check says otherwise. Ids for `uiautomator dump`: `home_stop`, `board_row`, `remind_leave`, `saved_routes_banner`, `last_bus_banner`, `refresh_chip`, `favorite_stop`.
+
+**C1. Last routes offline.** Plan a trip to Dizengoff Center and wait for the routes. Turn on airplane mode (`adb shell cmd connectivity airplane-mode enable`), then tap the refresh chip: the same routes come back under a banner "No new routes, showing the ones saved at HH:MM", without any whose bus has already left. Turn airplane mode off (`… airplane-mode disable`) and tap the banner's Try again: fresh routes, no banner, no route listed twice. Repeat the offline part in עברית: the banner is in Hebrew.
+
+**C2. Stops away** (needs live buses, as B5). On a stop screen with green (live) times, some rows say "N stops away". During a trip (Start on a route), the waiting step says "Bus N in X min · N stops away".
+
+**C3. Favourite stops on Home.** Stations tab → Arlozorov/Ibn Gabirol (or any stop near the location) → the star at the top. Back to the Navigate tab: Home's sheet has a "Favorite stops" section with that stop, its distance, and up to 3 lines with their times. Tap the stop's name: its stop screen opens. Star two more stops: at most 3 are shown, nearest first. Turn on airplane mode, wait 2 minutes on Home: the rows stay, and the stop's line says "Updated N min ago". Unstar all stops: the section disappears. Check it in עברית too (right to left, no English).
+
+**C4. Reminder to leave from a stop.** On a stop screen, long-press a departure at least 30 minutes away → "Remind me to leave": a toast says the reminder is set. Long-press one leaving in under 10 minutes: the toast says it's too soon. Do the same from a row under a starred stop on Home. If the reminder's time comes during the session, record its notification text. In עברית, the menu item says תזכירו לי לצאת.
+
+**C5. Last bus warning.** Plan a trip, open the time sheet and choose **Depart at** 23:30 on the next Sunday–Thursday. Results that include tomorrow-morning routes: the latest route before 04:00 has a "Last today" tag (only one card has it). Choose 10:00 the same day: no tag. If the session runs on a weekday evening after 22:30, also plan "Leave now" for a short trip: a banner "The last one today leaves at HH:MM from …" when the last bus is within the hour. No tag or banner is not a failure when the planner doesn't show any morning route (the app only claims a last bus when it can prove it); write down what the list showed.
 
 ## Report
 
