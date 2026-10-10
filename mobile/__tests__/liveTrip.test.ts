@@ -93,3 +93,13 @@ test('a saved session whose service is gone is dropped', async () => {
   expect(activeTrip.session).toBeNull();
   expect(await AsyncStorage.getItem('live_trip_v1')).toBeNull();
 });
+
+test('a location update arriving while the trip ends does not start it again (T1)', async () => {
+  hasStarted.mockResolvedValue(true);
+  await activeTrip.start(trip(), 'Savidor');
+  // The update reads the saved session while End runs.
+  const ending = activeTrip.stop();
+  await update();
+  await ending;
+  expect(activeTrip.session).toBeNull();
+});

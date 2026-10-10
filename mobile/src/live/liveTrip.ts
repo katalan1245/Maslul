@@ -41,6 +41,9 @@ class ActiveTrip {
   private pos: GeoPoint | null = null;
   private finishedAt: number | null = null;
   private ticking = false;
+  /** Counts ended trips: a restore that was reading the saved session while one ended must not bring it back. */
+  private ended = 0;
+  private ending: Promise<void> | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
 
   get session(): TripSession | null {
@@ -94,6 +97,14 @@ class ActiveTrip {
   }
 
   async stop() {
+    this.ended++;
+    const run = this.end();
+    this.ending = run;
+    await run;
+    if (this.ending === run) this.ending = null;
+  }
+
+  private async end() {
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
     this.guide = null;
@@ -108,9 +119,12 @@ class ActiveTrip {
 
   /** After the app (or just its JS) restarted: picks up a trip the location service is still following. */
   async restore() {
+    await this.ending;
     if (this.current) return;
+    const ended = this.ended;
     const json = await AsyncStorage.getItem(SESSION_KEY).catch(() => null);
     const running = await Location.hasStartedLocationUpdatesAsync(TRIP_TASK).catch(() => false);
+    if (this.current || ended !== this.ended) return;
     if (json == null || !running) {
       if (json != null) await AsyncStorage.removeItem(SESSION_KEY).catch(() => {});
       if (running) await Location.stopLocationUpdatesAsync(TRIP_TASK).catch(() => {});

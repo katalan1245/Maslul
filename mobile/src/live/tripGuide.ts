@@ -106,7 +106,8 @@ export class TripGuide {
         }
       }
       if (nextIdx < 0) {
-        const remaining = Math.max(total - this.lastAlong, 0);
+        // Off the planned path (another street) the distance along it stalls: the straight line can only be shorter.
+        const remaining = Math.min(Math.max(total - this.lastAlong, 0), pos != null ? GeoMath.distance(pos, dest) : Infinity);
         return {
           legIndex,
           title: leg.mode === 'CAR' ? S.guide.rideTo(this.destination) : S.guide.walkTo(this.destination),

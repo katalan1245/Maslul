@@ -163,3 +163,16 @@ test('stops away in Hebrew', () => {
     setLanguage('en');
   }
 });
+
+test('the last walk counts down by the straight line when you take another street (T1)', () => {
+  // Off the bus at E (km 4), then 400 m east along a path to the destination.
+  const off = makeLeg({ mode: 'WALK', from: call('E', 4, 780), to: at(4), start: t0 + 780, end: t0 + 1080, distanceM: 400 });
+  const east = (km: number): GeoPoint => ({ lat: pt(4).lat, lon: 34.8 + km / (111.32 * Math.cos((pt(4).lat * Math.PI) / 180)) });
+  const dest = { ...at(4), lat: east(0.4).lat, lon: east(0.4).lon };
+  const legs = [walk, bus, { ...off, to: dest, geometry: [pt(4), pt(4.2), { lat: pt(4.2).lat, lon: east(0.4).lon }, east(0.4)] }];
+  const g = new TripGuide({ ...itin, end: t0 + 1080, legs }, 'Home');
+  g.update(pt(4), t0 + 790, none);
+  // Walking straight there instead of round by the path: 250 m to go, not the path's 600 m.
+  const s = g.update({ lat: pt(4).lat, lon: east(0.145).lon }, t0 + 900, none);
+  expect(s.text).toBe('250 m to go');
+});
