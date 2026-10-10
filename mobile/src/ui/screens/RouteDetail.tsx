@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
-import { Platform, Pressable, Share, StyleSheet, View } from 'react-native';
+import { Pressable, Share, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Combine } from '../../data/combine';
 import type { LiveApproach, LiveCall } from '../../data/eta';
@@ -237,7 +237,7 @@ export function RouteDetailScreen({ route }: NativeStackScreenProps<RootStack, '
 
   const startLive = async () => {
     const ok = (await location.hasPermission()) || (await location.requestPermission());
-    if (Platform.OS === 'android') await canNotify(true);
+    await canNotify(true);
     if (ok) await activeTrip.start(model.itinerary, model.to.name);
     else showToast(S.detail.needLocation);
   };
