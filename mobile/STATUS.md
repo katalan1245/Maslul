@@ -66,6 +66,8 @@ Fixed after round 4 (passed in round 5 except where said):
 
 - **Round 5** (10 Oct, Shabbat, build fa6a20b): 10 pass, 3 fail, 1 couldn't test. All four round-4 fixes passed: a trip started again three times in a row, no alert left after End, "Train from …", the chip row. The Hebrew results are above. ride_within stopped at the place search (finding above), so the ride-search timeout fix is still unchecked.
 
+- **Round 6** (10–11 Oct, joint round on `feature/upstream-1.2.1`, build 01b1f51; report in `/share/maslul-test/archive/round6/`): the full pass with the upstream port. 15 findings, all handled on 11 Oct (see `HANDOVER.md`, "Round 7"); #3 (no "Last today" when night buses keep running) is a known limitation. Round 7 re-tests them (section F) with the new features (section W).
+
 ## Verified on iOS
 
 **Round 1** (10 Oct, Shabbat, build 6fdd280, iPhone 17 Pro simulator, iOS 26.0, Xcode 27.0; report `/share/maslul-ios-test/ios-report.md`): 12 pass, 3 fail, 1 couldn't test (VoiceOver). The Swift module builds (Xcode 26.4+ needed) and the live-bus feed decodes: buses moved on line 24 after Shabbat. A trip in the background gave "Get off" alerts, was restored after a kill, and the reminder fired on time.

@@ -21,11 +21,11 @@ Read this first. A fresh session should be able to start from this file alone. T
 - **Licence:** AGPL-3.0. The About credits and the OSM/OpenFreeMap credit must stay.
 - **Upstream:** the original developer's repo is `Tom-stack3/Maslul`. The user's goal is to test everything fully, port upstream's new versions, and eventually offer all of this to the original developer as a PR. That PR **restructures the repo**: the React Native app moves out of `mobile/` to the repo root and the Kotlin `app/` (with its Gradle files) is removed. Until then everything stays in `mobile/`.
 
-## Git state (2026-10-10, evening)
+## Git state (2026-10-11)
 
 | Branch | Fork (`origin`) | What |
 |---|---|---|
-| `feature/upstream-1.2.1` | pushed up to `01b1f51`; 3 doc commits after it are local (`9825073`, `def35e2`, `8a65437`) | **The branch under test.** Everything: the rewrite, its fixes, the upstream 1.1.1–1.2.1 port, the iOS round-1 fixes. 255 tests |
+| `feature/upstream-1.2.1` | pushed up to `01b1f51`; 24 commits after it are local (the Home strip, all Android round-6 fixes, BUGS 1 and 4, features 1, 3, 5, 7, 9, 10, checklists) | **The branch under test.** Everything: the rewrite, its fixes, the upstream 1.1.1–1.2.1 port, the iOS round-1 fixes, round-6 fixes and the first feature requests. 275 tests |
 | `rewrite/react-native` | pushed, `19875c5` | The rewrite and the iOS round-1 fixes, without the upstream port. Fully contained in the branch above |
 | `master` | 3 commits behind the local one | Fast-forwarded to upstream's 1.2.1 (`076af78`), not pushed |
 
@@ -44,7 +44,7 @@ Read this first. A fresh session should be able to start from this file alone. T
   - Set them through the `GIT_AUTHOR_*` / `GIT_COMMITTER_*` env vars, never through git config. Never use any other email.
 - **Release signing:** the user signs releases with a private `keystore.properties` that stays out of the repo and out of `/share`.
 - **Container:** don't change the container or the firewall, and don't expose credentials.
-- **Branches:** the user tests both platforms together on `feature/upstream-1.2.1`, so fixes from this round go there. Once the round passes, merge it into `rewrite/react-native` (ask first). New features come after the move to the original repo, each on its own branch.
+- **Branches:** the user tests both platforms together on `feature/upstream-1.2.1`, so fixes go there. Once a round passes, merge it into `rewrite/react-native` (ask first). On 2026-10-11 the user asked to start the feature requests on this branch too, skipping whatever needs them (those are done together).
 - **Code review:** the user decides when one runs. Don't start one on your own.
 - **Agents:** keep fan-out small. Parallel review agents used up the session limit once without reporting anything.
 
@@ -94,6 +94,15 @@ They should also check the wording of `FEATURES.md`.
 - **iOS round-1 fixes, none seen on a device yet** (I14 in `TESTING-ios.md`): Language = System via the native `preferredLanguage` constant; `writingDirection` on all text (`textDirection` in `theme.ts`); the app redrawing when the text size changes (`Fragment key={fontScale}` in `App.tsx`, nav state kept); Photon `lang=default`. Nominatim still follows iOS's Accept-Language (last fallback only).
 - **To discuss with the user — the Markdown files.** Should the working docs (`HANDOVER`, `STATUS`, `UPSTREAM-PORT`, `TESTING*`, `FEATURES`, `scripts/START-HERE.md`) stay in git? Suggested: keep them in the fork for now (the Mac and the testers get them that way), and leave them out of the PR to the original repo: there only the code, the READMEs, `AGENTS.md` and a trimmed `NOTES.md` (e.g. `docs/architecture.md`) go; `FEATURES.md` and `UPSTREAM-PORT.md` become the PR description. The user hasn't decided.
 
+## Round 7 (2026-10-11): what changed and what's waiting
+
+- **Android round 6** (report in `/share/maslul-test/archive/round6/`): all 15 findings handled. #3 ("Last today" missing) is a known limitation, not fixed: the check looks one page ahead and night buses keep running. Fixes: same-name stops (`exactRadius`), details/share match the card (`keepRides`, live legs), the live guide's restart race and last-walk distance, page order, language/text-size keep the screen (`navMemory`, native `currentLanguage`, no reload for same direction), "Train Train", Back on the full map, re-granted location, reminders re-made exact (`rescheduleReminders`), star state and row labels, time wheels instead of the keyboard.
+- **BUGS.md:** 1 (arrive-by with a lift) and 4 (fastest first; Options → "Show first") fixed. 2 (trains don't show) and 3 (routing) need the user's examples.
+- **FEATURE-REQUESTS.md done:** 1 time wheels (`components/wheels.tsx`), 3 repeating shuttles (kept as plain times, shown as runs), 5 lift only to the driver's destination, 7 lift time (row in the ride sheet → time sheet), 9 search (stop codes via Stride + Transitous, near-first, own places first), 10 train-station icons (`Place.mode`). 8 express lines: the fast-lane shuttles 861–864 are ordinary buses in the MOT GTFS, so nothing to add (W7 checks it).
+- **Left for doing together:** 2 design pass (needs the user's eye), 4 trip state (needs real rides), 6 traffic (no free traffic source; TomTom/HERE need an account and key), BUGS 2 and 3 (need examples).
+- **Unverified natively:** the Kotlin/Swift `currentLanguage` (the APK build compiles the Kotlin), the wheels' feel on phones (snap, nested scrolling in the sheet, TalkBack/VoiceOver).
+- **Next:** a new Android round from `TESTING.md` (W and F sections) and iOS from `TESTING-ios.md` (I15); the iOS round-2 report is still to come through the user.
+
 ## Testing state
 
 - **Checks here:** `npx tsc --noEmit` is clean; `npx jest --selectProjects app` passes 255 tests in 37 suites (222 on `rewrite/react-native`). The `live` project calls real services; run it only on purpose.
@@ -126,7 +135,7 @@ Upstream released 1.1.1, 1.2.0 (Simple Maslul) and 1.2.1 (the whole app in Russi
 
 ## Feature requests and ideas
 
-In `FEATURE-REQUESTS.md` (local only, not in git): 1. scrolling time wheels instead of typing (time sheet and shuttle times); 2. a full design pass by a dedicated UI agent; 3. repeating shuttles ("every 30 min, 07:00–19:00"); 4. the trip working out its own state (boarded, missed the bus, off route, walking vs riding); 5. a lift that goes only to the driver's destination; 6. lift times that follow traffic; 7. setting the lift's time; 8. Israel's new express bus lines; 9. place and stop search ranked by more than the name; 10. a train icon for train stations. Plus the older ideas list. Don't start them before the move to the original repo.
+In `FEATURE-REQUESTS.md` (local only, not in git), with each one's status there. Done on 2026-10-11: 1, 3, 5, 7, 8 (nothing needed), 9, 10. Open, to do with the user: 2 design pass, 4 trip state, 6 traffic.
 
 ## Build and environment
 
