@@ -3,7 +3,7 @@
  * driven through the same test ids and texts.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import App from '../src/App';
 import { store } from '../src/state/store';
 import { S } from '../src/i18n';
@@ -187,4 +187,112 @@ it('picks a destination on the map', async () => {
   await waitFor(() => expect(screen.getByTestId('picked_label')).toHaveTextContent('Rothschild 1'));
   await fireEvent.press(screen.getByTestId('choose_location'));
   await screen.findByTestId('routes_list');
+});
+
+it('shows the last routes for the trip when a search fails, and says when all of them have left', async () => {
+  await planToDizengoff();
+  const cards = screen.getAllByTestId('route_card').length;
+  await waitFor(async () => expect(await AsyncStorage.getItem('saved_routes_v1')).not.toBeNull());
+  const plan = fake.plan;
+  fake.plan = async () => {
+    throw new TypeError('Network request failed');
+  };
+  try {
+    await fireEvent.press(screen.getByTestId('refresh_chip'));
+    await screen.findByTestId('saved_routes_banner');
+    expect(screen.getByText(/No new routes, showing the ones saved at \d\d:\d\d/)).toBeTruthy();
+    expect(await screen.findAllByTestId('route_card')).toHaveLength(cards);
+    // The saved buses have left: say so instead of showing them.
+    const later = Date.now() + 3600_000;
+    jest.spyOn(Date, 'now').mockReturnValue(later);
+    await fireEvent.press(screen.getByTestId('refresh_chip'));
+    await screen.findByText(/The routes saved at .* have all left\./);
+    expect(screen.queryByTestId('saved_routes_banner')).toBeNull();
+  } finally {
+    fake.plan = plan;
+    jest.restoreAllMocks();
+  }
+});
+
+it('says how many stops away a live bus is on the stop screen, but not for an old position or a far-off count', async () => {
+  const board = fake.stopBoard;
+  const row = (trip: string, line: string, stopsAway: number, ageSec: number) => {
+    const t = Math.floor(Date.now() / 1000);
+    const stop = { stopId: 'il-Israel-MOT_21437', name: 'Arlozorov/Ibn Gabirol', code: null, lat: 32.0866, lon: 34.7818, scheduledArrival: t + 300, scheduledDeparture: t + 300 };
+    const vehicle = { lineRef: '1', journeyRef: null, originDeparture: t - 600, lat: 32.08, lon: 34.78, bearing: null, velocityKmh: null, recordedAt: t - ageSec, distanceFromStart: null, nextStopCode: null, vehicleRef: trip };
+    return {
+      departure: { tripId: trip, routeId: null, mode: 'BUS' as const, lineLabel: line, headsign: `To ${line}`, agency: 'Dan', routeColor: null, scheduled: t + 300, stop },
+      live: { status: 'LIVE' as const, scheduled: t + 300, expected: t + 240, delaySec: -60, stopsAway, vehicle, alightExpected: null, progress: null },
+    };
+  };
+  fake.stopBoard = async () => [row('a', '5', 3, 10), row('b', '61', 45, 10), row('c', '72', 2, 900)] as never;
+  try {
+    await start();
+    await fireEvent.press(screen.getByTestId('tab_stations'));
+    await fireEvent.press(await screen.findByText('Arlozorov/Ibn Gabirol'));
+    await screen.findByTestId('stop_screen');
+    expect(await screen.findByText('3 stops away')).toBeTruthy();
+    // 45 stops is a bus still far off, and a 15-minute-old position counts nothing: those keep their usual labels.
+    expect(screen.queryByText('45 stops away')).toBeNull();
+    expect(screen.queryByText('2 stops away')).toBeNull();
+    expect(screen.getByText('live')).toBeTruthy();
+  } finally {
+    fake.stopBoard = board;
+  }
+});
+
+it('shows the next departures at a starred stop on Home, and opens the stop from there', async () => {
+  await start();
+  expect(screen.queryByTestId('home_stop')).toBeNull();
+  await fireEvent.press(screen.getByTestId('tab_stations'));
+  await fireEvent.press(await screen.findByText('Arlozorov/Ibn Gabirol'));
+  await fireEvent.press(await screen.findByTestId('favorite_stop'));
+  await fireEvent.press(screen.getByLabelText('Back'));
+  await fireEvent.press(screen.getByTestId('tab_navigate'));
+  const home = await screen.findByTestId('home_stop');
+  await waitFor(() => expect(within(home).getByTestId('board_row')).toHaveTextContent(/Bat Yam/));
+  await fireEvent.press(within(home).getByText('Arlozorov/Ibn Gabirol'));
+  await screen.findByTestId('stop_screen');
+});
+
+it('marks the last bus of the night, found on the next page, and says so when it is close', async () => {
+  const { zoned } = require('../src/data/time') as typeof import('../src/data/time');
+  const { makeLeg } = require('../src/data/models') as typeof import('../src/data/models');
+  const { call, itinOf } = require('./helpers') as typeof import('./helpers');
+  const route = (id: string, t: number) => {
+    const a = call('s1', 'Arlozorov/Ibn Gabirol', 32.0866, 34.7818, t, t);
+    const b = call('s2', 'Dizengoff Center', 32.0756, 34.775, t + 600, t + 600);
+    return itinOf(id, makeLeg({ mode: 'WALK', from: call(null, 'Start', 32.0853, 34.7818), to: a, start: t - 240, end: t }), makeLeg({ mode: 'BUS', from: a, to: b, start: t, end: t + 600, routeShortName: '5', tripId: `trip-${id}` }));
+  };
+  const night = zoned('2026-10-08', 23); // a Thursday
+  jest.spyOn(Date, 'now').mockReturnValue(night * 1000);
+  const plan = fake.plan;
+  fake.plan = async (req: unknown) => {
+    fake.planCalls.push(req);
+    return (req as { pageCursor?: string }).pageCursor === 'next'
+      ? { itineraries: [route('morning', zoned('2026-10-09', 5, 30))], walkOnly: null, nextCursor: null, previousCursor: null }
+      : { itineraries: [route('a', night + 1200), route('b', night + 2400)], walkOnly: null, nextCursor: 'next', previousCursor: null };
+  };
+  try {
+    await planToDizengoff();
+    await screen.findByTestId('last_bus_banner');
+    expect(screen.getByText('The last one today leaves at 23:40 from Arlozorov/Ibn Gabirol')).toBeTruthy();
+    expect(screen.getAllByText('Last today')).toHaveLength(1);
+    expect(fake.planCalls.filter((r) => (r as { pageCursor?: string }).pageCursor === 'next')).toHaveLength(1);
+  } finally {
+    fake.plan = plan;
+    jest.restoreAllMocks();
+  }
+});
+
+it('looks for no last bus in the daytime', async () => {
+  const { zoned } = require('../src/data/time') as typeof import('../src/data/time');
+  jest.spyOn(Date, 'now').mockReturnValue(zoned('2026-10-08', 10) * 1000);
+  try {
+    await planToDizengoff();
+    expect(screen.queryByText('Last today')).toBeNull();
+    expect(screen.queryByTestId('last_bus_banner')).toBeNull();
+  } finally {
+    jest.restoreAllMocks();
+  }
 });

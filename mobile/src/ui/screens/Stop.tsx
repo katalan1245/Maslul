@@ -1,4 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { S } from '../../i18n';
@@ -7,14 +8,18 @@ import { callFreshness, callRecordedAt } from '../../data/freshness';
 import { type Place, platformLabel, placePoint } from '../../data/models';
 import type { Instant } from '../../data/time';
 import type { BoardEntry } from '../../data/transitRepository';
-import { useLastLocation } from '../../state/location';
+import { WALK_SPEEDS } from '../../data/userStore';
+import { canNotify } from '../../live/notifications';
+import { location, useLastLocation } from '../../state/location';
 import { repo } from '../../state/services';
 import { store, useUserData } from '../../state/store';
-import { Fmt } from '../fmt';
+import { Fmt, modeName } from '../fmt';
 import { Hairline, IconButton, LineBadge, LoadingBox, MessageBox, ProgressBar, Txt } from '../components/common';
 import { FAVORITE_GOLD } from '../components/favorites';
 import { Icon } from '../components/icons';
 import { ArrivalTime, useNow } from '../components/live';
+import { Menu } from '../components/overlays';
+import { ExactAlarmDialog, setReminder, stopReminderAt } from '../components/reminders';
 import { TransitMap } from '../map/TransitMap';
 import { Model, useModel } from '../model';
 import { CURRENT_LOCATION, type RootStack, nav } from '../nav';
@@ -52,17 +57,54 @@ class StopModel extends Model {
     this.changed();
   };
 
+  /** After a reminder was set without "Alarms & reminders": offer to allow it. */
+  askExactAlarm = false;
+
+  async remind(e: BoardEntry) {
+    if (await remindToLeave(e, this.place)) {
+      this.askExactAlarm = true;
+      this.changed();
+    }
+  }
+
+  closeExactAlarm = () => {
+    this.askExactAlarm = false;
+    this.changed();
+  };
+
   /** Opens the trip; with [focusVehicle] its map zooms to the live vehicle and follows it. */
   open = (e: BoardEntry, focusVehicle = false) => nav.push('Trip', { tripId: e.departure.tripId, boardStopId: this.place.stopId, focusVehicle });
 }
 
 /** Departures grouped per line+direction, next few times each. */
-interface BoardGroup {
+export interface BoardGroup {
   key: string;
   entries: BoardEntry[];
 }
 
-const entryTime = (e: BoardEntry) => (e.live ? bestTime(e.live) : e.departure.scheduled);
+/** A reminder to leave for [e] at [stop], the walk there from the last location included; true to offer exact alarms. */
+export async function remindToLeave(e: BoardEntry, stop: Place): Promise<boolean> {
+  await canNotify(true);
+  const settings = store.value.settings;
+  const departs = entryTime(e);
+  const { leaveAt, at } = stopReminderAt(departs, placePoint(stop), location.last, WALK_SPEEDS[settings.walkSpeed].mps, settings.reminderMinutes);
+  const d = e.departure;
+  const text = S.detail.reminder(Fmt.time(leaveAt), `${modeName(d.mode)} ${d.lineLabel}`, stop.name, Fmt.time(departs));
+  return setReminder(at, S.detail.reminderTitle(stop.name), text);
+}
+
+export const entryTime = (e: BoardEntry) => (e.live ? bestTime(e.live) : e.departure.scheduled);
+
+export function boardGroups(entries: BoardEntry[]): BoardGroup[] {
+  const groups: BoardGroup[] = [];
+  for (const e of entries) {
+    const key = `${e.departure.routeId}|${e.departure.headsign}`;
+    const g = groups.find((x) => x.key === key);
+    if (g) g.entries.push(e);
+    else groups.push({ key, entries: [e] });
+  }
+  return groups.sort((a, b) => entryTime(a.entries[0]) - entryTime(b.entries[0]));
+}
 
 export function StopScreen({ route }: NativeStackScreenProps<RootStack, 'Stop'>) {
   const t = useTheme();
@@ -73,14 +115,8 @@ export function StopScreen({ route }: NativeStackScreenProps<RootStack, 'Stop'>)
   const now = useNow(10_000);
   const place = model.place;
   const fav = data.favoriteStops.some((s) => s.stopId === place.stopId);
-  const groups: BoardGroup[] = [];
-  for (const e of model.entries) {
-    const key = `${e.departure.routeId}|${e.departure.headsign}`;
-    const g = groups.find((x) => x.key === key);
-    if (g) g.entries.push(e);
-    else groups.push({ key, entries: [e] });
-  }
-  groups.sort((a, b) => entryTime(a.entries[0]) - entryTime(b.entries[0]));
+  const [menuFor, setMenuFor] = useState<BoardEntry | null>(null);
+  const groups = boardGroups(model.entries);
 
   return (
     <View style={{ flex: 1, backgroundColor: t.c.background }} testID="stop_screen">
@@ -125,7 +161,13 @@ export function StopScreen({ route }: NativeStackScreenProps<RootStack, 'Stop'>)
           keyExtractor={(g) => g.key}
           renderItem={({ item }) => (
             <>
-              <BoardRow group={item} now={now} onTimePress={() => model.open(item.entries[0], true)} onPress={() => model.open(item.entries[0])} />
+              <BoardRow
+                group={item}
+                now={now}
+                onTimePress={() => model.open(item.entries[0], true)}
+                onPress={() => model.open(item.entries[0])}
+                onLongPress={() => setMenuFor(item.entries[0])}
+              />
               <Hairline start={20} />
             </>
           )}
@@ -144,11 +186,29 @@ export function StopScreen({ route }: NativeStackScreenProps<RootStack, 'Stop'>)
           {S.stopBoard.directions}
         </Txt>
       </Pressable>
+      <Menu
+        visible={menuFor != null}
+        onDismiss={() => setMenuFor(null)}
+        items={[{ text: S.stopBoard.remindLeave, icon: 'alarm-add', onPress: () => menuFor && void model.remind(menuFor), testID: 'remind_leave' }]}
+      />
+      <ExactAlarmDialog visible={model.askExactAlarm} onClose={model.closeExactAlarm} />
     </View>
   );
 }
 
-function BoardRow({ group, now, onTimePress, onPress }: { group: BoardGroup; now: Instant; onTimePress: () => void; onPress: () => void }) {
+export function BoardRow({
+  group,
+  now,
+  onTimePress,
+  onPress,
+  onLongPress,
+}: {
+  group: BoardGroup;
+  now: Instant;
+  onTimePress: () => void;
+  onPress: () => void;
+  onLongPress?: () => void;
+}) {
   const t = useTheme();
   const first = group.entries[0];
   const d = first.departure;
@@ -162,11 +222,19 @@ function BoardRow({ group, now, onTimePress, onPress }: { group: BoardGroup; now
   let sub: string;
   if (live?.status === 'LIVE') {
     const rec = callRecordedAt(live);
-    sub = freshness === 'STALE' && rec != null ? Fmt.ago(rec, now).toLowerCase() : S.stopBoard.live;
+    const away = live.stopsAway != null && live.stopsAway >= 1 && live.stopsAway <= 40 ? live.stopsAway : null;
+    sub = freshness === 'STALE' && rec != null ? Fmt.ago(rec, now).toLowerCase() : away != null ? S.cards.stopsAway(away) : S.stopBoard.live;
   } else if (live?.status === 'UNTRACKED') sub = S.stopBoard.noLiveData;
   else sub = time - now < 3600 ? Fmt.time(time) : S.stopBoard.scheduled;
   return (
-    <Pressable onPress={onPress} style={styles.row} accessibilityRole="button" testID="board_row">
+    <Pressable
+      onPress={onPress}
+      onLongPress={onLongPress}
+      accessibilityHint={onLongPress ? S.stopBoard.remindHint : undefined}
+      style={styles.row}
+      accessibilityRole="button"
+      testID="board_row"
+    >
       <View style={{ minWidth: 64 }}>
         <LineBadge label={d.lineLabel} mode={d.mode} color={lineColorOf(d.mode, d.routeColor, d.agencyId, d.agency)} />
       </View>

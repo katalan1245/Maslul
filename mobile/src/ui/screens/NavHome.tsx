@@ -16,6 +16,7 @@ import { MapSheet } from '../components/MapSheet';
 import { TransitMap, useMapController } from '../map/TransitMap';
 import { CURRENT_LOCATION, nav } from '../nav';
 import { useTheme } from '../theme';
+import { FavoriteStops } from './favoriteStops';
 
 export function planTo(to: Place, from: Place = CURRENT_LOCATION) {
   store.addRecent(to);
@@ -163,7 +164,7 @@ export function NavHomeScreen() {
         )}
         testID="home_sheet"
       >
-        <HomePlaces data={data} onEdit={(p) => setDraft(draftFor(p))} onAddFavorite={addFavorite} />
+        <HomePlaces data={data} here={user} onEdit={(p) => setDraft(draftFor(p))} onAddFavorite={addFavorite} />
       </MapSheet>
       <FavoriteDialogHost draft={draft} onClose={() => setDraft(null)} />
     </View>
@@ -236,7 +237,7 @@ function SmallFab({ icon, label, onPress, color, testID }: { icon: IconName; lab
   );
 }
 
-function HomePlaces({ data, onEdit, onAddFavorite }: { data: UserData; onEdit: (p: Place) => void; onAddFavorite: () => void }) {
+function HomePlaces({ data, here, onEdit, onAddFavorite }: { data: UserData; here: GeoPoint | null; onEdit: (p: Place) => void; onAddFavorite: () => void }) {
   const t = useTheme();
   return (
     <View>
@@ -279,6 +280,7 @@ function HomePlaces({ data, onEdit, onAddFavorite }: { data: UserData; onEdit: (
           </Txt>
         </Pressable>
       </ScrollView>
+      <FavoriteStops favorites={data.favoriteStops} here={here} />
       {data.savedTrips.length > 0 && (
         <>
           <SectionHeader text={S.home.savedTrips} />

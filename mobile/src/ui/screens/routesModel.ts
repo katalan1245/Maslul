@@ -17,6 +17,7 @@ import {
   transitLegs,
 } from '../../data/models';
 import { HttpException } from '../../data/http';
+import { lastTonight, lateSearch, nightEnd } from '../../data/lastBus';
 import type { OnBoardStart } from '../../data/onBoard';
 import { Ranking, type Transfer } from '../../data/ranking';
 import type { RideOffer } from '../../data/rides';
@@ -28,7 +29,9 @@ import type { PlanRequest } from '../../data/transitousApi';
 import { DEFAULT_SETTINGS, type Settings, WALK_SPEEDS } from '../../data/userStore';
 import { location } from '../../state/location';
 import { repo } from '../../state/services';
+import { SavedRoutes } from '../../state/savedRoutes';
 import { store } from '../../state/store';
+import { Fmt } from '../fmt';
 import { Model } from '../model';
 import { type SearchField, nav } from '../nav';
 
@@ -59,6 +62,10 @@ export class RoutesModel extends Model {
   ride: RideOffer | null = null;
   /** Whether there are earlier / later results to page to. */
   canPage = false;
+  /** Showing routes saved by an earlier search, because this one failed: when they were saved. */
+  savedAt: Instant | null = null;
+  /** Late at night, when the routes show the service ending: the route with the last departure, and that ride. */
+  last: { itinId: string; ride: Leg } | null = null;
 
   private nextCursor: string | null = null;
   private prevCursor: string | null = null;
@@ -190,6 +197,25 @@ export class RoutesModel extends Model {
   /** The next ride if [t]'s connection is missed, if one is known. */
   nextIfMissed = (t: Transfer): Leg | null => Combine.ridesAfter(t.next, this.after.get(rideKey(t.next)) ?? [], 1)[0] ?? null;
 
+  private savedQuery() {
+    return { from: this.fromPoint!, to: this.toPoint!, fromHere: this.from.kind === 'CURRENT_LOCATION' };
+  }
+
+  /** Looks for tonight's last departure: in the routes found, else on the planner's next page (one more call). */
+  private async findLast(gen: number) {
+    const at = this.timeMode === 'NOW' || this.time == null ? nowSec() : this.time;
+    if (this.timeMode === 'ARRIVE' || this.ride != null || this.onBoardTripId != null || !lateSearch(at)) return;
+    const end = nightEnd(at);
+    let last = lastTonight(this.itineraries, [], end);
+    if (last == null && this.nextCursor != null) {
+      const page = await repo.plan(this.request(this.nextCursor)!).catch(() => null);
+      if (gen !== this.gen || this.disposed || page == null) return;
+      last = lastTonight(this.itineraries, page.itineraries, end);
+    }
+    this.last = last && { itinId: last.itin.id, ride: last.ride };
+    this.changed();
+  }
+
   private async resolve(p: Place): Promise<GeoPoint | null> {
     if (p.kind !== 'CURRENT_LOCATION') return placePoint(p);
     return (await location.current().catch(() => null)) ?? location.last;
@@ -235,7 +261,8 @@ export class RoutesModel extends Model {
   search() {
     // Same trip, leaving now: a bus you could still run for shouldn't vanish on refresh.
     const same = placeKey(this.from) === this.searchedFrom && placeKey(this.to) === this.searchedTo;
-    const keep = same ? this.stillCatchable(nowSec()) : [];
+    // Saved routes shown after a failure aren't kept: the fresh search replaces them.
+    const keep = same && this.savedAt == null ? this.stillCatchable(nowSec()) : [];
     const keptLive = keep
       .map((i) => firstTransit(i))
       .filter((l): l is Leg => l != null)
@@ -262,6 +289,8 @@ export class RoutesModel extends Model {
     this.rideLive.clear();
     this.searchedAt = nowSec();
     this.canPage = false;
+    this.savedAt = null;
+    this.last = null;
     this.boardStart = null;
     this.changed();
     const boardTrip = this.onBoardTripId;
@@ -297,6 +326,10 @@ export class RoutesModel extends Model {
       this.prevCursor = r.previousCursor;
       this.canPage = this.nextCursor != null || this.prevCursor != null;
       if (found.length === 0 && this.walkOnly == null) this.error = S.routes.noneFound;
+      else {
+        if (boardTrip == null && this.ride == null && this.itineraries.length > 0) void SavedRoutes.save(this.savedQuery(), this.itineraries, nowSec());
+        void this.findLast(gen);
+      }
     } catch (e) {
       if (stale()) return;
       // Said apart, so a failure reported from a device names its cause.
@@ -311,6 +344,19 @@ export class RoutesModel extends Model {
               : e instanceof TypeError && /network/i.test(e.message)
                 ? S.routes.loadFailed
                 : S.routes.showFailed(String((e as Error)?.message ?? e));
+      if (boardTrip == null && this.ride == null) {
+        const saved = await SavedRoutes.load(this.savedQuery());
+        if (stale()) return;
+        if (saved != null) {
+          const now = nowSec();
+          const routes = SavedRoutes.stillAhead(saved.routes, now);
+          if (routes.length > 0) {
+            this.raw = routes;
+            this.itineraries = routes;
+            this.savedAt = saved.savedAt;
+          } else this.error += `\n${S.routes.savedAllLeft(Fmt.when(saved.savedAt, now))}`;
+        }
+      }
     }
     this.loading = false;
     this.changed();
