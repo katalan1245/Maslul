@@ -60,15 +60,8 @@ class StopModel extends Model {
   /** After a reminder was set without "Alarms & reminders": offer to allow it. */
   askExactAlarm = false;
 
-  /** A reminder to leave for [e], the walk here from the last location included. */
   async remind(e: BoardEntry) {
-    await canNotify(true);
-    const settings = store.value.settings;
-    const departs = entryTime(e);
-    const { leaveAt, at } = stopReminderAt(departs, placePoint(this.place), location.last, WALK_SPEEDS[settings.walkSpeed].mps, settings.reminderMinutes);
-    const d = e.departure;
-    const text = S.detail.reminder(Fmt.time(leaveAt), `${modeName(d.mode)} ${d.lineLabel}`, this.place.name, Fmt.time(departs));
-    if (await setReminder(at, S.detail.reminderTitle(this.place.name), text)) {
+    if (await remindToLeave(e, this.place)) {
       this.askExactAlarm = true;
       this.changed();
     }
@@ -87,6 +80,17 @@ class StopModel extends Model {
 export interface BoardGroup {
   key: string;
   entries: BoardEntry[];
+}
+
+/** A reminder to leave for [e] at [stop], the walk there from the last location included; true to offer exact alarms. */
+export async function remindToLeave(e: BoardEntry, stop: Place): Promise<boolean> {
+  await canNotify(true);
+  const settings = store.value.settings;
+  const departs = entryTime(e);
+  const { leaveAt, at } = stopReminderAt(departs, placePoint(stop), location.last, WALK_SPEEDS[settings.walkSpeed].mps, settings.reminderMinutes);
+  const d = e.departure;
+  const text = S.detail.reminder(Fmt.time(leaveAt), `${modeName(d.mode)} ${d.lineLabel}`, stop.name, Fmt.time(departs));
+  return setReminder(at, S.detail.reminderTitle(stop.name), text);
 }
 
 export const entryTime = (e: BoardEntry) => (e.live ? bestTime(e.live) : e.departure.scheduled);

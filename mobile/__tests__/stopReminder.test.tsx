@@ -52,3 +52,24 @@ it("sets no reminder for a bus that's too soon", async () => {
   await screen.findByText('That departure is too soon for a reminder');
   expect(schedule).not.toHaveBeenCalled();
 });
+
+it("sets a reminder from a starred stop's departure on Home", async () => {
+  const { act, within } = require('@testing-library/react-native') as typeof import('@testing-library/react-native');
+  const { store } = require('../src/state/store') as typeof import('../src/state/store');
+  const { STOP } = require('./support/fakeRepo') as typeof import('./support/fakeRepo');
+  schedule.mockClear();
+  const board = fake.stopBoard;
+  fake.stopBoard = async () => (await board()).map((e) => ({ ...e, departure: { ...e.departure, scheduled: e.departure.scheduled + 3300 } }));
+  try {
+    await render(<App />);
+    await act(() => store.toggleFavoriteStop(STOP));
+    const home = await screen.findByTestId('home_stop');
+    await fireEvent(await within(home).findByTestId('board_row'), 'longPress');
+    await fireEvent.press(await screen.findByTestId('remind_leave'));
+    await waitFor(() => expect(schedule).toHaveBeenCalledTimes(1));
+    expect(schedule.mock.calls[0][0].content.title).toBe('Time to go to Arlozorov/Ibn Gabirol');
+  } finally {
+    fake.stopBoard = board;
+    await act(() => store.toggleFavoriteStop(STOP));
+  }
+});
