@@ -1,6 +1,6 @@
 # Maslul: iOS test
 
-The first iOS build of the React Native rewrite, with Hebrew. Nothing iOS-specific has been compiled or run before this, so the build itself is the first check. The goal is to **find and report problems, not fix them**; fixes are made in the main checkout and come back through git.
+A full test of the React Native rewrite on iOS, with Hebrew and the five new features (I11). Pull first: `rewrite/react-native` was updated on 2026-10-10. The build itself is the first check. The goal is to **find and report problems, not fix them**; fixes are made in the main checkout and come back through git.
 
 ## Build on the Mac
 
@@ -61,6 +61,15 @@ Screenshot each check (`⌘S` in the Simulator) and name it after the check, e.g
 **I9. Language = System.** App on Language → System. Set the simulator to Hebrew (Settings → General → Language & Region, add עברית as primary; the simulator restarts) and open Maslul: Hebrew, right to left. Also check: iOS Settings → Maslul → Language offers English and עברית. Delete and reinstall the app while the phone is in Hebrew: the location prompt is in Hebrew. Set the phone back to English: Maslul is English again.
 
 **I10. Look and feel.** Notch and home indicator: nothing hidden under them on any screen. Dark mode (Settings → Developer → Dark Appearance, or Control Center) with the app on System theme: colours follow. Larger text (Settings → Accessibility → Display & Text Size → Larger Text): nothing cut off badly. Optional: VoiceOver on Home, buttons read sensible names.
+
+**I11. New features.**
+1. *Favourite stops on Home:* star a stop (Stations → a stop → the star). Home's sheet shows "Favorite stops" with it, its distance and up to 3 lines; tapping the name opens the stop. Unstar it: the section goes.
+2. *Reminder from a stop:* long-press a departure at least 30 minutes away (on a stop screen, and under a starred stop on Home) → "Remind me to leave": a toast, and the notification arrives at the time it said.
+3. *Last routes offline:* plan a trip, turn on Airplane Mode (on a real iPhone; the simulator uses the Mac's network), tap refresh: the same routes under "No new routes, showing the ones saved at HH:MM". Airplane Mode off → Try again: fresh routes, no banner.
+4. *Last bus:* time sheet → Depart at 23:30 on the next Sunday–Thursday: if the list reaches into tomorrow morning, one card is tagged "Last today".
+5. *Stops away* (weekday daytime): a stop screen with live times shows "N stops away"; during a trip the waiting step says "· N stops away".
+
+**I12. Fixes from the last look.** In the search fields (From/To) the typed text and the placeholder sit vertically centred, level with the dot and the ✕, in English and in Hebrew. The same in the line search, the time sheet's hour and minute, the favourite name and the shuttle fields. With the Home map full screen, the "Places" button sits on the same row as the two square buttons.
 
 ## Report
 

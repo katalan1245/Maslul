@@ -23,7 +23,7 @@ Both APKs are signed with the same key, so the new one installs over the old one
 - Don't modify, rebuild or re-sign the APKs, and don't push anything anywhere.
 - Take a screenshot at every check, named after the check (e.g. `B3-route-header.png`), and keep it in `evidence/`.
 - A failure is a finding: record it and go on. Don't stop at the first failure.
-- A missing file or tool only blocks the checks that need it. Only B4 needs `maestro/`; this round no check needs `maslul-kotlin-v4.apk`. Mark those **couldn't test** and do every other check. Never end the run because one thing is missing.
+- A missing file or tool only blocks the checks that need it. Only M1 needs `maestro/`, and only U1–U3 need `maslul-kotlin-v4.apk`. Mark those **couldn't test** and do every other check. Never end the run because one thing is missing.
 - If a check is impossible, mark it **couldn't test** with the exact reason. Never skip silently.
 - Keep what you **saw** separate from what you **guess** about the cause.
 - The emulator was unstable last round: the launcher restarted, Play services crashed, and Android soft-restarted. If something odd happens right after one of those, repeat the check once before you report it, and say in the report whether it happened again.
@@ -63,42 +63,77 @@ Use `adb` from a shell if you have one. If a command isn't available to you, mar
 11. "Get off at the next stop" posts a heads-up alert, as "Get off now" does. The old app did the same.
 12. The walking figure is mirrored in Hebrew: in English it reaches to the right, in Hebrew to the left. Compare with an English screenshot before reporting it.
 
-## Already passed: no need to repeat
+## What to test: a full pass over the whole app
 
-- Everything that passed in rounds 1–5: the upgrade from the old app, tabs, Back, settings, planning, line 480, the trip notification and "End trip", trips with the screen locked and after Recents, arrival sticking, Share, shuttles, About credits, dark theme and dark map labels, the map attribution on Home, times far away carrying their day, exact reminders, shuttle reminder text, the map after switching tabs (4 GB), line search on a weekend, ride within 15 min by hand, the trip guide on a simulated ride, starting a trip again, no alert left after End, the chip row, and in Hebrew: switching language both ways, every screen, map labels, a trip, the reminder toast and Share.
+This round is a **complete re-test before release**: every area, from scratch, even what passed in rounds 1–6. It also covers five new features (marked *new*). Do the sections in this order. Use 4 GB RAM. Screenshot every check; a layout finding needs its screenshot. Unless a check says otherwise, the app and the emulator are in English. If it's Shabbat or night, mark the checks that need running buses **couldn't test (Shabbat)**; don't count them as failures.
 
-## What to test now, in this order
+### U. Upgrade from the old app (most important; do it first)
 
-Round 7 does two things: it re-tests what was fixed after round 5 (B1–B5, which were round 6, never run), and it tests five new features (C1–C5). This build has **native changes**, so install it fresh over the old one: `adb install -r maslul-latest.apk`. Use 4 GB RAM. Screenshot every check; a layout finding needs its screenshot. Start with the app in English (Settings → Language → English) and the emulator in English. If it's Shabbat or night, mark the checks that need running buses **couldn't test (Shabbat)**.
+**U1.** `adb uninstall com.maslul.app`, then `adb install maslul-kotlin-v4.apk`. Open it, grant location and notifications, and enter (write down exactly what you entered): Home and Work (two addresses), two favourite places, a favourite line (Lines tab) and a favourite stop (Stations tab), a shuttle (Settings → My shuttles), dark theme, a changed walking speed and rail preference (Route options), and both Advanced switches on.
+**U2.** `adb shell am force-stop com.maslul.app`, then `adb install -r maslul-latest.apk`: it installs **without uninstalling** (quote any error). Open it: every item from U1 is there (one screenshot each). The favourite stop also shows on Home under "Favorite stops" (*new*).
+**U3.** Kill and reopen: still all there. Set the theme back to light, kill, reopen: it stays light.
 
-**B1. Place search in English** (was finding 1). App in English. Where to? → type `ויצמן 5`, then ` כ`: a "…כפר סבא" result comes to the top. Clear it and type `haifa center`: "Haifa Center HaShemona" is listed. Then switch to עברית and do the same: the same places, at the top.
+### N. Basics and the map
 
-**B2. Language = System on a Hebrew phone** (was finding 2). App on Language → System. Set the emulator to Hebrew (Settings → System → Languages, עברית first) and reopen Maslul: Hebrew and right to left after one reload. Set the emulator back to English and reopen: English and left to right after one reload.
+**N1.** Tabs (Navigate, Lines, Stations) switch; Android Back goes back one screen and leaves the app from a tab. No crash on any screen (dump the crash log after each section, as in Tools).
+**N2.** Map: streets and labels draw; rotate with two fingers: a compass appears, tapping it turns north up. Lines tab for 10 s, back to Navigate: the tiles show again within a few seconds (give the time).
+**N3.** Full-screen map (the button at the bottom right): the (i) at the bottom left is fully visible and opens the OpenStreetMap/OpenFreeMap credit. A "Places" button sits on the **same row** as the two square buttons, at the same height, not floating above them (*new*); with Settings → "Already on a bus" on, "On a bus?" shares the row and nothing overlaps or is cut off. Tap Places: the sheet comes back. Dragging the sheet down does the same.
+**N4.** Dark theme: look over every screen for unreadable text or wrong colours; map labels are bright and readable. Back to light.
+**N5.** Settings → About: the credits list GNU AGPL v3, Transitous, Open Bus, Stride, Photon, Nominatim, OpenFreeMap and © OpenStreetMap contributors.
 
-**B3. Hebrew details** (was findings 3, 5, 6, 7, 10), app in עברית:
-1. Reset the exact-alarm grant (`adb shell appops set com.maslul.app SCHEDULE_EXACT_ALARM default` and `adb shell appops set --uid com.maslul.app SCHEDULE_EXACT_ALARM default`), open a route → תזכורת: the dialog is laid out right to left, its buttons too. אישור opens Android's "Alarms & reminders" page; לא עכשיו closes it and the reminder stays set.
-2. A route's details: the time range at the top is on one line.
-3. Start a trip, then the app's notification settings: the live-directions channel has a Hebrew name, and there's no second, unused live-directions channel (`adb shell dumpsys notification | grep -i -A2 com.maslul.app` too).
-4. The element tree of Home and of a route's details (`uiautomator dump`): no "Bottom Sheet" labels; the Share button is labelled שיתוף נסיעה; Home's buttons are `quick_home` / `quick_work`.
-5. A route with a train (as A3 last round): the train leg in the details no longer says "to 114"; it says רכבת (or "Train" in English).
+### P. Planning a trip
 
-**B4. Automated flows (Maestro)**, app and emulator in English. Stop mobile-mcp's agent (`adb shell pkill -f com.mobilenext`), put the location in Tel Aviv (`adb emu geo fix 34.7818 32.0853`), then `maestro --device emulator-5554 test maestro/ --format junit --output maestro-report.xml`. All 11 should pass. ride_within now reaches the ride search for the first time since round 4's fix (the search used to time out after 30 s): if it fails, quote the message and save `adb logcat -d -t 3000 ReactNativeJS:V '*:S'`.
+**P1.** Where to? → type `ויצמן 5`, then ` כ`: a "…כפר סבא" result comes to the top. Clear it and type `haifa center`: "Haifa Center HaShemona" is listed. Pick Dizengoff Center: routes are listed with times, line chips and "leave in".
+**P2.** Options: closing it untouched keeps the routes; changing walking speed searches again. Time: Leave now → Depart at a later time → Arrive by: the list updates each time. Routes whose bus is tomorrow carry the day ("Sun 00:49 → 01:04"). The chip row scrolls sideways and Options is reachable.
+**P3.** Open a route: the time range at the top is on one line, the route is on the map, the steps make sense. Share: the text lists the trip (with the day if it's not today); a route with a train says "Train from …", never "Train Train" or "to 114".
+**P4.** Pick on map (in Where to?): drag the map under the pin; the address under it updates; Choose sets it and plans.
+**P5. Last routes offline** (*new*). Plan to Dizengoff Center and wait for the routes. Airplane mode on (`adb shell cmd connectivity airplane-mode enable`), tap the refresh chip: the same routes come back under "No new routes, showing the ones saved at HH:MM", without any whose bus has left. Airplane mode off (`… disable`), tap the banner's Try again: fresh routes, no banner, nothing listed twice.
+**P6. Last bus warning** (*new*). Open the time sheet and choose **Depart at** 23:30 on the next Sunday–Thursday. If the list reaches into tomorrow morning, the latest route before 04:00 has a "Last today" tag (one card only). Choose 10:00 the same day: no tag. On a weekday evening after 22:30, also "Leave now" on a short trip: a banner "The last one today leaves at HH:MM from …" when the last bus is within the hour. No tag is not a failure when the list shows no morning route (the app only claims a last bus it can prove); write down what the list showed.
 
-**B5. Live buses**, only outside Shabbat and night (not seen in any round yet): on a stop screen some times turn green, and on line 1 or 480 bus icons appear on the map within about 30 s and move. A reminder set for a time during the session: its notification text (in the app's language).
+### L. Lines and stops
 
-**C. New features.** App and emulator in English unless a check says otherwise. Ids for `uiautomator dump`: `home_stop`, `board_row`, `remind_leave`, `saved_routes_banner`, `last_bus_banner`, `refresh_chip`, `favorite_stop`.
+**L1.** Lines tab: search `480` and `1`: lines are listed (also on a weekend); open 480: its stops and timetable. Search `zzzz`: "No lines found" with a search icon. Star line 480.
+**L2.** Stations tab: open a stop near you: departures are listed. Star it (the star at the top).
+**L3. Favourite stops on Home** (*new*). Navigate tab: the sheet has a "Favorite stops" section with the starred stop, its distance, and up to 3 lines with their times. Tap the stop's name: its stop screen opens; tap a row: its trip opens. Star two more stops: at most 3 show, nearest first. Airplane mode on, 2 minutes on Home: the rows stay, and the stop's line says "Updated N min ago". Airplane mode off. Unstar all stops: the section disappears.
+**L4. Reminder from a stop** (*new*). On a stop screen, long-press a departure at least 30 minutes away → "Remind me to leave": a toast says the reminder is set. Long-press one leaving in under 10 minutes: "too soon". Do the same from a row under a starred stop on Home. If a reminder's time comes during the session, record its notification text.
+**L5. Stops away** (*new*; needs live buses). On a stop screen with green (live) times, some rows say "N stops away".
 
-**C1. Last routes offline.** Plan a trip to Dizengoff Center and wait for the routes. Turn on airplane mode (`adb shell cmd connectivity airplane-mode enable`), then tap the refresh chip: the same routes come back under a banner "No new routes, showing the ones saved at HH:MM", without any whose bus has already left. Turn airplane mode off (`… airplane-mode disable`) and tap the banner's Try again: fresh routes, no banner, no route listed twice. Repeat the offline part in עברית: the banner is in Hebrew.
+### T. A trip with live directions
 
-**C2. Stops away** (needs live buses, as B5). On a stop screen with green (live) times, some rows say "N stops away". During a trip (Start on a route), the waiting step says "Bus N in X min · N stops away".
+**T1.** Plan to Dizengoff Center, take a bus route, Start (grant notifications). Move the location along the route with `adb emu geo fix` every few seconds. Waiting at the stop: "Walk to <stop>" with "Bus N in M min" (*new*: plus "· N stops away" when the bus is live). On the bus: one stop before the last, "Get off at the next stop"; at the last, "Get off now" with its alert. 150 m off to the side: "Walk to Dizengoff Center · N m to go". At the destination: "You've arrived", and it stays when you move 200 m away.
+**T2.** Lock the screen mid-trip and keep moving the location for a minute: on unlocking, the notification kept updating and the app shows the new position. Swipe Maslul away from Recents, wait 20 s, reopen: the trip and its notification are still there.
+**T3.** End trip: the trip notification and the "Get off now" alert are gone (`adb shell dumpsys notification --noredact | grep -A2 com.maslul.app`). Start the same route again: the guide starts from the beginning. Android's notification settings for Maslul: the live-directions channel has one entry, with a proper name.
 
-**C3. Favourite stops on Home.** Stations tab → Arlozorov/Ibn Gabirol (or any stop near the location) → the star at the top. Back to the Navigate tab: Home's sheet has a "Favorite stops" section with that stop, its distance, and up to 3 lines with their times. Tap the stop's name: its stop screen opens. Star two more stops: at most 3 are shown, nearest first. Turn on airplane mode, wait 2 minutes on Home: the rows stay, and the stop's line says "Updated N min ago". Unstar all stops: the section disappears. Check it in עברית too (right to left, no English).
+### R. Reminders
 
-**C4. Reminder to leave from a stop.** On a stop screen, long-press a departure at least 30 minutes away → "Remind me to leave": a toast says the reminder is set. Long-press one leaving in under 10 minutes: the toast says it's too soon. Do the same from a row under a starred stop on Home. If the reminder's time comes during the session, record its notification text. In עברית, the menu item says תזכירו לי לצאת.
+**R1.** Reset the exact-alarm grant (`adb shell appops set com.maslul.app SCHEDULE_EXACT_ALARM default`). On a route → Remind me: a toast, then "Get reminders on time?". Not now: the reminder is still set. Set another and tap Allow: Android's "Alarms & reminders" page opens; switch it on, go back. With it allowed, no dialog.
+**R2.** A reminder a few minutes ahead arrives on time (`adb shell dumpsys alarm | grep -A3 com.maslul.app` shows it exact), also with the app in the background. A shuttle's reminder says "Leave at … · <shuttle name> from …"; a route starting with a train says "Train from …".
 
-**C5. Last bus warning.** Plan a trip, open the time sheet and choose **Depart at** 23:30 on the next Sunday–Thursday. Results that include tomorrow-morning routes: the latest route before 04:00 has a "Last today" tag (only one card has it). Choose 10:00 the same day: no tag. If the session runs on a weekday evening after 22:30, also plan "Leave now" for a short trip: a banner "The last one today leaves at HH:MM from …" when the last bus is within the hour. No tag or banner is not a failure when the planner doesn't show any morning route (the app only claims a last bus when it can prove it); write down what the list showed.
+### S. Shuttles
 
-**C6. Places button with the map full screen.** On Home, tap the full-screen button (bottom right): a "Places" button appears on the same row as the two square buttons, at the same height, not floating above them. Repeat with Settings → "Already on a bus" on, so "On a bus?" is on the same row: nothing overlaps or gets cut off. Tap Places: the sheet comes back. Screenshot both, in English and in עברית.
+**S1.** Settings → My shuttles → add: Save with nothing filled lists what's missing ("a name, where it leaves from, …"); times like `soon` are refused, `07:30, 17:00` reads "2 departures a day". Fill it in, running Sun–Fri: the list shows "Sun–Fri".
+**S2.** Kill, reopen, tap the shuttle at once (3 times): "Edit shuttle" each time. Edit its name: shown at once. Delete asks first: Cancel keeps it, Delete removes it. Changes survive a kill.
+
+### A. Advanced tools
+
+**A1.** Settings → Advanced: rides on. Plan to Haifa Center HaShemona; ride chip → 15 min → within: routes come back (no 30 s timeout; if it fails, quote the message and save `adb logcat -d -t 3000 ReactNativeJS:V '*:S'`).
+**A2.** "Already on a bus" on: the "On a bus?" button on Home lists the rides around (or "No rides found around you").
+
+### H. Hebrew
+
+**H1.** Settings → Language → עברית: one reload, Hebrew and right to left.
+**H2.** Walk through every screen in Hebrew: Home (with a starred stop and the full-screen map), search, routes and Options, a route's details, a line and its timetable, Stations and a stop (and its long-press menu, תזכירו לי לצאת), Settings, My shuttles and a new shuttle, About. Record any English UI text (names of streets and stops may be English), mirrored layout mistakes, and cut-off text.
+**H3.** Map labels in Hebrew, in the dark theme too. A trip in Hebrew (as T1, briefly): the guide steps and the notification are Hebrew. A reminder: the toast, the exact-alarm dialog (reset the grant first; laid out right to left, its buttons too) and the notification are Hebrew. Share a route: Hebrew text. P5 offline in Hebrew: the banner is Hebrew.
+**H4.** Settings → שפה → English: one reload, left to right. Then Language → System; set the emulator to Hebrew (Settings → System → Languages) and reopen Maslul: Hebrew after one reload. Emulator back to English: English after one reload.
+**H5.** In Hebrew, the place search (P1) finds the same places at the top.
+
+### V. Live buses (weekday daytime only; not seen in any round yet)
+
+**V1.** On a stop screen some times turn green; on line 1 or 480 bus icons appear on the map within about 30 s and move. If no bus ever appears while buses run, say so even without an error on screen.
+
+### M. Automated flows (Maestro)
+
+**M1.** App and emulator in English. Stop mobile-mcp's agent (`adb shell pkill -f com.mobilenext`), location in Tel Aviv (`adb emu geo fix 34.7818 32.0853`), then `maestro --device emulator-5554 test maestro/ --format junit --output maestro-report.xml`. All 11 should pass.
 
 ## Report
 
