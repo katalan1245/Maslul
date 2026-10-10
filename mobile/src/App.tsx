@@ -5,8 +5,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
-import { useEffect, useState } from 'react';
-import { Linking, LogBox, Pressable, StyleSheet, View, useColorScheme } from 'react-native';
+import { Fragment, useEffect, useState } from 'react';
+import { Linking, LogBox, Pressable, StyleSheet, View, useColorScheme, useWindowDimensions } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Place } from './data/models';
@@ -105,6 +105,7 @@ function LiveTripBanner({ routeName }: { routeName: string | undefined }) {
 function Root() {
   const data = useUserData();
   const system = useColorScheme();
+  const { fontScale } = useWindowDimensions();
   const dark = data.settings.theme === 'SYSTEM' ? system === 'dark' : data.settings.theme === 'DARK';
   const theme = dark ? darkTheme : lightTheme;
   const [routeName, setRouteName] = useState<string | undefined>(undefined);
@@ -118,7 +119,14 @@ function Root() {
   return (
     <ThemeContext.Provider value={theme}>
       <StatusBar style={dark ? 'light' : 'dark'} />
-      <NavigationContainer ref={navigationRef} theme={navTheme} onStateChange={() => setRouteName(navigationRef.getCurrentRoute()?.name)}>
+      {/* Screens already drawn keep their old text sizes when the phone's text size changes (seen on
+          iOS: clipped labels), so everything is drawn again, on the same screens. */}
+      <Fragment key={fontScale}>
+      <NavigationContainer
+        ref={navigationRef}
+        initialState={navigationRef.isReady() ? navigationRef.getRootState() : undefined}
+        theme={navTheme}
+        onStateChange={() => setRouteName(navigationRef.getCurrentRoute()?.name)}>
         <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
           <Stack.Screen name="Tabs" component={TabsScreen} />
           <Stack.Screen name="Search" component={SearchScreen} />
@@ -135,6 +143,7 @@ function Root() {
         </Stack.Navigator>
       </NavigationContainer>
       <LiveTripBanner routeName={routeName === 'Navigate' || routeName === 'Lines' || routeName === 'Stations' ? 'Tabs' : routeName} />
+      </Fragment>
       <ToastHost />
     </ThemeContext.Provider>
   );

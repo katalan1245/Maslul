@@ -9,7 +9,7 @@ import {
   type StyleSpecification,
   type ViewStateChangeEvent,
 } from '@maplibre/maplibre-react-native';
-import { type MutableRefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { type ComponentProps, type MutableRefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { Easing, type NativeSyntheticEvent, Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import type { GeoPoint } from '../../data/models';
@@ -198,6 +198,8 @@ export interface TransitMapProps {
   onUserPan?: () => void;
   /** Where the compass (shown once the map is rotated or tilted) sits, clear of the screen's own buttons. */
   compassStyle?: ViewStyle;
+  /** Where the credit button sits; bottom left unless a sheet covers that. */
+  attributionPosition?: ComponentProps<typeof Map>['attributionPosition'];
   testID?: string;
 }
 
@@ -219,6 +221,7 @@ export function TransitMap({
   focusVehicleId,
   onUserPan,
   compassStyle,
+  attributionPosition = { bottom: 8, left: 8 },
   testID,
 }: TransitMapProps) {
   const t = useTheme();
@@ -329,9 +332,9 @@ export function TransitMap({
         mapStyle={mapStyle}
         logo={false}
         compass={false}
-        // The OpenStreetMap / OpenFreeMap credit, as in the Kotlin app: the attribution button, bottom left.
+        // The OpenStreetMap / OpenFreeMap credit, as in the Kotlin app: the attribution button.
         attribution
-        attributionPosition={{ bottom: 8, left: 8 }}
+        attributionPosition={attributionPosition}
         touchRotate
         touchPitch
         onLongPress={(e) => onLongPress?.({ lat: e.nativeEvent.lngLat[1], lon: e.nativeEvent.lngLat[0] })}

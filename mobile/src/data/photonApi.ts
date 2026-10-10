@@ -44,6 +44,9 @@ export class PhotonApi {
       ['bbox', '34.2,29.4,35.95,33.4'],
       ['lat', near?.lat],
       ['lon', near?.lon],
+      // Names as mapped (Hebrew mostly), not in the Accept-Language iOS adds: English names broke
+      // matching a Hebrew town typed after the street.
+      ['lang', 'default'],
     ]);
     const fc = await Http.getJson<{ features?: PhotonFeature[] }>(url);
     return (fc.features ?? []).map(featureToPlace).filter((p): p is Place => p != null);

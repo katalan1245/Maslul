@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { TextStyle } from 'react-native';
+import { I18nManager, type TextStyle } from 'react-native';
 import type { TransitMode } from '../data/models';
 import { Operators } from '../data/operators';
 
@@ -136,10 +136,16 @@ export const type = {
 /** Tabular figures, so times don't jiggle as they tick. */
 export const numeric: TextStyle = { fontVariant: ['tabular-nums'] };
 
+/**
+ * iOS aligns unaligned text by the language iOS gave the app, not the app's direction: Hebrew
+ * text sat left on an English iPhone, English text right on a Hebrew one. Android ignores this.
+ */
+export const textDirection: TextStyle = { writingDirection: I18nManager.isRTL ? 'rtl' : 'ltr' };
+
 /** A text style for a one-line TextInput: [type] without its lineHeight, which makes iOS draw the text low in the field. */
 export function inputType(v: keyof typeof type): TextStyle {
   const { lineHeight: _, ...rest }: TextStyle = type[v];
-  return rest;
+  return { ...rest, ...textDirection };
 }
 
 // ---- Colour helpers ----------------------------------------------------------------
