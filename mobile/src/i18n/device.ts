@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { reloadAppAsync } from 'expo';
-import { I18nManager } from 'react-native';
+import { AppState, I18nManager } from 'react-native';
 import MaslulNative from '../../modules/maslul-native/src/MaslulNativeModule';
 import { type Lang, type LanguageSetting, setLanguage } from '.';
 
@@ -22,8 +22,9 @@ export function resolveLang(setting: LanguageSetting): Lang {
 /**
  * Switches to the language [setting] gives, laid out right-to-left for Hebrew. A change of
  * direction only shows after a reload, so the app then reloads, and true is returned meanwhile.
+ * [settle]: the app's screen is being rebuilt (App mounted again in the same JS runtime).
  */
-export async function applyLanguage(setting: LanguageSetting): Promise<boolean> {
+export async function applyLanguage(setting: LanguageSetting, settle = false): Promise<boolean> {
   const l = resolveLang(setting);
   setLanguage(l);
   const rtl = l === 'he';
@@ -35,8 +36,25 @@ export async function applyLanguage(setting: LanguageSetting): Promise<boolean> 
   await AsyncStorage.setItem(RELOAD_KEY, `${target}:${Date.now()}`).catch(() => {});
   I18nManager.allowRTL(rtl);
   I18nManager.forceRTL(rtl);
+  // Android rebuilds the screen when the phone's language changes; reloading while the new one
+  // is still being attached left a blank white screen (H4). Let it settle first.
+  if (settle) await settled();
   await reloadAppAsync('Language changed').catch(() => {});
   return true;
+}
+
+/** Once the app is in the foreground, and a moment after. */
+async function settled() {
+  if (AppState.currentState !== 'active') {
+    await new Promise<void>((resolve) => {
+      const sub = AppState.addEventListener('change', (st) => {
+        if (st !== 'active') return;
+        sub.remove();
+        resolve();
+      });
+    });
+  }
+  await new Promise((r) => setTimeout(r, 1000));
 }
 
 /**

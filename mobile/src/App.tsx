@@ -173,14 +173,18 @@ function Root() {
   );
 }
 
+/** App mounts again in the same JS runtime when Android rebuilds its screen (language, text size). */
+let mounts = 0;
+
 export default function App() {
   const [ready, setReady] = useState(false);
   useEffect(() => {
+    const again = mounts++ > 0;
     (async () => {
       // The first launch after the Kotlin app moves its saved places and settings over.
       await store.load(AsyncStorage, readLegacyStore).catch(() => {});
       // Before anything is drawn; when the layout direction has to change, the app reloads (splash stays up).
-      if (await applyLanguage(store.value.settings.language)) return;
+      if (await applyLanguage(store.value.settings.language, again)) return;
       repo.language = lang();
       setUpNotifications();
       await activeTrip.restore().catch(() => {});
