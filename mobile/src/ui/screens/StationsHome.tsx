@@ -61,18 +61,23 @@ class StationsHomeModel extends Model {
   nearbyAt: GeoPoint | null = null;
 
   override start() {
-    // Location allowed again in the phone's settings: show what's near without waiting for Refresh.
-    this.onForeground(() => this.noPermission && void this.loadNearby());
+    // Location allowed again in the phone's settings: show what's near without waiting for Refresh;
+    // taken away: what was near is no longer known.
+    this.onForeground(async () => {
+      const allowed = await location.hasPermission().catch(() => true);
+      if (this.noPermission ? allowed : !allowed) void this.loadNearby();
+    });
   }
 
   loadNearby = async () => {
     if (this.nearbyLoading) return;
     this.nearbyLoading = true;
     this.changed();
-    const here = (await location.current().catch(() => null)) ?? location.last;
     // Without a fix the permission may still be granted (the position just didn't come).
-    this.noPermission = here == null && !(await location.hasPermission().catch(() => false));
+    this.noPermission = !(await location.hasPermission().catch(() => false));
+    const here = this.noPermission ? null : ((await location.current().catch(() => null)) ?? location.last);
     const r = here ? await repo.nearbyStops(here).catch(() => null) : null;
+    if (this.noPermission) this.nearby = [];
     if (r) {
       this.nearby = r.slice(0, 15);
       this.nearbyAt = here;
