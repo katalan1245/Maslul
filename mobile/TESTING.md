@@ -69,6 +69,7 @@ Use `adb` from a shell if you have one. If a command isn't available to you, mar
 12. The walking figure is mirrored in Hebrew: in English it reaches to the right, in Hebrew to the left. Compare with an English screenshot before reporting it.
 13. Stations search in English for a train station ("Tel Aviv Center") finds nothing: the timetable data names stops in Hebrew only. Search in Hebrew.
 14. Still open from last round, not changed in this build (don't report again): quote marks around a Hebrew stop name in Simple's steps; an odd 2 h 31 route and missing day prefixes in P6; the offline list (P5) drops the Walk card, the "Last today" tag and the banner; Stations shows a spinner for 10–15 s when it opens; the stop's long-press menu sits at the top right; the share preview's bidi order; at the largest font the "Shortest trip" tag overlaps "leave in" and the Options chip is cut; Home once came back with only the map (report it again only with the exact steps that lead to it).
+15. From round 8, not changed (don't report again): a phone-language switch logs two `Running "main"` lines (Android rebuilds the screen, then the app reloads once for the new direction; it's right if the language is right and the screen never blank); a reminder set after "Not now" on the exact-alarm prompt can come late (the prompt says so; Android decides); the departures strip and "N buses go this way" count from now on a chosen-time search; no tight-transfer warning from a ride's drop-off onto a train; "No lines found" for a few seconds while Lines search loads; the Hebrew "System" chip cut in Settings; a Russian subtitle kept on a recent place in English; far-off places in a Haifa search; "Walk 1 min · 0 m"; the Home map not following a geo fix until relaunch. TalkBack on the time wheels (G9) can't be tested with injected touches; it's left for a person.
 
 ## What to test: re-test of last round's failures
 
@@ -76,28 +77,13 @@ This round is **short**: only what failed last round, and the fixes that couldn'
 
 Install over the existing app (`adb install -r maslul-latest.apk`).
 
-### G. Re-tests
+### K. Re-tests (round 9)
 
-**G1. Language (H4, F6, F10).** Settings → Language → System. While Maslul is open, set the emulator to Hebrew (Settings → System → Languages), then go back to Maslul: Hebrew after **one** reload, never a blank white screen (wait 30 s before calling it blank; save `adb logcat -d -t 3000 ReactNativeJS:V '*:S'` and count `Running main`). Back to English: one reload. Repeat both twice. Then in the app: Settings → Language → עברית: after the reload you are **on Settings**, not Home. Back to English: one reload, on Settings again. Русский → English: no reload, still on Settings. In Simple Maslul (X1), its language buttons: after a reload you're on Simple's settings.
-**G2. Map labels and "variants" (X3, H2).** English → Русский with no reload: the Home map and line 480's map relabel in Russian within a few seconds, and back to English the same, without a restart. Lines tab → Light rail: line 1 (Jerusalem) shows "3 variants" in English, "3 חלופות" in Hebrew, "3 варианта" in Russian.
-**G3. Chosen time (P2).** Plan to Dizengoff Center, time sheet → Depart at, an hour from now: the Walk card's arrival is the walk from that time, not from now. Tap the refresh chip: the time chip still says the chosen time and the routes are for it.
-**G4. Home after unstarring (L3).** Star three stops, scroll Home's sheet down to them, then unstar all three: the sheet shows the places again (no blank sheet).
-**G5. Route list order (W1).** Leave now, a trip with several options, at a time buses run: the first cards are ones you can still catch; one whose bus has already passed or that started in the past is never first. With a shuttle saved, when the planner fails (HTTP 429, often last round): a banner says the search failed, with Try again, instead of listing only shuttle routes.
-**G6. Live guide (T1).** As T1: on the walk to the stop, move the location along the bus's own path, past the stop, **before** the bus leaves: the guide stays on "Walk to <stop>" and doesn't jump onto the bus. After a live bus passes the stop without you, write down what the guide and the stop screen say, with times (last round it re-timed into a trip that got off before boarding).
-**G7. Reminders (R1, R2, F12).**
-1. Set two reminders (Remind me on routes) at least 20 minutes ahead; `adb shell dumpsys alarm | grep -A3 com.maslul.app` lists them. Revoke "Alarms & reminders" (`adb shell appops set --uid com.maslul.app SCHEDULE_EXACT_ALARM default`): Android kills the app. Open Maslul again: `dumpsys alarm` lists both again (inexact now), and they arrive.
-2. A route starting with a train → Remind me: the notification's "Leave at HH:MM" is not after the "Train … at HH:MM", and the train time matches the route's (live if it is).
-3. A "Not now" (inexact) reminder: does its notification appear? Give the time it came.
-**G8. Shuttles (W5, R2).** New shuttle → One time → 21:00 → Add: it's added, with no Repeating run. Also 19:30. Save a shuttle Habima → Azrieli with a departure about 40 minutes from now and another 3 hours later; plan from Habima to Azrieli, Leave now: the shuttle route leaves at the **first** departure, not the later one. The card names the shuttle by its own name ("Test Shuttle from Habima"), not "Bus Test Shuttle".
-**G9. Time wheels with TalkBack (W6).** TalkBack on, time sheet: touch the hour wheel: focus is on the whole wheel ("Hour, 08"), not on one number; a one-finger swipe up/down steps it by one; the number in the wheel's middle is the one Set time uses. The same in the shuttle editor.
-**G10. Tight train transfer (X7).** A route with a tight change onto a train: the card says "to catch the train" and has an "If missed, the next train at …" line. If the planner fails often (429), retry a few times and say so.
-**G11. Stations (W4).** Near Savidor Center (`adb emu geo fix 34.7983 32.0837`), Stations: no stop listed twice (also after Refresh twice). Then `adb emu geo fix 34.7818 32.0853` (1.6 km away) and wait 10 s without Refresh: the list changes to the stops near the new place. In Where to?, search `תל אביב מרכז`: the station has the train icon there too.
-**G12. Small fixes.**
-1. (X2) Full app's Work set to an address. Simple Maslul → settings → the Work button: its dialog shows that address, with no Clear. Change the address, then Clear: it shows the full app's Work again; Save: the list shows it.
-2. (N4) Where to? with the start at Current location: "Current location" isn't offered as the destination; picking a place closes the keyboard.
-3. (F15) Rows under a favourite stop on Home: "then HH:MM  HH:MM" never repeats a time.
-4. Ride card (Advanced → rides): the drop-off time on a ride card matches the times in its details.
-5. "Last today" isn't shown while night buses keep running within the hour, nor on tomorrow's routes.
+**K1. Route list order (G5).** Leave now at a stop-dense place (Ibn Gabirol/Arlozorov, `adb emu geo fix 34.7818 32.0853`), during the day: Where to? → Dizengoff Center, then Habima → Azrieli Center, then → Haifa. Each time, the **first** card's first bus comes after you'd walk to its stop (its "walk N min" is less than the bus's "in M min", or equal). A card whose bus comes a minute before you'd get there, says "Now", or started in the past is never first (it may be further down). Wait 30 s on the list and check again. 3 searches, a screenshot each. If the planner returns 429 with a shuttle saved: a banner says the search failed (optional, last round couldn't test).
+**K2. Live guide when the bus goes by without you (G6).** From a place about 300 m from a stop, plan a trip whose first bus is live and a few minutes away, open its route and tap Start. Don't move toward the stop; let the bus pass. Within a minute of it passing, the guide (banner and notification) switches to the next bus of that step ("Walk to <stop> · Bus 56 in 4 min"), never "Bus 36 is arriving" for the passed one; the route screen's selected bus is the new one, and the header times follow it. Write down the times. Then, on another trip, move the location along the bus's path past the stop before the bus leaves: the guide stays on "Walk to <stop>".
+**K3. Stations follows you (G11).** Near Savidor (`adb emu geo fix 34.7983 32.0837`), open Stations. Then `adb emu geo fix 34.7818 32.0853` and wait 20 s **without** Refresh: the list changes to the stops near Ibn Gabirol/Arlozorov. While Stations shows, `adb shell dumpsys location | grep -i "gps provider request"` shows a request from com.maslul.app that stays on (about every 10 s); after switching to another tab it goes off.
+**K4. "variants" order (G2).** Lines → Light rail, line 1: "<agency>  ·  3 variants" in English, "3 варианта" in Russian, "3 חלופות" in Hebrew (the number before the word). Line 480 in Russian: "8 вариантов".
+**K5. Map taps (new, from the original app).** On a route's map or a line's map, zoomed out so stops are small dots: tap about a fingertip (5 mm) beside a stop: its stop opens. Where two stops are close, the one nearer the finger opens. A tap on empty map far from any stop opens nothing.
 
 ### M. Automated flows (Maestro)
 
@@ -128,6 +114,6 @@ emulator: <image, API level>   time zone: <...>   tested at: <date, Israel time>
 ## All checks
 | check | result | note |
 |---|---|---|
-| G1 language | pass | |
+| K1 route order | pass | |
 ...
 ```
