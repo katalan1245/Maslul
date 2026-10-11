@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback, useEffect } from 'react';
 import { FlatList, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { S } from '../../i18n';
@@ -104,6 +105,18 @@ export function StationsHomeScreen() {
     void m.loadNearby();
     return m;
   });
+  // Follow the position while the tab shows: a one-off fix never hears that you moved (G11).
+  useFocusEffect(
+    useCallback(() => {
+      let stop: (() => void) | null = null;
+      let gone = false;
+      void location.watch(10_000, () => {}).then((s) => (gone ? s() : (stop = s)));
+      return () => {
+        gone = true;
+        stop?.();
+      };
+    }, []),
+  );
   // Moved on (W4): what's near is somewhere else now.
   useEffect(() => {
     if (here && model.nearbyAt && GeoMath.distance(here, model.nearbyAt) > 500) void model.loadNearby();
