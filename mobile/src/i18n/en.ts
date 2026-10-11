@@ -286,6 +286,7 @@ export const en = {
     searchHint: 'Stop or station name',
   },
   stopBoard: {
+    showDepartures: 'Show departures',
     remindLeave: 'Remind me to leave',
     remindHint: 'Long-press for a reminder to leave',
     unknown: 'Unknown stop',
@@ -348,9 +349,13 @@ export const en = {
     noneFound: 'No rides found around you',
     noneFoundHint: "Rides show up here while you're on a bus or train, or at a stop one is due at.",
     noMatch: 'Nothing matches. Clear the filter to see every ride around you.',
-    footer: 'Live buses closest to you come first. After you pick one, the trip is planned from its next stop: stay on, or where to get off and change.',
+    footer:
+      'Live buses closest to you come first. After you pick one, the trip is planned from its next stop: stay on, or where to get off and change. Rides going the other way from you come last.',
     liveFromYou: (distance: string) => `Live · ${distance} from you`,
     dueAt: (stop: string) => `Due at ${stop}`,
+    /** Where it calls and then, each name kept to itself so Hebrew names on both sides don't read backwards. */
+    fromTo: (a: string, b: string) => `\u2068${a}\u2069 → \u2068${b}\u2069`,
+    otherWay: 'Going the other way',
     timetable: 'Timetable',
     noLiveData: ' · no live data',
   },

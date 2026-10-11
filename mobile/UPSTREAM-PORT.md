@@ -1,4 +1,4 @@
-# Porting upstream 1.1.1, 1.2.0 and 1.2.1
+# Porting upstream 1.1.1, 1.2.0, 1.2.1 and 1.2.2
 
 The original Kotlin app (`Tom-stack3/Maslul`) released three versions after the rewrite was ported from its 1.1.0 (`fab01ac`):
 
@@ -91,6 +91,22 @@ Status: **Done**, **To do**, **Different** (deliberately not the same; the reaso
 |---|---|---|---|---|
 | U1 | Map stops and vehicles answer a finger-sized tap: a 48 dp square around the tap, the nearest stop or vehicle opens (`cf51350`, PR #7) | `TransitMap.kt` | `TransitMap.tsx` `HITBOX`, `nearestId`; `mapTap.test.ts`. MapLibre RN already had a 44 dp box but took the first feature; when both a stop and a vehicle are in the box, the vehicle wins (the library picks the top source) | Done |
 
+## 1.2.2 (`6ce84e5`, PR #8)
+
+| # | Upstream change | Where upstream | Where here | Status |
+|---|---|---|---|---|
+| V1 | Which way you're moving, from recent location fixes (own bearing when moving, else from a fix 80 m+ back; jumps and standing still ignored) | `LocationRepo.kt` `Motion` | `src/state/location.ts` `Motion`, `location.heading()`; fixes recorded from `current()` and `watch()` (expo-location's -1 means unknown) | Done |
+| V2 | "I'm on a bus": rides going the other way (over 110° off your heading) go last, with "Going the other way"; a timetable row shows "A → B" (its stop and the next one) | `OnBoard.kt`, `OnBoardScreen.kt` | `src/data/onBoard.ts` `against`, `rank(list, now, heading)`; `OnBoard.tsx` watches location every 2 s | Done |
+| V3 | Stop times ask for the next stop (`fetchStops`) to know a scheduled ride's direction | `TransitousApi.kt`, `TransitRepository.kt` | `transitousApi.ts` `nextStops` → `Departure.next`; `boardCandidates` | Done |
+| V4 | One arrival time: on the ride you're on, a passed boarding stop takes the live times, so the alighting time is the expected one everywhere | `Combine.kt` `expected(…, riding)` | `combine.ts`; callers in `routesModel.ts`, `routeCards.tsx`, `Routes.tsx`, `RouteDetail.tsx` | Done |
+| V5 | A route that ends on a bus ends at "Get off · destination", with no separate destination row; the walk rail between two rides | `Timeline.kt` | `RouteDetail.tsx` `JourneyTimeline` | Done |
+| V6 | Routes timeline scrolls to its end (rows measured before scrolling) | `Timeline.kt` | Not needed: RN rows size themselves (`onLayout`) | Not needed |
+| V7 | Stop screen: a bigger map in a draggable sheet, a fullscreen button and "Show departures"; each line's next arrival under its time ("then 12 min") | `StopScreen.kt` | `Stop.tsx` (`MapSheet`, `nextEntry`) | Done |
+| V8 | Stop board: an hour of departures, at most 3 per line and direction (plus any already due) | `TransitRepository.kt` `perLine` | `transitRepository.ts` `perLine`, `windowSec: 3600` | Done |
+| V9 | Angle difference wraps correctly for negative angles | `GeoMath.kt` | `geo.ts` `GeoMath.angleDiff` (the map's `angleDiff` uses it) | Done |
+| V10 | New and changed strings (footer, "A → B", "Going the other way", "Show departures") | `Strings*.kt` | `en.ts`, `he.ts`, `ru.ts` | Done |
+| V11 | versionCode 8 | `build.gradle.kts` | `version.json` versionCode 9 (this app was already at 8) | Done |
+
 ## Found while mapping (not new upstream)
 
 | # | What | Status |
@@ -114,3 +130,8 @@ Every file in `git diff --stat fab01ac 076af78 -- app/` (60 files) was checked a
 | `RideShuttleSmokeTest.aLiftIsOneDrive` (live) | Offline instead: `parsing.test.ts` feeds the plan filter a two-drive itinerary |
 | `TransitModeTest` (vehicle words by language, "the train") | `transitMode.test.ts` |
 | `AppFlowTest.switchingLanguageRedrawsTheApp` | The app reloads on a language change (by design); covered by `hebrew.test.tsx` and `russian.test.tsx` |
+| `OnBoardTest` (other way last, heading from fixes, angle wrap) | `onBoard.test.ts` |
+| `CombineTest` (the ride you're on) | `combine.test.ts` |
+| `EtaTest` (per line) | `eta.test.ts` |
+| `TimelineTest` (ends on a bus) | `upstream122.test.tsx` |
+| `AppFlowTest` (1.2.2 additions: stop map, next arrival) | `upstream122.test.tsx` |

@@ -10,7 +10,7 @@ The folder is `maslul-test` in the host's handoff folder (`C:\Users\Raz\Desktop\
 
 | File | What it is |
 |---|---|
-| `maslul-latest.apk` | The new app: versionCode 8, standalone release build (no Metro needed), from branch `feature/upstream-1.2.1` |
+| `maslul-latest.apk` | The new app: versionCode 9, standalone release build (no Metro needed), from branch `feature/upstream-1.2.1` |
 | `maslul-kotlin-v4.apk` | The **old** Kotlin app (versionCode 4), not used this round |
 | `maslul-kotlin-1.2.1.apk` | The Kotlin app's last version, 1.2.1 (versionCode 7), not used this round |
 | `build-info.txt` | Commit and build details. Quote the commit line at the top of your report |

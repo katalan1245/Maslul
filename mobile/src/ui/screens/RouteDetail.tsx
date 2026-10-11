@@ -114,7 +114,12 @@ class RouteDetailModel extends Model {
   liveOf = (l: Leg) => this.rideLive.get(rideKey(l));
 
   /** The trip as the rides are expected to run (late ones included): what its times show. */
-  expected = (): Itinerary => Combine.expected(this.itinerary, this.liveOf);
+  expected = (): Itinerary => Combine.expected(this.itinerary, this.liveOf, this.riding);
+
+  /** The trip the user is on, when planning from it. */
+  get riding(): string | null {
+    return this.from.kind === 'ON_BOARD' ? (this.from.tripId ?? null) : null;
+  }
 
   /** A tight connection onto [leg], if the previous vehicle (as expected to run) leaves little spare time. */
   tightTransferInto = (leg: Leg): Transfer | null =>
@@ -480,6 +485,10 @@ function JourneyTimeline({ model, now }: { model: RouteDetailModel; now: Instant
   const walkRail: RailSpec = { style: 'DOTTED', color: t.x.walk };
   const carRail: RailSpec = { style: 'SOLID', color: t.x.subtle };
   const railOf = (l: Leg): RailSpec => (l.mode === 'WALK' ? walkRail : l.mode === 'CAR' ? carRail : { style: 'SOLID', color: lineColor(l) });
+  // Changing straight from one ride to the next: the rail between them is the change, not either line.
+  const between = (a: Leg, b: Leg): RailSpec => (isTransit(a.mode) && isTransit(b.mode) ? walkRail : railOf(b));
+  // Getting off the last ride right where you're going: that stop is the destination, with one time.
+  const endsOnRide = isTransit(legs[legs.length - 1].mode);
   const from = model.from;
   return (
     <View>
@@ -518,20 +527,32 @@ function JourneyTimeline({ model, now }: { model: RouteDetailModel; now: Instant
         const next = legs[i + 1];
         const live = model.live(i);
         const tight = model.tightTransferInto(leg);
+        const ridden = leg.tripId != null && leg.tripId === model.riding;
+        // When it gets in, as the header and the rest of the trip have it.
+        const liveEnd = live?.status === 'LIVE' || (ridden && live?.status === 'PASSED') ? expected.legs[i].end : null;
+        const last = next == null;
+        const where = last ? (model.to.name !== leg.to.name ? model.to.name : model.to.subtitle) : null;
         return (
           <View key={i}>
             {/* Boarding */}
             <TimelineRow
-              above={prev ? railOf(prev) : null}
+              above={prev ? between(prev, leg) : null}
               below={rail}
               node="STOP"
               nodeColor={c}
-              time={<TimeText scheduled={leg.start} expected={live?.status === 'LIVE' ? live.expected : null} freshness={callFreshness(live, now)} />}
+              // Riding it already: when it was there, as early or late as it's running.
+              time={
+                <TimeText
+                  scheduled={leg.start}
+                  expected={live?.status === 'LIVE' ? live.expected : ridden && live?.status === 'PASSED' ? expected.legs[i].start : null}
+                  freshness={callFreshness(live, now)}
+                />
+              }
             >
               <Txt v="titleSmall" style={{ paddingTop: 12 }}>
                 {leg.from.name}
               </Txt>
-              {leg.tripId != null && leg.tripId === model.from.tripId && (
+              {ridden && (
                 <Txt v="bodySmall" color={t.x.subtle}>{S.detail.stayOn(vehicleKind(leg.mode))}</Txt>
               )}
               {platformLabel(leg.from) != null && (
@@ -549,32 +570,42 @@ function JourneyTimeline({ model, now }: { model: RouteDetailModel; now: Instant
             {/* Alighting */}
             <TimelineRow
               above={rail}
-              below={next ? railOf(next) : null}
-              node="STOP"
-              nodeColor={c}
-              time={<TimeText scheduled={leg.end} expected={live?.alightExpected ?? null} freshness={callFreshness(live, now)} />}
+              below={next ? between(leg, next) : null}
+              node={last ? 'TERMINUS' : 'STOP'}
+              nodeColor={last ? t.c.primary : c}
+              time={<TimeText scheduled={leg.end} expected={liveEnd} freshness={callFreshness(live, now)} />}
+              testID={last ? 'destination_row' : undefined}
             >
               <Txt v="titleSmall" style={{ paddingTop: 12 }}>
                 {leg.to.name}
               </Txt>
               <Txt v="bodySmall" color={t.x.subtle} style={{ marginBottom: 8 }}>
-                {S.detail.getOff}
+                {[S.detail.getOff, where].filter((x) => x != null).join(' · ')}
               </Txt>
             </TimelineRow>
           </View>
         );
       })}
-      {/* Destination */}
-      <TimelineRow above={railOf(legs[legs.length - 1])} below={null} node="TERMINUS" nodeColor={t.c.primary} time={<TimeText scheduled={expected.end} />}>
-        <Txt v="titleSmall" style={{ paddingTop: 12 }}>
-          {model.to.name}
-        </Txt>
-        {model.to.subtitle != null && (
-          <Txt v="bodySmall" color={t.x.subtle}>
-            {model.to.subtitle}
+      {/* Destination, after a walk (or a lift) from the last stop. */}
+      {!endsOnRide && (
+        <TimelineRow
+          above={railOf(legs[legs.length - 1])}
+          below={null}
+          node="TERMINUS"
+          nodeColor={t.c.primary}
+          time={<TimeText scheduled={expected.end} />}
+          testID="destination_row"
+        >
+          <Txt v="titleSmall" style={{ paddingTop: 12 }}>
+            {model.to.name}
           </Txt>
-        )}
-      </TimelineRow>
+          {model.to.subtitle != null && (
+            <Txt v="bodySmall" color={t.x.subtle}>
+              {model.to.subtitle}
+            </Txt>
+          )}
+        </TimelineRow>
+      )}
     </View>
   );
 }

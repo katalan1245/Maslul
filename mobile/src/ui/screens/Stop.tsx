@@ -1,6 +1,7 @@
+import { BottomSheetFlatList } from '@gorhom/bottom-sheet';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { S } from '../../i18n';
 import { bestTime } from '../../data/eta';
@@ -17,7 +18,8 @@ import { Fmt, modeLine } from '../fmt';
 import { Hairline, IconButton, LineBadge, LoadingBox, MessageBox, ProgressBar, Txt } from '../components/common';
 import { FAVORITE_GOLD } from '../components/favorites';
 import { Icon } from '../components/icons';
-import { ArrivalTime, useNow } from '../components/live';
+import { ArrivalTime, freshnessColor, useNow } from '../components/live';
+import { MapSheet } from '../components/MapSheet';
 import { Menu } from '../components/overlays';
 import { ExactAlarmDialog, setReminder, stopReminderAt } from '../components/reminders';
 import { TransitMap } from '../map/TransitMap';
@@ -141,44 +143,80 @@ export function StopScreen({ route }: NativeStackScreenProps<RootStack, 'Stop'>)
           testID="favorite_stop"
         />
       </View>
-      <TransitMap
-        style={{ height: 160 }}
-        markers={[{ point: placePoint(place), color: ModeColors[place.mode ?? 'BUS'], kind: 'STOP', id: place.stopId }]}
-        user={user}
-        initialCenter={placePoint(place)}
-        initialZoom={16}
-        compassStyle={{ bottom: 8, right: 8 }}
-      />
-      <ProgressBar active={model.loading} />
-      {model.loading && model.entries.length === 0 ? (
-        <LoadingBox text={S.stopBoard.loading} />
-      ) : model.error != null ? (
-        <MessageBox title={S.stopBoard.noDepartures} body={model.error} action={S.common.retry} onAction={() => void model.refresh()} />
-      ) : groups.length === 0 ? (
-        <MessageBox title={S.stopBoard.noUpcoming} body={S.stopBoard.noUpcomingHint} />
-      ) : (
-        <FlatList
-          data={groups}
-          keyExtractor={(g) => g.key}
-          renderItem={({ item }) => (
-            <>
-              <BoardRow
-                group={item}
-                now={now}
-                onTimePress={() => model.open(item.entries[0], true)}
-                onPress={() => model.open(item.entries[0])}
-                onLongPress={() => setMenuFor(item.entries[0])}
+      {/* The map, with the departures in a sheet over it that can be dragged down (or hidden) to enlarge the map, as on a line. */}
+      <MapSheet
+        peekFraction={0.7}
+        topGap={8}
+        scroll={false}
+        map={(c) => (
+          <TransitMap
+            style={StyleSheet.absoluteFill}
+            markers={[{ point: placePoint(place), color: ModeColors[place.mode ?? 'BUS'], kind: 'STOP', id: place.stopId }]}
+            user={user}
+            initialCenter={placePoint(place)}
+            initialZoom={16}
+            // The stop stays in the middle of what's in view: above the sheet, or the whole map.
+            fitPoints={[placePoint(place)]}
+            fitKey={`${place.stopId}-${c.mapOnly}`}
+            contentPadding={{ top: 0, bottom: c.mapOnly ? 72 : c.peekHeight }}
+            compassStyle={{ top: 64, right: 12 }}
+          />
+        )}
+        overlay={(c) => (
+          <>
+            <View style={{ position: 'absolute', top: 8, right: 8 }}>
+              <IconButton
+                icon={c.mapOnly ? 'fullscreen-exit' : 'fullscreen'}
+                label={c.mapOnly ? S.stopBoard.showDepartures : S.detail.expandMap}
+                onPress={() => (c.mapOnly ? c.show() : c.hide())}
+                filled
+                testID="stop_map_expand"
               />
-              <Hairline start={20} />
-            </>
+            </View>
+            {c.mapOnly && (
+              <Pressable onPress={c.show} style={[styles.fab, { left: 16, backgroundColor: t.c.surface, bottom: insets.bottom + 16 }]} accessibilityRole="button">
+                <Icon name="expand-less" color={t.c.onSurface} />
+                <Txt v="labelLarge" style={{ marginLeft: 8 }}>
+                  {S.stopBoard.showDepartures}
+                </Txt>
+              </Pressable>
+            )}
+          </>
+        )}
+      >
+        <View style={{ flex: 1 }}>
+          <ProgressBar active={model.loading} />
+          {model.loading && model.entries.length === 0 ? (
+            <LoadingBox text={S.stopBoard.loading} />
+          ) : model.error != null ? (
+            <MessageBox title={S.stopBoard.noDepartures} body={model.error} action={S.common.retry} onAction={() => void model.refresh()} />
+          ) : groups.length === 0 ? (
+            <MessageBox title={S.stopBoard.noUpcoming} body={S.stopBoard.noUpcomingHint} />
+          ) : (
+            <BottomSheetFlatList
+              data={groups}
+              keyExtractor={(g: BoardGroup) => g.key}
+              renderItem={({ item }: { item: BoardGroup }) => (
+                <>
+                  <BoardRow
+                    group={item}
+                    now={now}
+                    onTimePress={() => model.open(item.entries[0], true)}
+                    onPress={() => model.open(item.entries[0])}
+                    onLongPress={() => setMenuFor(item.entries[0])}
+                  />
+                  <Hairline start={20} />
+                </>
+              )}
+              contentContainerStyle={{ paddingBottom: 96 + insets.bottom }}
+              testID="stop_board"
+            />
           )}
-          contentContainerStyle={{ paddingBottom: 96 + insets.bottom }}
-          testID="stop_board"
-        />
-      )}
+        </View>
+      </MapSheet>
       <Pressable
         onPress={() => nav.push('Routes', { from: CURRENT_LOCATION, to: place })}
-        style={[styles.fab, { backgroundColor: t.c.primaryContainer, bottom: insets.bottom + 16 }]}
+        style={[styles.fab, { right: 16, backgroundColor: t.c.primaryContainer, bottom: insets.bottom + 16 }]}
         accessibilityRole="button"
         testID="stop_directions"
       >
@@ -198,9 +236,9 @@ export function StopScreen({ route }: NativeStackScreenProps<RootStack, 'Stop'>)
 }
 
 
-/** The next two times after the first, each minute once (two trips can share one, F15). */
-export const laterTimes = (entries: BoardEntry[]): string =>
-  [...new Set(entries.map((e) => Fmt.time(entryTime(e))))].slice(1, 3).join('  ');
+/** The ride after the first, at a later minute (two trips can share one, F15). */
+export const nextEntry = (entries: BoardEntry[]): BoardEntry | null =>
+  entries.slice(1).find((e) => Fmt.time(entryTime(e)) !== Fmt.time(entryTime(entries[0]))) ?? null;
 
 export function BoardRow({
   group,
@@ -218,9 +256,10 @@ export function BoardRow({
   const t = useTheme();
   const first = group.entries[0];
   const d = first.departure;
-  const later = laterTimes(group.entries);
   const live = first.live;
   const time = entryTime(first);
+  const next = nextEntry(group.entries);
+  const nextLive = next?.live?.status === 'LIVE' ? next.live : null;
   const freshness = callFreshness(live, now);
   let sub: string;
   if (live?.status === 'LIVE') {
@@ -248,7 +287,7 @@ export function BoardRow({
           {d.headsign}
         </Txt>
         <Txt v="bodySmall" color={t.x.subtle} numberOfLines={1}>
-          {[platformLabel(d.stop), d.agency, later.trim() !== '' ? S.common.then(later) : null].filter((x) => x != null).join(' · ')}
+          {[platformLabel(d.stop), d.agency].filter((x) => x != null).join(' · ')}
         </Txt>
       </View>
       <View style={{ alignItems: 'flex-end', marginLeft: 8 }}>
@@ -257,6 +296,12 @@ export function BoardRow({
         <Txt v="labelSmall" color={t.x.subtle}>
           {sub}
         </Txt>
+        {/* And the one after it, live when tracked. */}
+        {next != null && (
+          <Txt v="labelMedium" color={nextLive != null ? freshnessColor(callFreshness(nextLive, now), t) : t.x.subtle} style={{ marginTop: 2 }} testID="next_arrival">
+            {S.common.then(Fmt.relative(nextLive != null ? bestTime(nextLive) : next.departure.scheduled, now))}
+          </Txt>
+        )}
       </View>
     </Pressable>
   );
@@ -267,7 +312,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12 },
   fab: {
     position: 'absolute',
-    right: 16,
     flexDirection: 'row',
     alignItems: 'center',
     height: 56,

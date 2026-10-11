@@ -85,7 +85,7 @@ export function ItineraryCard({
   const liveOf = (o: Leg) => (first != null && rideKey(o) === rideKey(first) ? live : rideLive.get(rideKey(o)));
   // Times follow the live vehicles: "leave in" the first one, arrival with the last one, so a late
   // bus in the plan doesn't leave the times on its timetable slot.
-  const expected = Combine.expected(itin, liveOf);
+  const expected = Combine.expected(itin, liveOf, onBoardTripId ?? null);
   const leaveAt = expected.start;
   const endAt = expected.end;
   // The planned bus is live and close: you'd only make it by hurrying, so say so instead of "Missed".
@@ -170,7 +170,7 @@ export function ItineraryCard({
             icon={modeIcon(first.mode)}
             title={S.cards.stayOnUntil(first.to.name)}
             detail={
-              S.cards.getOffAt(Fmt.time(Combine.arrives(first, live))) +
+              S.cards.getOffAt(Fmt.time(expected.legs[itin.legs.indexOf(first)]?.end ?? first.end)) +
               (transitLegs(itin)[1] ? ` · ${S.cards.then(rideName(transitLegs(itin)[1]))}` : platformLabel(first.to) ? ` · ${platformLabel(first.to)}` : '')
             }
           />

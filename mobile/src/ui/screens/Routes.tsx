@@ -46,7 +46,7 @@ export function RoutesScreen({ route, navigation }: NativeStackScreenProps<RootS
   }, [model]);
 
   const liveOf = (l: Leg) => model.rideLive.get(rideKey(l));
-  const expectedOf = (i: Itinerary) => Combine.expected(i, liveOf);
+  const expectedOf = (i: Itinerary) => Combine.expected(i, liveOf, model.onBoardTripId);
   // Leaving now: options whose connection a late bus has made impossible aren't options (unless nothing else is left).
   const connected = model.timeMode !== 'NOW' ? model.itineraries : model.itineraries.filter((i) => Combine.connects(i, now, liveOf));
   const itineraries = connected.length ? connected : model.itineraries;

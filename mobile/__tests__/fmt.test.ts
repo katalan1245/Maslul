@@ -27,9 +27,11 @@ test('rideName: the line number after the mode, or just the mode when there is n
   expect(rideName({ mode: 'BUS', routeShortName: 'Test Shuttle', shuttleId: 's1' } as Leg)).toBe('Test Shuttle');
 });
 
-it("a board row's later times show each minute once (F15)", () => {
-  const { laterTimes } = require('../src/ui/screens/Stop') as typeof import('../src/ui/screens/Stop');
+it("a board row's next ride is at a later minute than the first (F15)", () => {
+  const { nextEntry } = require('../src/ui/screens/Stop') as typeof import('../src/ui/screens/Stop');
   const at = (h: number, m: number) => ({ departure: { scheduled: zoned('2026-10-08', h, m) }, live: null }) as never;
-  expect(laterTimes([at(8, 1), at(8, 11), at(8, 11), at(8, 20)])).toBe('08:11  08:20');
-  expect(laterTimes([at(8, 1), at(8, 1), at(8, 11)])).toBe('08:11');
+  const next = (e: never[]) => nextEntry(e) as { departure: { scheduled: number } } | null;
+  expect(next([at(8, 1), at(8, 11), at(8, 20)])?.departure.scheduled).toBe(zoned('2026-10-08', 8, 11));
+  expect(next([at(8, 1), at(8, 1), at(8, 11)])?.departure.scheduled).toBe(zoned('2026-10-08', 8, 11));
+  expect(next([at(8, 1), at(8, 1)])).toBeNull();
 });

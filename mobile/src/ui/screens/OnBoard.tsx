@@ -5,8 +5,8 @@ import { Freshness } from '../../data/freshness';
 import type { GeoPoint, Place, TransitMode } from '../../data/models';
 import { vehicleKind } from '../../data/models';
 import { S } from '../../i18n';
-import { type BoardCandidate, candidateKey } from '../../data/onBoard';
-import type { Instant } from '../../data/time';
+import { type BoardCandidate, OnBoard, candidateKey } from '../../data/onBoard';
+import { type Instant, nowSec } from '../../data/time';
 import { location } from '../../state/location';
 import { repo } from '../../state/services';
 import { Fmt, modeName } from '../fmt';
@@ -35,6 +35,8 @@ class OnBoardModel extends Model {
   mode: TransitMode | null = null;
   /** The candidate whose timetable is being looked up after a tap. */
   picking: string | null = null;
+  /** Which way you're moving (degrees from north), once it's known: rides going the other way go last. */
+  heading: number | null = null;
   private here: GeoPoint | null = null;
   /** Trips of live vehicles not on the timetable around you, by key; null when it has none. */
   private readonly resolved = new Map<string, string | null>();
@@ -46,6 +48,19 @@ class OnBoardModel extends Model {
   }
 
   override start() {
+    // Follows your position while the list is open, to learn which way you're going.
+    let stop: (() => void) | null = null;
+    void location
+      .watch(2000, (p) => {
+        this.here = p;
+        const h = location.heading();
+        if (h != null && h !== this.heading) {
+          this.heading = h;
+          this.changed();
+        }
+      })
+      .then((s) => (this.disposed ? s() : (stop = s)));
+    this.onDispose(() => stop?.());
     // Vehicles move along with you: keep the list current.
     this.every(30_000, () => {
       if (this.picking == null) void this.refresh(true);
@@ -64,6 +79,7 @@ class OnBoardModel extends Model {
       return;
     }
     this.here = p;
+    this.heading = location.heading() ?? this.heading;
     try {
       this.candidates = this.tidy(await repo.boardCandidates(p));
       void this.resolveLoose();
@@ -108,7 +124,7 @@ class OnBoardModel extends Model {
 
   get shown(): BoardCandidate[] {
     const q = this.query.trim().toLowerCase();
-    return this.candidates
+    return OnBoard.rank(this.candidates, nowSec(), this.heading)
       .filter((c) => this.mode == null || c.mode === this.mode)
       .filter((c) => q === '' || c.lineLabel.toLowerCase().includes(q) || c.headsign.toLowerCase().includes(q));
   }
@@ -199,7 +215,7 @@ export function OnBoardScreen({ route }: NativeStackScreenProps<RootStack, 'OnBo
               )}
             </>
           }
-          renderItem={({ item }) => <CandidateRow c={item} now={now} busy={model.picking === candidateKey(item)} onPress={() => void model.pick(item)} />}
+          renderItem={({ item }) => <CandidateRow c={item} now={now} busy={model.picking === candidateKey(item)} otherWay={OnBoard.against(item, model.heading)} onPress={() => void model.pick(item)} />}
           ListFooterComponent={
             <Txt v="labelSmall" color={t.x.subtle} style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12 + insets.bottom }}>
               {S.onBoard.footer}
@@ -211,7 +227,7 @@ export function OnBoardScreen({ route }: NativeStackScreenProps<RootStack, 'OnBo
   );
 }
 
-function CandidateRow({ c, now, busy, onPress }: { c: BoardCandidate; now: Instant; busy: boolean; onPress: () => void }) {
+function CandidateRow({ c, now, busy, otherWay, onPress }: { c: BoardCandidate; now: Instant; busy: boolean; otherWay: boolean; onPress: () => void }) {
   const t = useTheme();
   const v = c.vehicle;
   return (
@@ -222,16 +238,33 @@ function CandidateRow({ c, now, busy, onPress }: { c: BoardCandidate; now: Insta
           {c.headsign.trim() !== '' ? S.common.toward(c.headsign) : modeName(c.mode)}
         </Txt>
         {v != null ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <LiveSignal freshness={Freshness.of(v.recordedAt, now)} />
-            <Txt v="bodySmall" color={freshnessColor(Freshness.of(v.recordedAt, now), t)} style={{ marginLeft: 4 }}>
-              {S.onBoard.liveFromYou(Fmt.distance(c.distanceM))}
-            </Txt>
-          </View>
+          <>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <LiveSignal freshness={Freshness.of(v.recordedAt, now)} />
+              <Txt v="bodySmall" color={freshnessColor(Freshness.of(v.recordedAt, now), t)} style={{ marginLeft: 4 }}>
+                {S.onBoard.liveFromYou(Fmt.distance(c.distanceM))}
+              </Txt>
+            </View>
+            {/* Where it calls and then: both directions stop here, so this tells them apart. */}
+            {c.stopName != null && c.nextStopName != null && (
+              <Txt v="bodySmall" color={t.x.subtle} numberOfLines={1}>
+                {S.onBoard.fromTo(c.stopName, c.nextStopName)}
+              </Txt>
+            )}
+          </>
         ) : (
-          <Txt v="bodySmall" color={t.x.subtle} numberOfLines={1}>
-            {([c.stopName != null ? S.onBoard.dueAt(c.stopName) : null, c.stopTime != null ? Fmt.time(c.stopTime) : null].filter((x) => x != null).join(' · ') ||
-              S.onBoard.timetable) + S.onBoard.noLiveData}
+          <Txt v="bodySmall" color={t.x.subtle} numberOfLines={2}>
+            {([
+              c.stopName != null ? S.onBoard.dueAt(c.nextStopName != null ? S.onBoard.fromTo(c.stopName, c.nextStopName) : c.stopName) : null,
+              c.stopTime != null ? Fmt.time(c.stopTime) : null,
+            ]
+              .filter((x) => x != null)
+              .join(' · ') || S.onBoard.timetable) + S.onBoard.noLiveData}
+          </Txt>
+        )}
+        {otherWay && (
+          <Txt v="bodySmall" color={t.x.late} testID="other_way">
+            {S.onBoard.otherWay}
           </Txt>
         )}
       </View>

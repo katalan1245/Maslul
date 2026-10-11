@@ -162,7 +162,7 @@ export class RoutesModel extends Model {
         return Combine.pickBest(itin, now, liveOf, keep);
       }),
     );
-    const score = (i: Itinerary) => Ranking.score(Combine.expected(i, liveOf), false, this.walkMps, this.rail, this.sort);
+    const score = (i: Itinerary) => Ranking.score(Combine.expected(i, liveOf, board), false, this.walkMps, this.rail, this.sort);
     // A route whose first ride is gone, or can be caught only by running (also within the
     // catch slack: the bus comes before you'd walk there), doesn't go first.
     const reach = (i: Itinerary) => {

@@ -161,12 +161,12 @@ They should also check the wording of `FEATURES.md`.
 
 Upstream released 1.1.1, 1.2.0 (Simple Maslul) and 1.2.1 (the whole app in Russian, grace, wider walk, one-drive lifts). [UPSTREAM-PORT.md](UPSTREAM-PORT.md) maps every change, file by file, to where it lands here and marks the deliberate differences; `NOTES.md` has the summary.
 
-- **versionCode** is 8 (upstream's 1.2.1 is 7).
+- **versionCode** is 9 (upstream's 1.2.2 is 8).
 - **Russian** covers the whole app, translated here: a Russian speaker should read `src/i18n/ru.ts`. Where upstream had the same phrase (`StringsRu.kt`, `SimpleStrings.kt`) its wording is used.
 - **Simple Maslul** lives in `src/ui/simple/` and follows the app's language (upstream gives it its own).
 - **Not covered by automated tests:** the location-permission prompt on Simple's home (E5), real layout on phones, iOS.
 - Not in `FEATURES.md`: these come from upstream.
-- **After 1.2.1** (checked 2026-10-11): upstream master has one more change, finger-sized map taps (`cf51350`), ported (U1 in `UPSTREAM-PORT.md`). No new upstream version, so versionCode stays 8. Re-check `git fetch upstream; git log master..upstream/master` before the PR.
+- **After 1.2.1** (checked 2026-10-11): finger-sized map taps (`cf51350`) ported (U1). **1.2.2** (`6ce84e5`, 2026-10-12) ported (V1–V11 in `UPSTREAM-PORT.md`). Re-check `git fetch upstream; git log master..upstream/master` before the PR.
 
 ## Feature requests and ideas
 

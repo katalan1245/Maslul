@@ -35,6 +35,11 @@ export abstract class Model {
     this.subs.add(AppState.addEventListener('change', (s) => s === 'active' && !this.disposed && f()));
   }
 
+  /** Runs [f] when the screen closes (e.g. to stop a location watch). */
+  protected onDispose(f: () => void) {
+    this.subs.add({ remove: f });
+  }
+
   /** Called when the screen appears (again); start loops here. */
   start() {}
 
