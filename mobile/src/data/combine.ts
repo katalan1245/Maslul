@@ -327,7 +327,7 @@ function connects(itin: Itinerary, now: Instant, liveOf: LiveOf): boolean {
 
 /**
  * The itinerary riding [choice] (one of leg [legIndex]'s options) instead. Walks to the
- * first ride and from the last one move with it, so start/end times stay right.
+ * first ride and after this one move with it, so start/end times stay right.
  */
 function choose(itin: Itinerary, legIndex: number, choice: Leg): Itinerary {
   const leg = itin.legs[legIndex];
@@ -338,7 +338,6 @@ function choose(itin: Itinerary, legIndex: number, choice: Leg): Itinerary {
     .map((o) => ({ ...o, alternatives: [] }));
   const swapped = { ...choice, alternatives: others };
   const firstTransit = itin.legs.findIndex((l) => isTransit(l.mode));
-  const lastTransit = itin.legs.map((l) => isTransit(l.mode)).lastIndexOf(true);
   // A driver heading somewhere leaves when they do: only the walk after their lift moves.
   const lift = itin.legs
     .slice(0, Math.max(firstTransit, 0))
@@ -346,10 +345,12 @@ function choose(itin: Itinerary, legIndex: number, choice: Leg): Itinerary {
     .lastIndexOf(true);
   const dStart = choice.start - leg.start;
   const dEnd = choice.end - leg.end;
+  // A walk after a ride starts when it gets in, also the walk to the next ride.
+  const rideBetween = (i: number) => itin.legs.slice(legIndex + 1, i).some((l) => isTransit(l.mode));
   const legs = itin.legs.map((l, i) => {
     if (i === legIndex) return swapped;
     if (i < legIndex && legIndex === firstTransit && i > lift) return shift(l, dStart);
-    if (i > legIndex && legIndex === lastTransit) return shift(l, dEnd);
+    if (i > legIndex && !isTransit(l.mode) && !rideBetween(i)) return shift(l, dEnd);
     return l;
   });
   return { ...itin, start: legs[0].start, end: legs[legs.length - 1].end, legs };

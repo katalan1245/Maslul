@@ -10,6 +10,8 @@ import { type Lang, S, lang, languageSet, setLanguage } from '../i18n';
 import MaslulNative from '../../modules/maslul-native/src/MaslulNativeModule';
 import { location } from '../state/location';
 import { repo } from '../state/services';
+import { store } from '../state/store';
+import { DEFAULT_SETTINGS } from '../data/userStore';
 import { BRAND } from '../ui/theme';
 import { alert, canNotify, dismissAlert, ensureChannels } from './notifications';
 import { type GuideState, TripGuide, rideGone } from './tripGuide';
@@ -164,7 +166,8 @@ class ActiveTrip {
         );
       }
       if (this.current !== s) return;
-      const next = this.nextIfPassed(s, now);
+      const next = await this.nextIfPassed(s, now);
+      if (this.current !== s) return;
       const state = (this.guide ?? guide).update(pos ?? this.pos, now, this.live);
       this.set({ ...next, state });
       await MaslulNative?.updateTripNotification(TRIP_TASK, state.title, state.text, state.progress, END_TRIP_URL, S.notify.endTrip).catch(() => false);
@@ -186,15 +189,24 @@ class ActiveTrip {
 
   /**
    * A ride you were still on your way to went by without you: the trip takes the next one of
-   * that step that can still be caught, rather than saying it's arriving.
+   * that step that can still be caught, rather than saying it's arriving, and the rides after
+   * it that it no longer gets you to in time too. When the plan knows no later one, looks it up.
    */
-  private nextIfPassed(s: TripSession, now: Instant): TripSession {
+  private async nextIfPassed(s: TripSession, now: Instant): Promise<TripSession> {
     // While on board, the bus has passed the boarding stop with you on it.
     const at = s.state?.legIndex ?? 0;
+    const noLive = () => null;
     let itinerary = s.itinerary;
-    for (const [i, leg] of s.itinerary.legs.entries()) {
-      if (i <= at || !isTransit(leg.mode) || !rideGone(leg, this.live.get(i), now)) continue;
-      const option = Combine.catchableOptions(itinerary, i, now, false, () => null)[0];
+    for (let i = at + 1; i < itinerary.legs.length; i++) {
+      const leg = itinerary.legs[i];
+      if (!isTransit(leg.mode)) continue;
+      const missed = itinerary !== s.itinerary && !Combine.catchable(leg, null, Combine.reachBy(itinerary, i, now, false, noLive));
+      if (!missed && !rideGone(leg, this.live.get(i), now)) continue;
+      const by = Combine.reachBy(itinerary, i, now, false, noLive);
+      const modes = (store.value.settings ?? DEFAULT_SETTINGS).modes;
+      const option =
+        Combine.catchableOptions(itinerary, i, now, false, noLive)[0] ??
+        (await repo.ridesAfter(leg, modes).catch(() => [])).find((r) => Combine.catchable(r, null, by));
       if (option == null) continue;
       itinerary = Combine.choose(itinerary, i, option);
       this.live.delete(i);
