@@ -50,12 +50,13 @@ function shown(): string[] {
 
 const leaks = () => shown().filter((s) => ENGLISH.has(s));
 
-async function launchHebrew(reloadedJustNow: boolean, data: object = {}) {
+async function launchHebrew(reloadedJustNow: boolean, data: object = {}, before: () => Promise<void> = async () => {}) {
   await AsyncStorage.clear();
   await AsyncStorage.setItem(MIGRATED_KEY, '1');
   await AsyncStorage.setItem(STORE_KEY, JSON.stringify({ ...data, settings: { ...(data as { settings?: object }).settings, language: 'HE' } }));
   // As after the reload that turned the layout right-to-left (the test renderer can't flip it).
   if (reloadedJustNow) await AsyncStorage.setItem('direction_reload_v1', `rtl:${Date.now()}`);
+  await before();
   await render(<App />);
 }
 
@@ -204,4 +205,12 @@ it('shows Simple Maslul without English UI text', async () => {
   await fireEvent.press((await screen.findAllByTestId('simple_option'))[0]);
   await screen.findByText(he.simple.howToGetThere);
   expect(leaks()).toEqual([]);
+});
+
+it('comes back to Settings after the reload for a language chosen there (I8 a)', async () => {
+  // As if Settings had just chosen Hebrew and the app reloaded.
+  await launchHebrew(true, {}, () => AsyncStorage.setItem('language_from_settings_v1', String(Date.now())));
+  await screen.findByTestId('settings_screen');
+  // Only once: the next launch opens Home.
+  expect(await AsyncStorage.getItem('language_from_settings_v1')).toBeNull();
 });

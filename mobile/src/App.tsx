@@ -16,7 +16,7 @@ import MaslulNative from '../modules/maslul-native/src/MaslulNativeModule';
 import { readLegacyStore } from './native';
 import { navMemory } from './ui/navMemory';
 import { S, lang } from './i18n';
-import { applyLanguage } from './i18n/device';
+import { applyLanguage, backToSettings } from './i18n/device';
 import { repo } from './state/services';
 import { store, useUserData } from './state/store';
 import { Txt } from './ui/components/common';
@@ -185,6 +185,10 @@ export default function App() {
       await store.load(AsyncStorage, readLegacyStore).catch(() => {});
       // Before anything is drawn; when the layout direction has to change, the app reloads (splash stays up).
       if (await applyLanguage(store.value.settings.language, again)) return;
+      if (await backToSettings()) {
+        const simple = store.value.settings.simpleMode;
+        navMemory.state = { index: 1, routes: simple ? [{ name: 'SimpleHome' }, { name: 'SimpleSettings' }] : [{ name: 'Tabs' }, { name: 'Settings' }] } as unknown as typeof navMemory.state;
+      }
       repo.language = lang();
       setUpNotifications();
       await activeTrip.restore().catch(() => {});

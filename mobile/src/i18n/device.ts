@@ -61,6 +61,19 @@ async function settled() {
  * From Settings. A change of direction reloads the app; otherwise the screens are drawn again in
  * the new language where they are (App keys them by language). Call before saving the setting.
  */
-export function changeLanguage(setting: LanguageSetting): Promise<boolean> {
+export async function changeLanguage(setting: LanguageSetting): Promise<boolean> {
+  // Right away: saving the setting next redraws the app in it.
+  setLanguage(resolveLang(setting));
+  // A reload starts the app afresh: it comes back to Settings (see backToSettings).
+  await AsyncStorage.setItem(SETTINGS_KEY, String(Date.now())).catch(() => {});
   return applyLanguage(setting);
+}
+
+const SETTINGS_KEY = 'language_from_settings_v1';
+
+/** Whether the app was just reloaded for a language chosen in Settings, so it should open there again. */
+export async function backToSettings(): Promise<boolean> {
+  const at = Number(await AsyncStorage.getItem(SETTINGS_KEY).catch(() => null));
+  await AsyncStorage.removeItem(SETTINGS_KEY).catch(() => {});
+  return Number.isFinite(at) && at > 0 && Date.now() - at < 60_000;
 }
