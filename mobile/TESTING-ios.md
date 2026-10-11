@@ -1,6 +1,6 @@
 # Maslul: iOS test
 
-A full test of the React Native rewrite on iOS: **round 2**, on branch `feature/upstream-1.2.1`. Do every check, I1–I14, from scratch: it adds the Kotlin app's 1.1.1–1.2.1 (I13, Simple Maslul and Russian) and the fixes from round 1 (I14). Round 1's report is `ios-report-round1.md`. The build itself is the first check. The goal is to **find and report problems, not fix them**; fixes are made in the main checkout and come back through git.
+A **short re-test** of the React Native rewrite on iOS, **round 3**, on branch `feature/upstream-1.2.1`: only what failed in round 2 (its report is `ios-report-round2.md`), the fixes made for it, and the fixes made for the Android round that iOS shares. Everything else passed and isn't repeated. The build itself is the first check. The goal is to **find and report problems, not fix them**; fixes are made in the main checkout and come back through git.
 
 ## Build on the Mac
 
@@ -34,7 +34,6 @@ npx expo run:ios --configuration Release
 - MapLibre's screen-reader labels follow the phone's language, not the app's.
 - On the stop screen the Directions button covers a row until you scroll to the end.
 - The routes screen's chip row scrolls sideways; a long time chip pushes Options under the fixed Refresh button.
-- The walk-only card's arrive time counts from now, even with a chosen time (the Kotlin app does the same).
 - Pick on map names the spot as the map data has it (often Hebrew), whatever the app's language.
 
 ## Checks
@@ -43,56 +42,28 @@ Screenshot each check (`xcrun simctl io booted screenshot <name>.png`) and name 
 
 **I1. Build.** `prebuild`, `pod install` and the Xcode build all finish; the app opens without a red error screen. If anything fails, this is the most important finding: copy the **first** error lines in full (from Xcode's Report navigator, or the terminal), not just the last.
 
-**I2. First run.** The location prompt appears with Maslul's text; allow it. Home: the map draws with streets and labels, the OpenFreeMap/OSM credit (the ⓘ button) shows at the top left under the search card, the blue dot is in Tel Aviv. Tabs switch; the bottom sheet drags up and down.
+**J1. Live directions (I6.2).** Open a route whose bus leaves in 10 minutes or more → Start, on the simulator walking toward the stop (`xcrun simctl location booted start` with waypoints along the walk). Right after Start and all the way to the stop, the guide says "Walk to <stop>" with the bus's time, never the on-bus step ("Bus N → … · N stops"), and no "Get off" alert comes before the bus leaves. Also walk along the bus's own path past the stop before it leaves: still the walk step. Then ride (waypoints along the bus's path after it leaves): the on-bus step, "Get off at the next stop", "Get off now".
 
-**I3. Planning.** Where to? → type `haifa center`: "Haifa Center HaShemona" is listed; pick it. Routes are listed with times and line chips; open one: the details, the route on the map, Share opens the iOS share sheet. Change the time (Leave now → a later time, then Arrive by) and the list updates. Pick on map: drag the map under the pin, the place name under it updates, and Choose sets it. Typing works with the keyboard up (fields aren't covered).
+**J2. Names (I6, I11.2).** A route with a train: the guide, Home's trip banner and a reminder say "Train from …" / "Train N", never "Train Train". A reminder's text "Leave at HH:MM · Bus N from … at HH:MM" uses one consistent pair of times (both live, or both timetable).
 
-**I4. Lines and stops.** Search line `480`: the line screen shows its route, stops and timetable. Open a stop: its departures. Add a favourite stop and a favourite place; quit the app (swipe it away) and reopen: they're still there. Settings: dark theme, then back; My shuttles: add one, edit it, delete it.
+**J3. Shuttles (I15.6).** New shuttle → One time → 21:00 → Add: added, with no Repeating run. Also 19:30. Save a shuttle with two departures, one about 40 minutes from now and one 3 hours later, from a place near you to another; plan between them, Leave now: the shuttle route leaves at the first departure, and the card names it by its own name, not "Bus <name>".
 
-**I5. Live buses** (weekday daytime only). On a stop screen some times turn green; on line 1 or 480 bus icons appear on the map within about 30 s and move. This is the iOS native code (it downloads and unpacks the live-bus feed), so if no bus ever appears while the buses run, say so even with no error on screen.
+**J4. "Last today" (I11.4).** Late evening or at night (after 23:00), Leave now on a short trip where night buses run: no "Last today" while another bus follows within the hour, and never on tomorrow morning's routes. Depart at 23:30 on a Sunday–Thursday: the tag is on at most one card, tonight's.
 
-**I6. Live trip.** Best on a real iPhone; on the simulator move the position with `xcrun simctl location booted start` (a list of waypoints) or repeated `set`.
-1. Open a route → Start. iOS asks for location (if not yet) and **notifications**: allow both.
-2. The guide follows the trip step by step; the blue location indicator shows in the status bar.
-3. Put the app in the background (home screen, or lock the phone) for a few minutes: "board soon" / "get off" alerts arrive as notifications, and on return the guide has moved on.
-4. Quit the app during a trip and reopen it: the trip is restored. End trip: the guide closes, no alerts afterwards.
+**J5. Train stations in search (I15.4).** Where to? → `תל אביב מרכז` (and `Haifa Center`): the train station in the results has the train icon in blue. Stations near Tel Aviv Savidor Center (`xcrun simctl location booted set 32.0837,34.7983`): no stop listed more than once, also after Refresh. Then move 1.6 km (`set 32.0853,34.7818`) and wait 10 s without Refresh: the list follows.
 
-**I7. Reminder.** On a route → Reminder for a few minutes ahead. It fires on time as a notification, with the text in the app's language, also with the app in the background.
+**J6. Language change keeps the screen (smaller point a).** Settings → עברית: after the reload you're on Settings, not Home. Back to English: Settings again. In Simple Maslul's settings, a language button: back on Simple's settings. English → Русский and back: no reload, and the **map labels** follow (Home's map and line 480's) without a restart; Lines → Light rail: "3 variants" / "3 חלופות" / "3 варианта".
 
-**I8. Hebrew.** Settings → Language → עברית: the app reloads once, in Hebrew and right to left. Repeat I2–I4 briefly in Hebrew: every screen right to left, map labels in Hebrew, the time sheet, dialogs and their buttons mirrored. Search `ויצמן 5 כ`: a "…כפר סבא" result near the top. Back to English: left to right after one reload.
+**J7. Location revoked (smaller point g).** On Stations with nearby stops, revoke location (`xcrun simctl privacy booted revoke location com.maslul.app`, or iOS Settings → Maslul → Location → Never), come back to the app: the list is replaced by "Allow location access…" without a relaunch. Allow again and come back: the stops return.
 
-**I9. Language = System.** App on Language → System. Set the simulator to Hebrew (Settings → General → Language & Region, add עברית as primary; the simulator restarts) and open Maslul: Hebrew, right to left. Also check: iOS Settings → Maslul → Language offers English, עברית and Русский. Delete and reinstall the app while the phone is in Hebrew: the location prompt is in Hebrew. Set the phone back to English: Maslul is English again.
+**J8. Small fixes shared with Android.**
+1. Where to?, start at Current location: "Current location" isn't offered as the destination; picking a place closes the keyboard.
+2. Simple Maslul, the full app's Work set: Simple's Work button shows that address with no Clear; change it, then Clear: back to the full app's Work; Save.
+3. Home under a favourite stop: "then HH:MM  HH:MM" never repeats a time.
+4. Plan, open the time sheet → Depart at an hour from now: the Walk card's arrival counts from that time; refresh keeps the chosen time.
+5. Star three stops, scroll Home's sheet to them, unstar all: the places come back (no blank sheet).
 
-**I10. Look and feel.** Notch and home indicator: nothing hidden under them on any screen. Dark mode (Settings → Developer → Dark Appearance, or Control Center) with the app on System theme: colours follow. Larger text (Settings → Accessibility → Display & Text Size → Larger Text): nothing cut off badly. Optional: VoiceOver on Home, buttons read sensible names.
-
-**I11. New features.**
-1. *Favourite stops on Home:* star a stop (Stations → a stop → the star). Home's sheet shows "Favorite stops" with it, its distance and up to 3 lines; tapping the name opens the stop. Unstar it: the section goes.
-2. *Reminder from a stop:* long-press a departure at least 30 minutes away (on a stop screen, and under a starred stop on Home) → "Remind me to leave": a toast, and the notification arrives at the time it said.
-3. *Last routes offline:* plan a trip, turn on Airplane Mode (on a real iPhone; the simulator uses the Mac's network), tap refresh: the same routes under "No new routes, showing the ones saved at HH:MM". Airplane Mode off → Try again: fresh routes, no banner.
-4. *Last bus:* time sheet → Depart at 23:30 on the next Sunday–Thursday: if the list reaches into tomorrow morning, one card is tagged "Last today".
-5. *Stops away* (weekday daytime): a stop screen with live times shows "N stops away"; during a trip the waiting step says "· N stops away".
-
-**I12. Fixes from the last look.** In the search fields (From/To) the typed text and the placeholder sit vertically centred, level with the dot and the ✕, in English and in Hebrew. The same in the line search, the favourite name and the shuttle name. With the Home map full screen, the sheet stays as a thin "PLACES" strip at the bottom with the two square buttons on its edge; tapping the strip brings the places back.
-
-**I13. From the Kotlin app's 1.1.1–1.2.1.** In full detail as `TESTING.md` X1–X3 and X5–X7 (same app; skip X4, Android only). Briefly:
-1. *Simple Maslul:* Settings → Simple Maslul → Switch. Big buttons, no tab bar; the location prompt if not yet allowed. Set a button's address, plan to it, open an option: plain numbered steps. Simple Settings → Русский and עברית (right to left after one reload), edit a button, then "Switch to full Maslul": the tabs are back. Nothing hidden under the notch or the home indicator on these screens; big text fits on a small iPhone.
-2. *Russian:* Settings → Language → Русский: Russian everywhere (walk the screens of I2–I4 and record any English UI text), left to right; delete and reinstall with the phone in Russian: the location prompt is in Russian.
-
-**I14. Fixes from the first iOS report** (build it fresh: the native module changed). Each at the place it failed:
-- I9 again: phone in Hebrew (`defaults write -g AppleLanguages -array he-IL en-IL`, reboot) with the app on System: Hebrew and right to left. Also with the phone back in English and the app on עברית: titles (Lines, Stations, the time sheet's "מתי?") sit on the right with their padding.
-- I9: phone in Hebrew, app on English: all text left-aligned, nothing right-aligned.
-- I10: with the app open on the Lines tab, change the text size (`xcrun simctl ui booted content_size extra-large`, then `extra-extra-extra-large`): Lines, Home and the trip banner redraw at the new size, with no "2.." badges or clipped times, and the app stays on the screen it was on.
-- I8: with the app in English *and* in עברית, `ויצמן 5 כ` lists a "…כפר סבא" result, in Hebrew, in the top three.
-- I4: stop sending positions (or deny location), open Stations: "Allow location access" shows only when access is off; otherwise "Tap Refresh to try again".
-- I8: the time sheet's Depart at / Arrive by control is whole, with its edges, in Hebrew.
-
-**I15. New in this round** (in full detail as `TESTING.md` W1–W6; the same app). Briefly:
-1. *Fastest first:* routes are sorted by arrival; the first card says "Arrives first" ("Leaves last" with Arrive by), the shortest trip says "Shortest trip". Options → "Show first" → Easiest changes the order and the first card says "Easiest".
-2. *Lifts:* with rides on (Settings → Advanced), the ride sheet has "Only at their destination" (every route then gets out at the driver's destination) and "When does the driver leave?" (opens the time sheet). Arrive by with a driver heading somewhere: every route arrives by then, each with its own pickup time.
-3. *Search:* `20314` finds the stop with that code first (also in Stations' search); `הרצל` near Tel Aviv lists Tel Aviv-area stops before other towns'; a favourite with your own name ("Grandma's") comes first when you type that name.
-4. *Train stations:* a train station has a train icon in blue (Stations near Tel Aviv Savidor Center, search results, favourites) and a bigger blue ring on Home's map.
-5. *Time wheels:* the time sheet and the shuttle editor pick times on hour and minute wheels: they scroll and snap smoothly on iOS, inside the sheet, without moving the sheet itself; a tap on a row picks it; VoiceOver reads "Hour"/"Minute" with the value and swipes up/down step it; in Hebrew the hours stay on the left; with the largest text the rows aren't cut. No keyboard.
-6. *Repeating shuttles:* a new shuttle → Repeating → From 07:30 Until 19:00 Every 30 min → "Add 24 departures": one chip "Every 30 min, 07:30–19:00"; My shuttles shows it the same way; its ✕ removes the whole run.
+**J9. Still open from round 2, for the record** (not fixed in this build; one screenshot each tells whether they're unchanged): route-detail times wrapping at XL text (I10); Hebrew phone with the app in English: mirrored switches and field padding (I14); no banner for a reminder while the app is open; the restored trip's first row says "Start"; the Russian Options sheet's button below the fold; Hebrew Settings "לפי המכ…" cut; Russian Lines placeholder cut.
 
 ## Report
 

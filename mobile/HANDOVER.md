@@ -25,7 +25,7 @@ Read this first. A fresh session should be able to start from this file alone. T
 
 | Branch | Fork (`origin`) | What |
 |---|---|---|
-| `feature/upstream-1.2.1` | pushed up to `fc049e4` (the build under test). After it, 3 local doc commits (`00d9b9f`, `99549d6`, `58fc8e1`: how the iOS tester hands back its results), plus this handover; not pushed, the user hasn't said yes | **The branch under test.** Everything: the rewrite, its fixes, the upstream 1.1.1–1.2.1 port, the iOS round-1 fixes, round-6 fixes and the first feature requests. 275 tests |
+| `feature/upstream-1.2.1` | pushed up to `fc049e4` (round 7's build). After it, local only: 3 doc commits (iOS hand-back), the round-7 fixes and this handover; not pushed, the user hasn't said yes. **The Mac needs these pushed before iOS round 3** | **The branch under test.** Everything: the rewrite, its fixes, the upstream 1.1.1–1.2.1 port, the iOS fixes, round-6 and round-7 fixes and the first feature requests. 293 tests |
 | `rewrite/react-native` | pushed, `19875c5` | The rewrite and the iOS round-1 fixes, without the upstream port. Fully contained in the branch above |
 | `master` | 3 commits behind the local one | Fast-forwarded to upstream's 1.2.1 (`076af78`), not pushed |
 
@@ -94,24 +94,24 @@ They should also check the wording of `FEATURES.md`.
 - **iOS round-1 fixes, none seen on a device yet** (I14 in `TESTING-ios.md`): Language = System via the native `preferredLanguage` constant; `writingDirection` on all text (`textDirection` in `theme.ts`); the app redrawing when the text size changes (`Fragment key={fontScale}` in `App.tsx`, nav state kept); Photon `lang=default`. Nominatim still follows iOS's Accept-Language (last fallback only).
 - **To discuss with the user — the Markdown files.** Should the working docs (`HANDOVER`, `STATUS`, `UPSTREAM-PORT`, `TESTING*`, `FEATURES`, `scripts/START-HERE.md`) stay in git? Suggested: keep them in the fork for now (the Mac and the testers get them that way), and leave them out of the PR to the original repo: there only the code, the READMEs, `AGENTS.md` and a trimmed `NOTES.md` (e.g. `docs/architecture.md`) go; `FEATURES.md` and `UPSTREAM-PORT.md` become the PR description. The user hasn't decided.
 
-## Round 7 (2026-10-11): what changed and what's waiting
+## Round 8 (2026-10-11): what changed and what's waiting
 
-- **Android round 6** (report in `/share/maslul-test/archive/round6/`): all 15 findings handled. #3 ("Last today" missing) is a known limitation, not fixed: the check looks one page ahead and night buses keep running. Fixes: same-name stops (`exactRadius`), details/share match the card (`keepRides`, live legs), the live guide's restart race and last-walk distance, page order, language/text-size keep the screen (`navMemory`, native `currentLanguage`, no reload for same direction), "Train Train", Back on the full map, re-granted location, reminders re-made exact (`rescheduleReminders`), star state and row labels, time wheels instead of the keyboard.
-- **BUGS.md:** 1 (arrive-by with a lift) and 4 (fastest first; Options → "Show first") fixed. 2 (trains don't show) and 3 (routing) need the user's examples.
-- **FEATURE-REQUESTS.md done:** 1 time wheels (`components/wheels.tsx`), 3 repeating shuttles (kept as plain times, shown as runs), 5 lift only to the driver's destination, 7 lift time (row in the ride sheet → time sheet), 9 search (stop codes via Stride + Transitous, near-first, own places first), 10 train-station icons (`Place.mode`). 8 express lines: the fast-lane shuttles 861–864 are ordinary buses in the MOT GTFS, so nothing to add (W7 checks it).
-- **Left for doing together:** 2 design pass (needs the user's eye), 4 trip state (needs real rides), 6 traffic (no free traffic source; TomTom/HERE need an account and key), BUGS 2 and 3 (need examples).
-- **Unverified natively:** the Kotlin/Swift `currentLanguage` (the APK build compiles the Kotlin), the wheels' feel on phones (snap, nested scrolling in the sheet, TalkBack/VoiceOver).
-- **Round 7 has been run** on build `fc049e4` (APK published 2026-10-11 02:14 Israel time). See "Testing state" for where the reports are. **Next session: read both reports in full, then fix.**
+- **Round 7 reports** (Android: `/share/maslul-test/archive/round7/`; iOS: `/share/maslul-ios-test/ios-report-round2.md`, `evidence-round2/`, `logs-round2/`; the iOS tester calls it "round 3" inside). Fixed, each with a test:
+  - Language: H4 blank screen after the phone goes Hebrew (`applyLanguage` waits for the rebuilt screen to settle before `reloadAppAsync`); a reload from Settings comes back to Settings (`language_from_settings_v1`); map labels follow a change without a reload (`mapStyle` caches the style without labels).
+  - Guide and naming: the guide never moves ahead of a ride that hasn't left (`notAheadOfRides`); "Train Train" (`modeLine`/`rideName` in `fmt.ts`); reminders use one `departs` time; reminders re-armed on every Android launch.
+  - Routes: a 429 with only shuttle routes shows `search_failed_banner`; Leave now sorts catchable first; refresh keeps the chosen time; the Walk card counts from the chosen time.
+  - Shuttles: a one-time departure after 19:00 can be added; a shuttle taken all the way offers its first departure (it was merged into the later one). A shuttle ride goes by its own name ("Bus Test Shuttle" before).
+  - "Last today": not when another bus follows within 60 min, nor on another calendar day.
+  - Smaller: "N variants" translated; Photon train stations get the train icon; duplicate nearby stops; Stations re-looks-up after moving 500 m and drops its list when location is revoked; Simple's Clear on Home/Work; no Current location for both ends; board row "then" times deduped; the ride card's drop-off time; Home's sheet scrolls back when it shrinks; the wheels are one TalkBack control; Maestro flows set the Advanced switches (both on after a fresh install, as in Kotlin).
+- **Not fixed, listed as known in the checklists:** T1's re-timed trip after the bus passes (only the guide part fixed; needs a real ride to see), Home with only the map (no trigger found), English station names in Stations search (Transitous has Hebrew only), and the minors: Simple's quote marks, P6's 2 h 31 route, P5 offline drops, Stations' slow spinner, the long-press menu position, share bidi, largest-font overlaps; iOS: XL time wrap, Hebrew phone + English app mirroring, no foreground banner, "Start" on a restored trip, Russian Options button, small cuts.
+- **New Hebrew string for the user to check:** "חלופות" (line variants).
+- **Unverified on devices:** everything above, especially the H4 settle wait, TalkBack on the wheels, re-armed reminders and the Maestro `checked` selector.
 
 ## Testing state
 
-- **Checks here:** `npx tsc --noEmit` is clean; `npx jest --selectProjects app` passes 275 tests. The `live` project calls real services (Transitous, Stride); run it only on purpose, e.g. `npx jest --selectProjects live __tests__/live/rideShuttle.test.ts`.
-- **Round 7 (finished 2026-10-11), both on build `fc049e4`, versionCode 8:**
-  - **Android:** the Windows-host session ran `/share/maslul-test/TESTING.md` (sections U, N, P, L, T, R, S, A, H, V, X, **W** new features, **F** one check per round-6 finding, M Maestro). Its report is `/share/maslul-test/report.md` with `evidence/` (written 08:26). Also there: `bash.exe.stackdump`, a crash dump of the tester's own shell, not the app; look at it only if the report mentions it. The tester can't see `/workspace`, only `/share`.
-  - **iOS:** the Mac session ran `TESTING-ios.md` (I1–I15; I15 is the new features). It may also cover the round-2 checks whose report never arrived. Its results come back through the user: a Claude artifact link (read it with the Artifact tool's `read`, and `path: maslul-ios-results.zip` for the zip), or a zip the user hands over (put it in `/share/maslul-ios-test/` and unzip it into a fresh folder there; round 1 is archived there as `*-round1`). The hand-back instructions (zip + artifact) are in the 3 unpushed commits, so the Mac may not have had them; ask the user how the results came back.
-  - Read both reports in full before fixing anything. Then: fix on `feature/upstream-1.2.1` with a test each, commit, archive the round (Android: move `report.md` and `evidence/` to `/share/maslul-test/archive/round7/`; iOS: `*-round2` names in `/share/maslul-ios-test/`), rebuild and publish (`JAVA_HOME=$HOME/jdk/jdk-17.0.20.1+1 ANDROID_HOME=$HOME/android-sdk npm run build:test-apk`, look for "BUILD SUCCESSFUL"; it publishes to `/share/maslul-test` and leaves `report.md`/`evidence/` alone, so create them empty afterwards), and write the next checklists (re-test what failed).
-- **Things to watch for in the reports, untested before this round:** the time wheels (snap, scrolling inside the sheet, TalkBack/VoiceOver, Hebrew order, large text); the two Maestro flows that now tap wheel rows by position (`shuttle_missing`, `shuttle_save`: a failure there may be the flow, not the app); the native `currentLanguage` (Kotlin and Swift) behind F6/H4 and I9; lifts with arrive-by and "Only at their destination" (W2); stop-code search (W3); fast-lane line 861 (W7, data-dependent).
-- **Results before this round:** Android rounds 1–6 (`STATUS.md`); iOS round 1: 12 pass, 3 fail, all fixed (`STATUS.md`, "Verified on iOS").
+- **Checks here:** `npx tsc --noEmit` is clean; `npx jest --selectProjects app` passes 293 tests. The `live` project calls real services (Transitous, Stride); run it only on purpose, e.g. `npx jest --selectProjects live __tests__/live/rideShuttle.test.ts`.
+- **Round 8 (ready to run):** a short re-test of what failed. Android: `/share/maslul-test/TESTING.md` (section G and Maestro M1) on the APK just published, with an empty `report.md` and `evidence/`. iOS: `TESTING-ios.md` round 3 (J1–J9), which needs this branch pushed first. Same flow afterwards: read both reports, fix with tests, archive (Android `archive/round8/`; iOS `*-round3` names), rebuild, next checklists.
+- **Results before this round:** Android rounds 1–7 (`STATUS.md`); iOS rounds 1–2 (`STATUS.md`, "Verified on iOS").
 - **Never seen:** a real ride on a phone on a weekday (real GPS, live buses during a trip, battery savers stopping the trip service).
 
 ## Waiting on the user
@@ -120,11 +120,12 @@ They should also check the wording of `FEATURES.md`.
 - Feature 6 (lift times with traffic): no free source; TomTom/HERE need an account and key. Keep or drop?
 - Whether the working Markdown files stay in git (see "Known open items").
 - A Russian speaker to read `src/i18n/ru.ts` (all written here, unreviewed).
-- Pushing the 3 local doc commits and this handover.
+- Pushing the local commits (doc commits, round-7 fixes, this handover): needed before the Mac can run iOS round 3.
+- The Hebrew "חלופות" for line variants.
 
 ## The plan, in order
 
-1. **This test round** (above): read both reports, fix on `feature/upstream-1.2.1`, add tests, commit, rebuild, re-test only what failed. Archive each round as described under "Build and environment".
+1. **Round 8** (above): run it, read both reports, fix on `feature/upstream-1.2.1`, add tests, commit, rebuild, re-test only what failed. Archive each round as described under "Build and environment".
 2. **Merge** `feature/upstream-1.2.1` into `rewrite/react-native` once it passes (ask first).
 3. **Full code review,** when the user says so.
 4. **A real weekday ride** with the release-like build.

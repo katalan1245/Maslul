@@ -68,6 +68,8 @@ Fixed after round 4 (passed in round 5 except where said):
 
 - **Round 6** (10–11 Oct, joint round on `feature/upstream-1.2.1`, build 01b1f51; report in `/share/maslul-test/archive/round6/`): the full pass with the upstream port. 15 findings, all handled on 11 Oct (see `HANDOVER.md`, "Round 7"); #3 (no "Last today" when night buses keep running) is a known limitation. Round 7 re-tests them (section F) with the new features (section W).
 
+- **Round 7** (11 Oct, build fc049e4, versionCode 8; report in `/share/maslul-test/archive/round7/`): 50 pass, 12 fail, 1 couldn't test (63 checks), no crash all session. Passed among others: the upgrade from Kotlin v4 (U), favourite stops on Home, reminders from a stop, the offline list, every guide step, Simple Maslul, Russian, lifts, stop-code search. Failed: blank screen after the phone goes Hebrew (H4/F6), reminders lost when the exact-alarm grant is revoked, an impossible re-timed trip (T1), first card not catchable (W1), train reminder times, 429 showing only shuttles, Home with only the map, Advanced switches on after install (Maestro 6/11), TalkBack on the wheels, one-time shuttle times after 19:00, a skipped shuttle departure, map labels after a no-reload language switch, "variants 3", the Walk card's time. Fixed on 11 Oct except T1's re-timing and the bare Home (see `HANDOVER.md`, "Round 8"); round 8 re-tests them (section G).
+
 ## Verified on iOS
 
 **Round 1** (10 Oct, Shabbat, build 6fdd280, iPhone 17 Pro simulator, iOS 26.0, Xcode 27.0; report `/share/maslul-ios-test/ios-report.md`): 12 pass, 3 fail, 1 couldn't test (VoiceOver). The Swift module builds (Xcode 26.4+ needed) and the live-bus feed decodes: buses moved on line 24 after Shabbat. A trip in the background gave "Get off" alerts, was restored after a kill, and the reminder fired on time.
@@ -80,6 +82,8 @@ Fixed after round 1 and not yet re-tested (I14 in `TESTING-ios.md`):
 - "Allow location access" showed when access was on but no position came: it now says to tap Refresh, on Lines too.
 - The map credit was under Home's sheet: on Home it's top left now.
 - The segmented control's divider uses the start border (the Hebrew time sheet looked cut).
+
+**Round 2** (11 Oct, build fc049e4, same simulator; report `/share/maslul-ios-test/ios-report-round2.md`): 29 pass, 5 fail, 2 couldn't test (VoiceOver, offline). The round-1 fixes held (Language = System, text size redraw, Photon `lang=default`, the location message); the time wheels, the reminder toast from Home and line 480's framing work. Failed: the guide on the bus before it comes (I6.2), one-time shuttle times after 19:00, "Last today" on night buses, the train icon in search results, "Train Train", times wrapping at XL text, and a Hebrew phone with the app in English (mirrored switches). All fixed on 11 Oct except the last two; round 3 (J1–J9 in `TESTING-ios.md`) re-tests them.
 
 ## Not verified yet
 
