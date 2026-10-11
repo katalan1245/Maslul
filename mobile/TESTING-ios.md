@@ -96,7 +96,12 @@ Screenshot each check (`xcrun simctl io booted screenshot <name>.png`) and name 
 
 ## Report
 
-Write `ios-report.md` (in the format below) with screenshots in an `evidence/` folder and logs in `logs/`, and bring them back however is easiest (last time: the `maslul-ios-test` handoff folder). Work through every check even if some fail; a failure is a finding, not a reason to stop. Keep what you saw separate from guesses about the cause.
+Write `ios-report.md` (in the format below) with screenshots in an `evidence/` folder and logs in `logs/`. Work through every check even if some fail; a failure is a finding, not a reason to stop. Keep what you saw separate from guesses about the cause.
+
+**Hand the results back as a Claude artifact.** When the report is finished:
+1. Zip everything into one file: `zip -r maslul-ios-results.zip ios-report.md evidence logs`.
+2. Publish it with your Artifact tool: a small HTML page titled "Maslul iOS results" that shows the report's Summary and Findings, with the zip attached as a supporting file at `maslul-ios-results.zip` (linked from the page). If the publish refuses the zip, publish the page with the full report text, each screenshot as an image file and each log as a `.txt` file instead, and say so on the page.
+3. Give the user the artifact's link; that link is how the results come back.
 
 ```
 # Maslul iOS test report
