@@ -160,7 +160,8 @@ export function ItineraryCard({
                 ? S.cards.dropOffNear(RidePlanner.dropOffName(itin)!)
                 : S.cards.dropOffOnTheWay
           }
-          detail={S.cards.byCar(Fmt.time(car.end), Fmt.duration(legDurationSec(car)))}
+          // As the card's own times run (the walk and drive move with a late or early train).
+          detail={S.cards.byCar(Fmt.time(expected.legs[itin.legs.indexOf(car)].end), Fmt.duration(legDurationSec(car)))}
         />
       )}
       {onBoard && first != null &&

@@ -38,3 +38,23 @@ test('with a strip, the sheet goes down to it instead of away, and that counts a
   await act(() => sheet.onChange(0));
   expect(screen.getByTestId('c')).toHaveTextContent('true');
 });
+
+test('content that shrinks under the scroll position scrolls back to its end, not to a blank sheet (L3)', async () => {
+  await render(
+    <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 400, height: 900 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}>
+      <MapSheet peekFraction={0.5} map={() => null}>
+        <Text>places</Text>
+      </MapSheet>
+    </SafeAreaProvider>,
+  );
+  const list = screen.getByTestId('sheet_list');
+  const proto = (require('react-native') as { ScrollView: { prototype: { scrollTo: jest.Mock } } }).ScrollView.prototype;
+  const scrollTo = jest.spyOn(proto, 'scrollTo').mockImplementation(() => {});
+  await fireEvent(list, 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 300 } } });
+  await fireEvent(list, 'scrollEndDrag', { nativeEvent: { contentOffset: { x: 0, y: 500 } } });
+  // Still long enough: stays.
+  await fireEvent(list, 'contentSizeChange', 400, 900);
+  expect(scrollTo).not.toHaveBeenCalled();
+  await fireEvent(list, 'contentSizeChange', 400, 400);
+  expect(scrollTo).toHaveBeenCalledWith({ y: 100, animated: false });
+});

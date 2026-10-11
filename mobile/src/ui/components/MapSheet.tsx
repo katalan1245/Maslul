@@ -1,6 +1,6 @@
 import BottomSheet, { BottomSheetHandle, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { type ReactNode, useRef, useState } from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { type ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { type SharedValue, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
@@ -53,6 +53,9 @@ export function MapSheet({
   // window let the expanded sheet run up over the search card.
   const [height, setHeight] = useState(useWindowDimensions().height);
   const sheet = useRef<BottomSheet>(null);
+  const list = useRef<ScrollView>(null);
+  const offset = useRef(0);
+  const view = useRef(0);
   // With a strip, index 0 is the strip and 1 the peek.
   const low = strip ? 1 : 0;
   const [index, setIndex] = useState(low);
@@ -89,7 +92,27 @@ export function MapSheet({
         handleComponent={(p) => <BottomSheetHandle {...p} indicatorStyle={{ backgroundColor: t.c.outline }} accessible={false} accessibilityLabel={null} />}
         style={styles.shadow}
       >
-        {scroll ? <BottomSheetScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 8 }}>{content}</BottomSheetScrollView> : content}
+        {scroll ? (
+          <BottomSheetScrollView
+            ref={list}
+            testID="sheet_list"
+            contentContainerStyle={{ paddingBottom: insets.bottom + 8 }}
+            onLayout={(e) => (view.current = e.nativeEvent.layout.height)}
+            onScrollEndDrag={(e) => (offset.current = e.nativeEvent.contentOffset.y)}
+            onMomentumScrollEnd={(e) => (offset.current = e.nativeEvent.contentOffset.y)}
+            // Content that shrinks under the scroll position (the last starred stop unstarred) left the sheet blank (L3).
+            onContentSizeChange={(_, h) => {
+              if (offset.current > Math.max(h - view.current, 0)) {
+                offset.current = Math.max(h - view.current, 0);
+                list.current?.scrollTo({ y: offset.current, animated: false });
+              }
+            }}
+          >
+            {content}
+          </BottomSheetScrollView>
+        ) : (
+          content
+        )}
       </BottomSheet>
     </View>
   );
