@@ -18,7 +18,7 @@ import {
   modeFromMotis,
 } from './models';
 import { type Instant, isoUtc, parseInstant } from './time';
-import { sortedBy } from './util';
+import { distinctBy, sortedBy } from './util';
 
 /** Longest walk to or from a stop that route planning allows by default. */
 export const DEFAULT_MAX_WALK_MINUTES = 20;
@@ -478,7 +478,8 @@ export class TransitousApi {
         if (sub.trim()) p.subtitle = sub;
         return p;
       });
-    return sortedBy(stops, (s) => GeoMath.distance(center, s));
+    // The same stop can come several times (one per feed entry), identical down to its code: one row each.
+    return distinctBy(sortedBy(stops, (s) => GeoMath.distance(center, s)), (s) => `${s.name}|${s.subtitle ?? ''}`);
   }
 
   /** Departures from [stopId]: at least [count], and all of those within [windowSec] of [time] when given. */

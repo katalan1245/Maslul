@@ -29,6 +29,7 @@ export function featureToPlace(f: PhotonFeature): Place | null {
   const sub = [p.name != null ? address : null, p.city].filter((s) => s != null).join(', ');
   const place: Place = { name, lat: c[1], lon: c[0], kind: p.name == null ? 'ADDRESS' : 'POI' };
   if (sub.trim()) place.subtitle = sub;
+  if (p.osm_key === 'railway' && (p.osm_value === 'station' || p.osm_value === 'halt')) place.mode = 'TRAIN';
   return place;
 }
 

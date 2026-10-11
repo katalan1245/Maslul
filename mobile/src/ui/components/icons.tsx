@@ -74,7 +74,7 @@ export function kindIcon(k: PlaceKind, mode?: TransitMode): IconName {
     case 'CURRENT_LOCATION':
       return 'my-location';
     case 'POI':
-      return 'business';
+      return mode != null ? modeIcon(mode) : 'business';
     case 'ON_BOARD':
       return 'directions-bus';
     default:

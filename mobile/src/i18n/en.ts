@@ -262,6 +262,7 @@ export const en = {
     addressOrPlace: 'Search address or place',
   },
   lines: {
+    variants: (n: number) => `${n} variants`,
     title: 'Lines',
     loadFailed: "Couldn't load lines. Check your connection.",
     detailsUnavailable: 'Line details unavailable',

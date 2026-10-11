@@ -121,7 +121,8 @@ export function RoutesScreen({ route, navigation }: NativeStackScreenProps<RootS
           </View>
         );
       case 'walk':
-        return <WalkOnlyCard itin={item.itin} now={now} onPress={() => model.open(item.itin)} />;
+        // Leaving now it sets off now, whenever the search ran; at a chosen time, as planned for it.
+        return <WalkOnlyCard itin={item.itin} now={model.timeMode === 'NOW' ? now : item.itin.start} onPress={() => model.open(item.itin)} />;
       case 'later':
         return model.loadingMore ? (
           <LoadingBox />

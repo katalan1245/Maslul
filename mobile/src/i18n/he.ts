@@ -252,6 +252,7 @@ export const he: Strings = {
     addressOrPlace: 'חיפוש כתובת או מקום',
   },
   lines: {
+    variants: (n: number) => `${n} חלופות`,
     title: 'קווים',
     loadFailed: 'לא הצלחנו לטעון קווים. בדקו את החיבור.',
     detailsUnavailable: 'פרטי הקו לא זמינים',

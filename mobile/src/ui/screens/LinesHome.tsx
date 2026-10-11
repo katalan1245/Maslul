@@ -237,7 +237,7 @@ export function LineRow({ route, variants = 1, favorite = false, onPress }: { ro
           </Txt>
         )}
         <Txt v="labelMedium" color={t.x.subtle}>
-          {route.agency + (variants > 2 ? `  ·  ${variants} variants` : '')}
+          {route.agency + (variants > 2 ? `  ·  ${S.lines.variants(variants)}` : '')}
         </Txt>
       </View>
       {favorite && <Icon name="star" size={18} color={FAVORITE_GOLD} />}

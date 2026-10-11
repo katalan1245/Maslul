@@ -318,6 +318,34 @@ it('shows the next departures at a starred stop on Home, and opens the stop from
   await screen.findByTestId('stop_screen');
 });
 
+it("the walk card arrives by the chosen departure time, not by now (P2)", async () => {
+  const { zoned } = require('../src/data/time') as typeof import('../src/data/time');
+  const { makeLeg } = require('../src/data/models') as typeof import('../src/data/models');
+  const { call, itinOf } = require('./helpers') as typeof import('./helpers');
+  const morning = zoned('2026-10-08', 10);
+  jest.spyOn(Date, 'now').mockReturnValue(morning * 1000);
+  const plan = fake.plan;
+  fake.plan = async (req: unknown) => {
+    const r = await plan(req);
+    const t = (req as { time?: number | null }).time ?? morning;
+    const walk = makeLeg({ mode: 'WALK', from: call(null, 'Start', 32.0853, 34.7818), to: call(null, 'Dizengoff Center', 32.0753, 34.7748), start: t, end: t + 20 * 60, distanceM: 1500 });
+    return { ...r, walkOnly: itinOf('walk', walk) };
+  };
+  try {
+    await planToDizengoff();
+    expect(await screen.findByTestId('walk_only')).toHaveTextContent(/Arrive 10:20/);
+    await fireEvent.press(screen.getByTestId('time_chip'));
+    await screen.findByTestId('time_sheet');
+    await fireEvent.press(screen.getByText('Depart at'));
+    await fireEvent.press(within(screen.getByTestId('time_hour')).getByText('14', { includeHiddenElements: true }));
+    await fireEvent.press(within(screen.getByTestId('time_minute')).getByText('00', { includeHiddenElements: true }));
+    await fireEvent.press(screen.getByTestId('set_time'));
+    await waitFor(() => expect(screen.getByTestId('walk_only')).toHaveTextContent(/Arrive 14:20/));
+  } finally {
+    fake.plan = plan;
+  }
+});
+
 it('marks the last bus of the night, found on the next page, and says so when it is close', async () => {
   const { zoned } = require('../src/data/time') as typeof import('../src/data/time');
   const { makeLeg } = require('../src/data/models') as typeof import('../src/data/models');

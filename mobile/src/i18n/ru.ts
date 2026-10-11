@@ -287,6 +287,7 @@ export const ru: Strings = {
     addressOrPlace: 'Поиск адреса или места',
   },
   lines: {
+    variants: (n: number) => count(n, 'вариант', 'варианта', 'вариантов'),
     title: 'Линии',
     loadFailed: 'Не удалось загрузить линии. Проверьте подключение к интернету.',
     detailsUnavailable: 'Информация о линии недоступна',

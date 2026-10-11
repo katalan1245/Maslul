@@ -97,3 +97,17 @@ test('a real SIRI snapshot decodes and parses', () => {
   expect(vehicleCount({ minute, fetchedAt: minute, byLine })).toBeGreaterThan(1000);
   expect(fetchedAt('siri-snapshot')).toBeGreaterThan(minute);
 });
+
+test('a Photon railway station is a train place (I15.4)', () => {
+  const station = featureToPlace({ geometry: { coordinates: [34.798, 32.084] }, properties: { name: 'תל אביב סבידור מרכז', osm_key: 'railway', osm_value: 'station' } });
+  expect(station?.mode).toBe('TRAIN');
+  expect(featureToPlace({ geometry: { coordinates: [34.798, 32.084] }, properties: { name: 'Azrieli', osm_key: 'shop', osm_value: 'mall' } })?.mode).toBeUndefined();
+});
+
+test('nearby stops listed several times over, identically, come once (W4)', async () => {
+  const { TransitousApi } = require('../src/data/transitousApi') as typeof import('../src/data/transitousApi');
+  const stop = { name: 'ת. רכבת תל אביב - סבידור/הורדה', stopId: 'il-Israel-MOT_1', stopCode: '27997', lat: 32.084, lon: 34.798 };
+  (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true, status: 200, text: async () => JSON.stringify([stop, { ...stop, stopId: 'x_2' }, { ...stop, stopId: 'x_3' }]), json: async () => [stop, { ...stop, stopId: 'x_2' }, { ...stop, stopId: 'x_3' }] });
+  const stops = await new TransitousApi().nearbyStops({ lat: 32.084, lon: 34.798 });
+  expect(stops).toHaveLength(1);
+});

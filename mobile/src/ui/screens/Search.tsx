@@ -2,7 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useRef, useState } from 'react';
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { type Place, type PlaceKind, placeKey } from '../../data/models';
+import { type Place, type PlaceKind, type TransitMode, placeKey } from '../../data/models';
 import { S } from '../../i18n';
 import { favoriteFor } from '../../data/userStore';
 import { location } from '../../state/location';
@@ -17,7 +17,8 @@ import { ModeColors, type Theme, inputType, useTheme } from '../theme';
 /** A chosen place's name as field text; "Current location" isn't text to edit, so it leaves the field empty. */
 const fieldText = (p: Place | null) => (p != null && p.kind !== 'CURRENT_LOCATION' ? p.name : '');
 
-export function kindTint(k: PlaceKind, t: Theme): string {
+export function kindTint(k: PlaceKind, t: Theme, mode?: TransitMode): string {
+  if (mode != null) return ModeColors[mode];
   if (k === 'STOP') return ModeColors.BUS;
   if (k === 'CURRENT_LOCATION') return t.c.primary;
   return t.c.onSurfaceVariant;
@@ -208,7 +209,7 @@ export function SearchScreen({ route }: NativeStackScreenProps<RootStack, 'Searc
             title={item.place.name}
             subtitle={item.place.subtitle}
             icon={item.icon ?? kindIcon(item.place.kind, item.place.mode)}
-            iconTint={item.icon ? undefined : kindTint(item.place.kind, t)}
+            iconTint={item.icon ? undefined : kindTint(item.place.kind, t, item.place.mode)}
             trailing={item.star ? <FavoriteStar saved={favoriteFor(data, item.place) != null} onPress={() => setDraft(draftFor(item.place))} /> : undefined}
             onLongPress={() => setDraft(draftFor(item.place))}
             onPress={() => pick(item.place)}
