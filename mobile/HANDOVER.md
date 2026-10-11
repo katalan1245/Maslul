@@ -25,7 +25,7 @@ Read this first. A fresh session should be able to start from this file alone. T
 
 | Branch | Fork (`origin`) | What |
 |---|---|---|
-| `feature/upstream-1.2.1` | pushed up to `01b1f51`; 24 commits after it are local (the Home strip, all Android round-6 fixes, BUGS 1 and 4, features 1, 3, 5, 7, 9, 10, checklists) | **The branch under test.** Everything: the rewrite, its fixes, the upstream 1.1.1–1.2.1 port, the iOS round-1 fixes, round-6 fixes and the first feature requests. 275 tests |
+| `feature/upstream-1.2.1` | pushed up to `fc049e4` (the build under test). After it, 3 local doc commits (`00d9b9f`, `99549d6`, `58fc8e1`: how the iOS tester hands back its results), plus this handover; not pushed, the user hasn't said yes | **The branch under test.** Everything: the rewrite, its fixes, the upstream 1.1.1–1.2.1 port, the iOS round-1 fixes, round-6 fixes and the first feature requests. 275 tests |
 | `rewrite/react-native` | pushed, `19875c5` | The rewrite and the iOS round-1 fixes, without the upstream port. Fully contained in the branch above |
 | `master` | 3 commits behind the local one | Fast-forwarded to upstream's 1.2.1 (`076af78`), not pushed |
 
@@ -89,7 +89,7 @@ They should also check the wording of `FEATURES.md`.
 
 ## Known open items
 
-- **Home with the map full screen:** the sheet now goes down to a 64 px "PLACES" strip (`strip` on `MapSheet`) instead of away, and the floating Places pill is gone; the user disliked the buttons floating. Not seen on a device yet (iOS I12 and Android N3 describe it).
+- **Home with the map full screen:** the sheet goes down to a 64 px "PLACES" strip (`strip` on `MapSheet`) instead of away; the user disliked floating buttons. Round 7 is the first device look (Android N3, F9; iOS I12).
 - **Last bus on quiet nights:** unverified whether the planner's next page reaches past 04:00. If it doesn't, the feature just stays silent, which is safe.
 - **iOS round-1 fixes, none seen on a device yet** (I14 in `TESTING-ios.md`): Language = System via the native `preferredLanguage` constant; `writingDirection` on all text (`textDirection` in `theme.ts`); the app redrawing when the text size changes (`Fragment key={fontScale}` in `App.tsx`, nav state kept); Photon `lang=default`. Nominatim still follows iOS's Accept-Language (last fallback only).
 - **To discuss with the user — the Markdown files.** Should the working docs (`HANDOVER`, `STATUS`, `UPSTREAM-PORT`, `TESTING*`, `FEATURES`, `scripts/START-HERE.md`) stay in git? Suggested: keep them in the fork for now (the Mac and the testers get them that way), and leave them out of the PR to the original repo: there only the code, the READMEs, `AGENTS.md` and a trimmed `NOTES.md` (e.g. `docs/architecture.md`) go; `FEATURES.md` and `UPSTREAM-PORT.md` become the PR description. The user hasn't decided.
@@ -101,17 +101,26 @@ They should also check the wording of `FEATURES.md`.
 - **FEATURE-REQUESTS.md done:** 1 time wheels (`components/wheels.tsx`), 3 repeating shuttles (kept as plain times, shown as runs), 5 lift only to the driver's destination, 7 lift time (row in the ride sheet → time sheet), 9 search (stop codes via Stride + Transitous, near-first, own places first), 10 train-station icons (`Place.mode`). 8 express lines: the fast-lane shuttles 861–864 are ordinary buses in the MOT GTFS, so nothing to add (W7 checks it).
 - **Left for doing together:** 2 design pass (needs the user's eye), 4 trip state (needs real rides), 6 traffic (no free traffic source; TomTom/HERE need an account and key), BUGS 2 and 3 (need examples).
 - **Unverified natively:** the Kotlin/Swift `currentLanguage` (the APK build compiles the Kotlin), the wheels' feel on phones (snap, nested scrolling in the sheet, TalkBack/VoiceOver).
-- **Next:** a new Android round from `TESTING.md` (W and F sections) and iOS from `TESTING-ios.md` (I15); the iOS round-2 report is still to come through the user.
+- **Round 7 has been run** on build `fc049e4` (APK published 2026-10-11 02:14 Israel time). See "Testing state" for where the reports are. **Next session: read both reports in full, then fix.**
 
 ## Testing state
 
-- **Checks here:** `npx tsc --noEmit` is clean; `npx jest --selectProjects app` passes 255 tests in 37 suites (222 on `rewrite/react-native`). The `live` project calls real services; run it only on purpose.
-- **Running now (started 2026-10-10 evening, after Shabbat), both on `feature/upstream-1.2.1`:**
-  - **Android:** a Claude session on the Windows host (mobile-mcp, adb, Maestro) runs `/share/maslul-test/TESTING.md`: the whole app plus section X (upstream features, X4 upgrades from `maslul-kotlin-1.2.1.apk`) and section F (fixes since round 5). APK built from `01b1f51`, versionCode 8. Its report lands in `/share/maslul-test/report.md` and `evidence/`. The folder was tidied: old rounds are in `archive/round2…5`, and `START-HERE.md` points to `TESTING.md`. The tester can't see `/workspace`, only `/share`.
-  - **iOS:** a Claude session on the user's Mac (Xcode 27, simulator) runs `TESTING-ios.md` round 2, I1–I14. The report comes back through the user, last time into `/share/maslul-ios-test/` (round 1 is archived there as `*-round1`).
-  - The user will say when the reports are in. Read them in full before fixing anything.
-- **Results so far:** Android rounds 1–5 (`STATUS.md`); iOS round 1: 12 pass, 3 fail, all fixed (`STATUS.md`, "Verified on iOS").
-- **Never seen:** a real ride on a phone on a weekday (real GPS, live buses during a trip, battery savers stopping the trip service). Live buses were seen once, on iOS after Shabbat.
+- **Checks here:** `npx tsc --noEmit` is clean; `npx jest --selectProjects app` passes 275 tests. The `live` project calls real services (Transitous, Stride); run it only on purpose, e.g. `npx jest --selectProjects live __tests__/live/rideShuttle.test.ts`.
+- **Round 7 (finished 2026-10-11), both on build `fc049e4`, versionCode 8:**
+  - **Android:** the Windows-host session ran `/share/maslul-test/TESTING.md` (sections U, N, P, L, T, R, S, A, H, V, X, **W** new features, **F** one check per round-6 finding, M Maestro). Its report is `/share/maslul-test/report.md` with `evidence/` (written 08:26). Also there: `bash.exe.stackdump`, a crash dump of the tester's own shell, not the app; look at it only if the report mentions it. The tester can't see `/workspace`, only `/share`.
+  - **iOS:** the Mac session ran `TESTING-ios.md` (I1–I15; I15 is the new features). It may also cover the round-2 checks whose report never arrived. Its results come back through the user: a Claude artifact link (read it with the Artifact tool's `read`, and `path: maslul-ios-results.zip` for the zip), or a zip the user hands over (put it in `/share/maslul-ios-test/` and unzip it into a fresh folder there; round 1 is archived there as `*-round1`). The hand-back instructions (zip + artifact) are in the 3 unpushed commits, so the Mac may not have had them; ask the user how the results came back.
+  - Read both reports in full before fixing anything. Then: fix on `feature/upstream-1.2.1` with a test each, commit, archive the round (Android: move `report.md` and `evidence/` to `/share/maslul-test/archive/round7/`; iOS: `*-round2` names in `/share/maslul-ios-test/`), rebuild and publish (`JAVA_HOME=$HOME/jdk/jdk-17.0.20.1+1 ANDROID_HOME=$HOME/android-sdk npm run build:test-apk`, look for "BUILD SUCCESSFUL"; it publishes to `/share/maslul-test` and leaves `report.md`/`evidence/` alone, so create them empty afterwards), and write the next checklists (re-test what failed).
+- **Things to watch for in the reports, untested before this round:** the time wheels (snap, scrolling inside the sheet, TalkBack/VoiceOver, Hebrew order, large text); the two Maestro flows that now tap wheel rows by position (`shuttle_missing`, `shuttle_save`: a failure there may be the flow, not the app); the native `currentLanguage` (Kotlin and Swift) behind F6/H4 and I9; lifts with arrive-by and "Only at their destination" (W2); stop-code search (W3); fast-lane line 861 (W7, data-dependent).
+- **Results before this round:** Android rounds 1–6 (`STATUS.md`); iOS round 1: 12 pass, 3 fail, all fixed (`STATUS.md`, "Verified on iOS").
+- **Never seen:** a real ride on a phone on a weekday (real GPS, live buses during a trip, battery savers stopping the trip service).
+
+## Waiting on the user
+
+- Examples for BUGS 2 (trains not showing) and 3 (routing): from, to, time, what showed, what was expected.
+- Feature 6 (lift times with traffic): no free source; TomTom/HERE need an account and key. Keep or drop?
+- Whether the working Markdown files stay in git (see "Known open items").
+- A Russian speaker to read `src/i18n/ru.ts` (all written here, unreviewed).
+- Pushing the 3 local doc commits and this handover.
 
 ## The plan, in order
 
@@ -121,7 +130,7 @@ They should also check the wording of `FEATURES.md`.
 4. **A real weekday ride** with the release-like build.
 5. **Release:** the user builds and signs it.
 6. **PR to `Tom-stack3/Maslul`,** only when the user asks. It **restructures the repo**: the React Native app moves from `mobile/` to the root and the Kotlin `app/` and its Gradle files are deleted. Paths to fix then: the docs' `mobile/` and `/workspace/app` references, `scripts/publish-test.sh` (`../app` for the old Kotlin APK; `KOTLIN_121_APK` for the 1.2.1 one), the READMEs, any CI, and `.gitignore`.
-7. **Feature requests** (`FEATURE-REQUESTS.md`, local) after that, as GitHub issues.
+7. **The rest of the feature requests** (`FEATURE-REQUESTS.md`, local; 2 design pass, 4 trip state, 6 traffic), together with the user. The user had them started early on this branch (2026-10-11).
 
 ## Porting upstream (done, untested on devices)
 
