@@ -100,7 +100,8 @@ They should also check the wording of `FEATURES.md`.
 - **Fixed, each with a test:** `6808c40` "variants" bidi (a mark after the agency name too); `0ce9ddc` a stale vehicle report no longer predicts the bus at "now" (`eta.ts`: the distance floor counts from a report at most a minute old), so "is arriving · 6 stops away" is gone in the guide, the cards and the ranking; `3401dca` `ranked()` applies the live order (`liveOrder`), so re-ranking between live refreshes no longer puts a gone bus first; `d49f6ba` `choose` moves the walk after any switched ride, and `nextIfPassed` re-picks later rides the new bus no longer reaches and asks `repo.ridesAfter` when the plan has no later run.
 - **Not fixed:** K5's train step (a delayed train's get-off time after the next step's departure; "+11 min" for a train 3 min later): needs a look at live train `alightExpected`. Place search "No results" for 4–10 s before results (Search.tsx sets `loading` before the call; cause not found). The `ExpoModulesCore` invalidated-callback log after a language reload (harmless).
 - **K6/L7 was a checklist mistake:** the Kotlin app opens stops only from the Home map (`NavHome.kt`); line maps follow vehicles. Stop taps on line/route maps would be a new feature; ask the user.
-- **Round 10 checklists:** Android N1–N4, iOS round 5 P1–P3. Archives: `/share/maslul-test/archive/round9/`, `/share/maslul-ios-test/*-round4`.
+- **Upstream 1.2.2 ported** (`b7b534f` data, `6b9314c` screens; V1–V11 in `UPSTREAM-PORT.md`), versionCode 9. Device checks only for it: Android N5–N7, iOS P4–P6.
+- **Round 10 checklists:** Android N1–N7, iOS round 5 P1–P6. Archives: `/share/maslul-test/archive/round9/`, `/share/maslul-ios-test/*-round4`.
 
 ## Round 9 (2026-10-11): Android round 8 and iOS round 3 read and fixed
 

@@ -1,6 +1,6 @@
 # Maslul: iOS test
 
-A **short re-test** of the React Native rewrite on iOS, **round 5**, on branch `feature/upstream-1.2.1`: only the fixes for round 4's findings. Everything else passed and isn't repeated. The build itself is the first check. The goal is to **find and report problems, not fix them**; fixes are made in the main checkout and come back through git.
+A **short re-test** of the React Native rewrite on iOS, **round 5**, on branch `feature/upstream-1.2.1`: only the fixes for round 4's findings, plus the port of the original app's 1.2.2 (P4–P6). Everything else passed and isn't repeated. The build itself is the first check. The goal is to **find and report problems, not fix them**; fixes are made in the main checkout and come back through git.
 
 ## Build on the Mac
 
@@ -30,7 +30,7 @@ npx expo run:ios --configuration Release
 
 **Test only the checks below.** No exploring; don't report anything outside the checks unless the app crashes. One screenshot per check (more only for a failure): `xcrun simctl io booted screenshot <name>.png`.
 
-## Checks (round 5: only what changed since round 4)
+## Checks (round 5: only what changed since round 4, plus 1.2.2)
 
 **I1. Build.** The app builds and opens with no red error screen. If it fails, copy the **first** error lines.
 
@@ -39,6 +39,12 @@ npx expo run:ios --configuration Release
 **P2. "Arriving" means close.** Start a trip whose first bus is live and a few minutes away and don't move. The guide says "is arriving" (and the bus row "Arrives now") only when the bus is 1–2 stops away, never with 3+ stops away. When the bus goes by, within a minute the guide names the next bus.
 
 **P3. "variants" order.** Russian, Lines → search 480: "אגד  ·  8 вариантов" (the 8 next to its word). English, Light rail line 1: "…  ·  3 variants".
+
+**P4. "On a bus or train now" knows which way you're going.** Drive north along Ibn Gabirol: `xcrun simctl location booted start --speed=12 32.0790,34.7808 32.0820,34.7813 32.0853,34.7818` and, while it runs, open Where to? → "On a bus or train now". Pass if every row marked **"Going the other way"** (red) is below all unmarked rows, and timetable rows show "<stop> → <next stop>". Then drive south (`start` with the points reversed) and reopen: the lines on Ibn Gabirol swap marks. Once in Hebrew: a timetable row reads "<stop> ← <next stop>" with the stop on the right. `xcrun simctl location booted clear` when done.
+
+**P5. One arrival time.** On the Home map tap a stop 2–3 km away (e.g. in Ramat Aviv) → Directions → a route whose last step is a bus. The timeline ends with **"Get off · <that stop>"** and one time, no separate destination row under it, and that time is the header's arrival time.
+
+**P6. Stop screen.** Tap the Ibn Gabirol/Arlozorov stop on the Home map. The map is big with the departures in a sheet you can drag; the fullscreen button hides the sheet and "Show departures" brings it back; under a line's time, "then N min" shows its next departure.
 
 ## Report
 

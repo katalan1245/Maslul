@@ -36,7 +36,7 @@ All three APKs are signed with the same key, so the new one installs over either
 2. Buses must be running (not Shabbat, not night); otherwise mark the bus checks **couldn't test (Shabbat)**.
 3. Taps: if mobile-mcp's tap misses, use `adb shell input tap X Y`.
 
-## Checks (round 10: only what changed since round 9)
+## Checks (round 10: only what changed since round 9, plus upstream 1.2.2 in N5–N7)
 
 **N1. Route list order.** At Ibn Gabirol/Arlozorov (`adb emu geo fix 34.7818 32.0853`), Where to? → Azrieli Center; then Habima → Azrieli Center. Each time: the **first** card's bus isn't "Now", "is arriving" or "Hurry", and the card hasn't started in the past ("Go now" with a start time already gone). Watch the list for a minute: the first card never changes to such a card. Two searches.
 
@@ -48,6 +48,14 @@ All three APKs are signed with the same key, so the new one installs over either
 **N3. "variants" order.** English: Lines → Light rail → line 1: "<agency>  ·  3 variants" with the 3 next to "variants". Russian (Settings → Русский): Lines → 480: "אגד  ·  8 вариантов". Then back to English.
 
 **N4. Map tap on Home.** On the Home map (zoomed in on Tel Aviv so stops show), tap about 5 mm beside a stop: its stop screen opens. (Stops on line and route maps don't open on tap, as in the original app; vehicles do.)
+
+**N5. "On a bus or train now" knows which way you're going.** Drive north along Ibn Gabirol, one fix every 3 s, and open Where to? → "On a bus or train now" while it runs:
+`for p in "34.7808 32.0790" "34.7810 32.0800" "34.7812 32.0810" "34.7813 32.0820" "34.7815 32.0830" "34.7816 32.0840" "34.7818 32.0850" "34.7818 32.0853"; do adb emu geo fix $p; sleep 3; done` (repeat the last fix every 10 s while you look).
+Pass if every row marked **"Going the other way"** (red) is below all unmarked rows, and the timetable rows show "<stop> → <next stop>". Then drive south (the same fixes in reverse order), reopen the screen: the lines on Ibn Gabirol swap (a line marked before isn't now, and the other way round). Once in Hebrew (Settings → עברית): one timetable row reads "<stop> ← <next stop>" with the stop on the right; then back to English. Three screenshots.
+
+**N6. One arrival time.** On the Home map tap a stop about 2–3 km away (e.g. in Ramat Aviv) → Directions. Open a route whose last step is a bus (no walk at the end). Its timeline ends with **"Get off · <that stop>"** and one time, with no separate destination row under it, and that time is the route's arrival time in the header.
+
+**N7. Stop screen.** At Ibn Gabirol/Arlozorov, tap its stop on the Home map. Pass if: the map is big with the departures in a sheet you can drag down and up; the fullscreen button (top of the map) hides the sheet and a "Show departures" button brings it back; under a line's time, "then N min" shows its next departure (lines with only one have none). Two screenshots.
 
 ## Report
 
