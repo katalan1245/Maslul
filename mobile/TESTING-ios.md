@@ -1,6 +1,6 @@
 # Maslul: iOS test
 
-A **short re-test** of the React Native rewrite on iOS, **round 3**, on branch `feature/upstream-1.2.1`: only what failed in round 2 (its report is `ios-report-round2.md`), the fixes made for it, and the fixes made for the Android round that iOS shares. Everything else passed and isn't repeated. The build itself is the first check. The goal is to **find and report problems, not fix them**; fixes are made in the main checkout and come back through git.
+A **short re-test** of the React Native rewrite on iOS, **round 4**, on branch `feature/upstream-1.2.1`: the fixes for round 3's findings (its report is `ios-report-round3.md`) and for the Android round that iOS shares. Everything else passed and isn't repeated. The build itself is the first check. The goal is to **find and report problems, not fix them**; fixes are made in the main checkout and come back through git.
 
 ## Build on the Mac
 
@@ -42,28 +42,23 @@ Screenshot each check (`xcrun simctl io booted screenshot <name>.png`) and name 
 
 **I1. Build.** `prebuild`, `pod install` and the Xcode build all finish; the app opens without a red error screen. If anything fails, this is the most important finding: copy the **first** error lines in full (from Xcode's Report navigator, or the terminal), not just the last.
 
-**J1. Live directions (I6.2).** Open a route whose bus leaves in 10 minutes or more → Start, on the simulator walking toward the stop (`xcrun simctl location booted start` with waypoints along the walk). Right after Start and all the way to the stop, the guide says "Walk to <stop>" with the bus's time, never the on-bus step ("Bus N → … · N stops"), and no "Get off" alert comes before the bus leaves. Also walk along the bus's own path past the stop before it leaves: still the walk step. Then ride (waypoints along the bus's path after it leaves): the on-bus step, "Get off at the next stop", "Get off now".
+This is **round 4**: only the fixes since round 3 (build 3791f6f), on the build named in the message that sent you here. Do the checks in order.
 
-**J2. Names (I6, I11.2).** A route with a train: the guide, Home's trip banner and a reminder say "Train from …" / "Train N", never "Train Train". A reminder's text "Leave at HH:MM · Bus N from … at HH:MM" uses one consistent pair of times (both live, or both timetable).
+**L1. Route list order.** Leave now from Ibn Gabirol/Arlozorov (`set 32.0853,34.7818`), during the day, to Dizengoff Center, then Habima → Azrieli Center: the **first** card's first bus comes after you'd walk to its stop (its walk is no longer than the bus's "in N min"). A card whose bus says "Now", comes a minute before you'd get there, or started in the past is never first.
 
-**J3. Shuttles (I15.6).** New shuttle → One time → 21:00 → Add: added, with no Repeating run. Also 19:30. Save a shuttle with two departures, one about 40 minutes from now and one 3 hours later, from a place near you to another; plan between them, Leave now: the shuttle route leaves at the first departure, and the card names it by its own name, not "Bus <name>".
+**L2. A bus that goes without you.** From a place about 300 m from a stop, plan a trip whose first bus is live and a few minutes away, open the route, Start, and don't move. After the bus passes the stop: within a minute the guide switches to that step's next bus ("Walk to <stop> · Bus N in M min"), and the route screen's chosen bus is the new one. Never "Bus N is arriving" for the bus that has gone. Then, as in your round 3 finding, leave a started trip alone for an hour past its bus: the guide says the bus has passed or names a later one, never "is arriving".
 
-**J4. "Last today" (I11.4).** Late evening or at night (after 23:00), Leave now on a short trip where night buses run: no "Last today" while another bus follows within the hour, and never on tomorrow morning's routes. Depart at 23:30 on a Sunday–Thursday: the tag is on at most one card, tonight's.
+**L3. Remind me twice.** On one route, tap Remind me three times: only **one** reminder comes (the last one set).
 
-**J5. Train stations in search (I15.4).** Where to? → `תל אביב מרכז` (and `Haifa Center`): the train station in the results has the train icon in blue. Stations near Tel Aviv Savidor Center (`xcrun simctl location booted set 32.0837,34.7983`): no stop listed more than once, also after Refresh. Then move 1.6 km (`set 32.0853,34.7818`) and wait 10 s without Refresh: the list follows.
+**L4. Train choices.** A route with a train → route details: the train step's heading says "N trains go this way · tap to choose", not "Next N trains of Train".
 
-**J6. Language change keeps the screen (smaller point a).** Settings → עברית: after the reload you're on Settings, not Home. Back to English: Settings again. In Simple Maslul's settings, a language button: back on Simple's settings. English → Русский and back: no reload, and the **map labels** follow (Home's map and line 480's) without a restart; Lines → Light rail: "3 variants" / "3 חלופות" / "3 варианта".
+**L5. Stations follows you.** Stations near Savidor (`set 32.0837,34.7983`), then `set 32.0853,34.7818` and wait 20 s without Refresh: the list changes. (Passed in round 3; the way it follows has changed.)
 
-**J7. Location revoked (smaller point g).** On Stations with nearby stops, revoke location (`xcrun simctl privacy booted revoke location com.maslul.app`, or iOS Settings → Maslul → Location → Never), come back to the app: the list is replaced by "Allow location access…" without a relaunch. Allow again and come back: the stops return.
+**L6. "variants" order.** Russian, Lines → search 480: "אגד  ·  8 вариантов" (the number next to its word). English Light rail line 1: "…  ·  3 variants".
 
-**J8. Small fixes shared with Android.**
-1. Where to?, start at Current location: "Current location" isn't offered as the destination; picking a place closes the keyboard.
-2. Simple Maslul, the full app's Work set: Simple's Work button shows that address with no Clear; change it, then Clear: back to the full app's Work; Save.
-3. Home under a favourite stop: "then HH:MM  HH:MM" never repeats a time.
-4. Plan, open the time sheet → Depart at an hour from now: the Walk card's arrival counts from that time; refresh keeps the chosen time.
-5. Star three stops, scroll Home's sheet to them, unstar all: the places come back (no blank sheet).
+**L7. Map taps.** On a route's or a line's map, zoomed out so stops are small dots: a tap a fingertip beside a stop opens it; with two stops close together, the nearer one opens.
 
-**J9. Still open from round 2, for the record** (not fixed in this build; one screenshot each tells whether they're unchanged): route-detail times wrapping at XL text (I10); Hebrew phone with the app in English: mirrored switches and field padding (I14); no banner for a reminder while the app is open; the restored trip's first row says "Start"; the Russian Options sheet's button below the fold; Hebrew Settings "לפי המכ…" cut; Russian Lines placeholder cut.
+**Known since round 3 (don't report again):** the guide moves onto the bus up to 2 minutes before its time (slack for buses leaving early); the route header and the chosen bus row change while riding; with a later departure, the step's bus list starts from now; a train's live time can stay still for minutes (the feed); everything listed in round 3's J9.
 
 ## Report
 

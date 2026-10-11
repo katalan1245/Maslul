@@ -94,12 +94,12 @@ They should also check the wording of `FEATURES.md`.
 - **iOS round-1 fixes, none seen on a device yet** (I14 in `TESTING-ios.md`): Language = System via the native `preferredLanguage` constant; `writingDirection` on all text (`textDirection` in `theme.ts`); the app redrawing when the text size changes (`Fragment key={fontScale}` in `App.tsx`, nav state kept); Photon `lang=default`. Nominatim still follows iOS's Accept-Language (last fallback only).
 - **To discuss with the user — the Markdown files.** Should the working docs (`HANDOVER`, `STATUS`, `UPSTREAM-PORT`, `TESTING*`, `FEATURES`, `scripts/START-HERE.md`) stay in git? Suggested: keep them in the fork for now (the Mac and the testers get them that way), and leave them out of the PR to the original repo: there only the code, the READMEs, `AGENTS.md` and a trimmed `NOTES.md` (e.g. `docs/architecture.md`) go; `FEATURES.md` and `UPSTREAM-PORT.md` become the PR description. The user hasn't decided.
 
-## Round 9 (2026-10-11): Android round 8 read and fixed
+## Round 9 (2026-10-11): Android round 8 and iOS round 3 read and fixed
 
 - **Android round 8** (`/share/maslul-test/archive/round8/`; summary in `STATUS.md`). Fixed, each with a test: G5 `9f13a82` (Leave now ranks first only a route you reach before its bus, without the 90 s slack), G6 `78ef314` (`ActiveTrip.nextIfPassed`: the started trip takes the step's next catchable bus when its bus passes before you board; `RouteDetailModel.adopt` follows it), G11 `cdb8f33` (Stations watches the position every 10 s while focused), G2 `e331129` (a direction mark before the agency on line rows). Plus upstream's map taps `5d787d2`.
 - **Not bugs / not changed:** G1's two `Running "main"` lines (Android recreating the activity, then our one reload); the inexact Not-now reminder (same Android call as Kotlin; the prompt says it may be late). Both, and the round's minors, are in TESTING.md's "Known" item 15.
-- **iOS round 3 results not in yet.** When they come, read them, fix, and add K1–K5's iOS counterparts to `TESTING-ios.md`.
-- **Round 9 Android checklist:** `TESTING.md` section K (K1–K5) and M1. The top-level `/share/maslul-test/bash.exe.stackdump` (and the one in `maestro/`) are the host's Git Bash dumps; left in place.
+- **iOS round 3** (results page plus a small zip in the user's Claude app; summary saved as `/share/maslul-ios-test/ios-report-round3.md`, no screenshots here): 13 pass, 0 fail. Fixed in `4a5d5bf`: a gone bus shown as arriving (`rideGone` in `tripGuide.ts`, used by `nextIfPassed`), Remind me twice (`cancelReminder`), "trains of Train". `TESTING-ios.md` round 4 (L1–L7) re-tests everything since 3791f6f.
+- **Round 9 Android checklist:** `TESTING.md` section K (K1–K6) and M1. The top-level `/share/maslul-test/bash.exe.stackdump` (and the one in `maestro/`) are the host's Git Bash dumps; left in place.
 
 ## Round 8 (2026-10-11): what changed and what's waiting
 

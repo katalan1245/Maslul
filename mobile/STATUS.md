@@ -86,6 +86,8 @@ Fixed after round 1 and not yet re-tested (I14 in `TESTING-ios.md`):
 
 **Round 2** (11 Oct, build fc049e4, same simulator; report `/share/maslul-ios-test/ios-report-round2.md`): 29 pass, 5 fail, 2 couldn't test (VoiceOver, offline). The round-1 fixes held (Language = System, text size redraw, Photon `lang=default`, the location message); the time wheels, the reminder toast from Home and line 480's framing work. Failed: the guide on the bus before it comes (I6.2), one-time shuttle times after 19:00, "Last today" on night buses, the train icon in search results, "Train Train", times wrapping at XL text, and a Hebrew phone with the app in English (mirrored switches). All fixed on 11 Oct except the last two; round 3 (J1–J9 in `TESTING-ios.md`) re-tests them.
 
+- **Round 3** (11 Oct, build 3791f6f; `/share/maslul-ios-test/ios-report-round3.md`): 13 pass, 0 fail, 1 couldn't test (Leave now after 23:00). Findings outside the checklist: a trip left running said its gone bus "is arriving" 80 min on; Remind me twice gave two reminders; "Next 3 trains of Train". Fixed in `4a5d5bf`; round 4 (L1–L7) re-tests them with the Android round-8 fixes.
+
 ## Not verified yet
 
 - **Live vehicles** (SIRI brotli decoding at runtime) and green live times: every test session so far fell on Shabbat or at night.
