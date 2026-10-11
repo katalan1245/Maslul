@@ -57,6 +57,13 @@ test('early vehicle is not predicted in the past', () => {
   near(origin + 420, p.predicted[4]);
 });
 
+test("an old report doesn't make a bus several stops back arrive now (K2)", () => {
+  // Last seen at the first stop 10 minutes ago; 3 stops (3 km) before stop 3.
+  const now = origin + 900;
+  const p = timeline.estimate(vehicle(0.1, origin + 300), origin, now)!;
+  expect(p.predicted[3]!).toBeGreaterThan(now + 60);
+});
+
 test('waiting at terminal is on time until departure', () => {
   const t = origin - 120;
   const p = timeline.estimate(vehicle(0, t, 0), origin, t)!;

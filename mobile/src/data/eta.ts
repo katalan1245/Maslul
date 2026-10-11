@@ -87,8 +87,9 @@ export class TripTimeline {
     const predicted = stops.map((_, j) => {
       if (j <= lastPassed) return null;
       const byDelay = origin + offsetsSec[j] + delay;
-      // Never faster than ~60 km/h from the reported position, never in the past.
-      const byDistance = v.recordedAt + Math.trunc(Math.max(stopAlong[j] - along, 0) / 17);
+      // Never faster than ~60 km/h from the reported position, never in the past. An old report
+      // counts as at most a minute old: a bus last seen 6 stops back isn't "arriving" just because time went by.
+      const byDistance = Math.max(v.recordedAt, now - 60) + Math.trunc(Math.max(stopAlong[j] - along, 0) / 17);
       return Math.max(byDelay, byDistance, now);
     });
     return { vehicle: v, alongM: along, delaySec: delay, lastPassed, predicted, stale: Freshness.isStale(v.recordedAt, now) };
