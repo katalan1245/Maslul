@@ -1,6 +1,6 @@
 # Maslul: iOS test
 
-A **short re-test** of the React Native rewrite on iOS, **round 4**, on branch `feature/upstream-1.2.1`: the fixes for round 3's findings (its report is `ios-report-round3.md`) and for the Android round that iOS shares. Everything else passed and isn't repeated. The build itself is the first check. The goal is to **find and report problems, not fix them**; fixes are made in the main checkout and come back through git.
+A **short re-test** of the React Native rewrite on iOS, **round 4**, on branch `feature/upstream-1.2.1`: the fixes for round 3's findings and for the Android round that iOS shares. Everything else passed and isn't repeated. The build itself is the first check. The goal is to **find and report problems, not fix them**; fixes are made in the main checkout and come back through git.
 
 ## Build on the Mac
 
@@ -65,7 +65,7 @@ This is **round 4**: only the fixes since round 3 (build 3791f6f), on the build 
 Write `ios-report.md` (in the format below) with screenshots in an `evidence/` folder and logs in `logs/`. Work through every check even if some fail; a failure is a finding, not a reason to stop. Keep what you saw separate from guesses about the cause.
 
 **Hand the results back as a Claude artifact.** When the report is finished:
-1. Zip everything into one file: `zip -r maslul-ios-results.zip ios-report.md evidence logs`.
+1. Shrink the screenshots first, so the zip stays under 15 MB (the artifact limit is 16 MB; last round's was 53 MB): `cd evidence && for f in *.png; do sips -s format jpeg -s formatOptions 70 -Z 1200 "$f" --out "${f%.png}.jpg" >/dev/null && rm "$f"; done && cd ..` (the report's evidence names then end in `.jpg`). Then zip everything into one file: `zip -r maslul-ios-results.zip ios-report.md evidence logs`, and check its size with `ls -lh`.
 2. Publish it with your Artifact tool: a small HTML page titled "Maslul iOS results" that shows the report's Summary and Findings, with the zip attached as a supporting file at `maslul-ios-results.zip` (linked from the page). Give the user the artifact's link; that link is how the results come back.
 3. If the publish refuses the zip, don't work around it: send the zip to the user with your SendUserFile tool, so it reaches them in the Claude app. Only if that tool isn't available, tell them the zip's full path on the Mac.
 
