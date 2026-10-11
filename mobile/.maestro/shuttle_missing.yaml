@@ -29,8 +29,8 @@ name: A shuttle says what's missing, the ride time included
 - tapOn: Add 09:30
 - assertVisible: 2 departures a day
 # The ride-time slider is set by dragging; check by hand that it reads "60 min" at the middle and
-# that "Still needed" then drops the ride time.
-- hideKeyboard
+# that "Still needed" then drops the ride time. (No hideKeyboard here: with no keyboard open it
+# sends Back, which closes the editor.)
 - scrollUntilVisible:
     element: Save and add the way back
 - tapOn: Save and add the way back

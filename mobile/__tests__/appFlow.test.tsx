@@ -129,11 +129,11 @@ it('saves, edits and deletes a complete shuttle', async () => {
   await fireEvent.changeText(screen.getByTestId('shuttle_name'), 'Test shuttle');
   await pickStop('From', 'dizengoff center', 'Dizengoff Center');
   await pickStop('To', 'azrieli center', 'Azrieli Center');
-  await fireEvent.press(within(screen.getByTestId('shuttle_at_hour')).getByText('08'));
-  await fireEvent.press(within(screen.getByTestId('shuttle_at_minute')).getByText('15'));
+  await fireEvent.press(within(screen.getByTestId('shuttle_at_hour')).getByText('08', { includeHiddenElements: true }));
+  await fireEvent.press(within(screen.getByTestId('shuttle_at_minute')).getByText('15', { includeHiddenElements: true }));
   await fireEvent.press(screen.getByText('Add 08:15'));
-  await fireEvent.press(within(screen.getByTestId('shuttle_at_hour')).getByText('07'));
-  await fireEvent.press(within(screen.getByTestId('shuttle_at_minute')).getByText('30'));
+  await fireEvent.press(within(screen.getByTestId('shuttle_at_hour')).getByText('07', { includeHiddenElements: true }));
+  await fireEvent.press(within(screen.getByTestId('shuttle_at_minute')).getByText('30', { includeHiddenElements: true }));
   await fireEvent.press(screen.getByText('Add 07:30'));
   await setRide(120);
   expect(screen.getByTestId('shuttle_ride')).toHaveTextContent('120 min');
@@ -421,12 +421,20 @@ it('adds a repeating shuttle as one run, every N minutes up to the end time (#3)
   expect(screen.queryByTestId('shuttle_times')).toBeNull();
 });
 
+it('adds a single departure after the repeating form\'s end time (W5, I15.6)', async () => {
+  await openNewShuttle();
+  await fireEvent.press(within(screen.getByTestId('shuttle_at_hour')).getByText('21', { includeHiddenElements: true }));
+  await fireEvent.press(within(screen.getByTestId('shuttle_at_minute')).getByText('00', { includeHiddenElements: true }));
+  await fireEvent.press(screen.getByText('Add 21:00'));
+  expect(screen.getByText('1 departure a day')).toBeTruthy();
+});
+
 it('sets the trip time on wheels, without a keyboard (#1, F11)', async () => {
   await planToDizengoff();
   await fireEvent.press(screen.getByTestId('time_chip'));
   await screen.findByTestId('time_sheet');
   await fireEvent.press(screen.getByText('Arrive by'));
-  await fireEvent.press(within(screen.getByTestId('time_hour')).getByText('09'));
+  await fireEvent.press(within(screen.getByTestId('time_hour')).getByText('09', { includeHiddenElements: true }));
   await fireEvent(screen.getByTestId('time_minute'), 'accessibilityAction', { nativeEvent: { actionName: 'decrement' } });
   const minute = screen.getByTestId('time_minute').props.accessibilityValue.text as string;
   await fireEvent.press(screen.getByTestId('set_time'));

@@ -1,4 +1,5 @@
 # Shared: set the two Advanced switches from Settings. Pass RIDES and ON_BOARD as "on"/"off".
+# Both start on after a fresh install (as in the Kotlin app), so each is tapped only when it's not as asked.
 appId: com.maslul.app
 ---
 - tapOn:
@@ -9,12 +10,36 @@ appId: com.maslul.app
 - runFlow:
     when:
       true: ${RIDES == 'on'}
+      visible:
+        id: rides_switch
+        checked: false
+    commands:
+      - tapOn:
+          id: rides_switch
+- runFlow:
+    when:
+      true: ${RIDES == 'off'}
+      visible:
+        id: rides_switch
+        checked: true
     commands:
       - tapOn:
           id: rides_switch
 - runFlow:
     when:
       true: ${ON_BOARD == 'on'}
+      visible:
+        id: on_board_switch
+        checked: false
+    commands:
+      - tapOn:
+          id: on_board_switch
+- runFlow:
+    when:
+      true: ${ON_BOARD == 'off'}
+      visible:
+        id: on_board_switch
+        checked: true
     commands:
       - tapOn:
           id: on_board_switch

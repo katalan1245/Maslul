@@ -1,9 +1,14 @@
 appId: com.maslul.app
 name: Advanced tools stay out of the way until switched on
 ---
-# A fresh install has both switches off.
+# Both switches off: no "On a bus?" and no ride chip.
 - launchApp:
     clearState: true
+- runFlow:
+    file: subflows/_settings_advanced.yaml
+    env:
+      RIDES: "off"
+      ON_BOARD: "off"
 - assertNotVisible:
     id: on_board
 - runFlow: subflows/_plan_to_dizengoff.yaml

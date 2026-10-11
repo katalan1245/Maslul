@@ -41,6 +41,9 @@ function Wheel({ values, value, onChange, label, testID }: { values: number[]; v
       <View pointerEvents="none" style={[styles.band, { top: rowH * 2, height: rowH, backgroundColor: t.c.surfaceVariant }]} />
       <ScrollView
         ref={list}
+        // The wheel is one control to a screen reader: its rows would take focus, and its own scrolling skips onChange.
+        importantForAccessibility="no-hide-descendants"
+        accessibilityElementsHidden
         nestedScrollEnabled
         showsVerticalScrollIndicator={false}
         snapToInterval={rowH}

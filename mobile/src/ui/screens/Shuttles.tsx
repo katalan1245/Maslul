@@ -67,7 +67,7 @@ function AddTimes({ onAdd }: { onAdd: (times: number[]) => void }) {
       )}
       <Button
         text={kind === 'ONE' ? S.shuttles.addTime(ShuttleSchedule.formatTime(at)) : S.shuttles.addRun(run.length)}
-        disabled={run.length === 0}
+        disabled={kind === 'REPEAT' && run.length === 0}
         onPress={() => onAdd(kind === 'ONE' ? [at] : run)}
         style={{ marginTop: 12, height: 48 }}
         testID="shuttle_add_time"
