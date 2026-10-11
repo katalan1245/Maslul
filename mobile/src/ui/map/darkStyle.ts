@@ -82,12 +82,13 @@ export function mapStyle(dark: boolean): Promise<StyleSpecification | null> {
   if (!p) {
     p = fetch(dark ? DARK_STYLE : LIGHT_STYLE, { headers: { 'User-Agent': USER_AGENT } })
       .then((r) => (r.ok ? (r.json() as Promise<StyleSpecification>) : null))
-      .then((s) => (s ? labelLanguage(dark ? brightenDark(s) : s, lang()) : null))
+      .then((s) => (s && dark ? brightenDark(s) : s))
       .catch(() => {
         loaded.delete(dark);
         return null;
       });
     loaded.set(dark, p);
   }
-  return p;
+  // Labelled when asked, not when fetched: the language can change without a restart.
+  return p.then((s) => (s ? labelLanguage(s, lang()) : null));
 }

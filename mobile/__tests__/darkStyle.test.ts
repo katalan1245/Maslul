@@ -39,3 +39,19 @@ test('labels show one name, in the app language', () => {
   // Road numbers aren't names: untouched.
   expect(layout('he')[1]['text-field']).toEqual(['to-string', ['get', 'ref']]);
 });
+
+test('the fetched style is labelled in the language of the moment, not the one it was fetched in (X3)', async () => {
+  const { mapStyle } = require('../src/ui/map/darkStyle') as typeof import('../src/ui/map/darkStyle');
+  const { setLanguage } = require('../src/i18n') as typeof import('../src/i18n');
+  const style = { version: 8, sources: {}, layers: [{ id: 'city', type: 'symbol', source: 's', layout: { 'text-field': ['get', 'name'] } }] };
+  (global.fetch as jest.Mock).mockResolvedValueOnce({ ok: true, json: async () => style });
+  const field = async () => JSON.stringify(((await mapStyle(false))!.layers[0] as { layout: object }).layout);
+  try {
+    setLanguage('ru');
+    expect(await field()).toContain('name:ru');
+    setLanguage('en');
+    expect(await field()).toContain('name:en');
+  } finally {
+    setLanguage('en');
+  }
+});
