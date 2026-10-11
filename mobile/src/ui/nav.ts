@@ -2,7 +2,8 @@ import { StackActions, createNavigationContainerRef } from '@react-navigation/na
 import type { Itinerary, LineRoute, Place } from '../data/models';
 import { S } from '../i18n';
 import type { Shuttle } from '../data/userStore';
-import type { RoutesModel } from './screens/routesModel';
+import type { RoutesModel, TimeMode } from './screens/routesModel';
+import type { Instant } from '../data/time';
 
 export type SearchField = 'FROM' | 'TO';
 
@@ -31,7 +32,8 @@ export type RootStack = {
   Tabs: undefined;
   Search: SearchParams;
   PickOnMap: { onPicked: (p: Place) => void };
-  Routes: { from: Place; to: Place };
+  /** [timeMode] and [time] keep the chosen time when the screen is drawn again (a text-size change). */
+  Routes: { from: Place; to: Place; timeMode?: TimeMode; time?: Instant | null };
   RouteDetail: { itinerary: Itinerary; from: Place; to: Place; keepRides?: boolean };
   Settings: undefined;
   OnBoard: { onPicked: (p: Place) => void };

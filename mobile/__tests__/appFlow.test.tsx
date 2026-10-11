@@ -7,7 +7,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import App from '../src/App';
 import { store } from '../src/state/store';
 import { S } from '../src/i18n';
-import { makeFakeRepo } from './support/fakeRepo';
+import { DIZENGOFF, STOP, makeFakeRepo } from './support/fakeRepo';
 
 jest.mock('../src/state/services', () => ({ repo: require('./support/fakeRepo').makeFakeRepo() }));
 
@@ -197,6 +197,55 @@ it('picks a destination on the map', async () => {
   await waitFor(() => expect(screen.getByTestId('picked_label')).toHaveTextContent('Rothschild 1'));
   await fireEvent.press(screen.getByTestId('choose_location'));
   await screen.findByTestId('routes_list');
+});
+
+it("doesn't put first a route whose bus has already passed (W1)", async () => {
+  const { liveCall } = require('../src/data/eta') as typeof import('../src/data/eta');
+  const { worthLive, legLive, plan } = fake;
+  // Two routes from different stops, so they stay two cards: the 5 (sooner, but it has passed) and the 61.
+  fake.plan = async (req: unknown) => {
+    const r = await plan(req);
+    const [a, b] = r.itineraries;
+    const other = (c: (typeof b.legs)[0]['from']) => ({ ...c, stopId: `${c.stopId}-x`, name: `${c.name} North`, lat: c.lat + 0.004 });
+    const legs = b.legs.map((l, i) => (i === 1 ? { ...l, from: other(l.from), to: other(l.to) } : l));
+    return { ...r, itineraries: [a, { ...b, legs }] };
+  };
+  fake.worthLive = async () => true;
+  fake.legLive = (async (l: { routeShortName: string | null; start: number }) => (l.routeShortName === '5' ? liveCall('PASSED', l.start, null) : null)) as never;
+  try {
+    await planToDizengoff();
+    await waitFor(() => expect(screen.getAllByTestId('route_card')).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByTestId('route_card')[0]).toHaveTextContent(/61/));
+  } finally {
+    fake.worthLive = worthLive;
+    fake.legLive = legLive;
+    fake.plan = plan;
+  }
+});
+
+it("says the planner failed when only the user's shuttles gave routes (429)", async () => {
+  const { HttpException } = require('../src/data/http') as typeof import('../src/data/http');
+  const plan = fake.plan;
+  const shuttleOptions = fake.shuttleOptions;
+  const ok = await plan({});
+  const shuttle = { id: 'sh', name: 'Office', from: STOP, to: DIZENGOFF, times: [450], rideMinutes: 20, days: [1, 2, 3, 4, 5, 6, 7] };
+  jest.spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    await planToDizengoff();
+    await act(() => store.saveShuttle(shuttle));
+    fake.plan = async () => {
+      throw new HttpException(429, 'HTTP 429');
+    };
+    fake.shuttleOptions = async () => [ok.itineraries[0]];
+    // No saved routes to fall back on: only the shuttle's.
+    await AsyncStorage.removeItem('saved_routes_v1');
+    await fireEvent.press(screen.getByTestId('refresh_chip'));
+    expect(await screen.findByTestId('search_failed_banner')).toHaveTextContent(/429/);
+  } finally {
+    fake.plan = plan;
+    fake.shuttleOptions = shuttleOptions;
+    await act(() => store.removeShuttle('sh'));
+  }
 });
 
 it('shows the last routes for the trip when a search fails, and says when all of them have left', async () => {
@@ -440,4 +489,8 @@ it('sets the trip time on wheels, without a keyboard (#1, F11)', async () => {
   await fireEvent.press(screen.getByTestId('set_time'));
   await waitFor(() => expect(screen.getByTestId('time_chip')).toHaveTextContent(new RegExp(`09:${minute}`)));
   expect(screen.getByTestId('time_chip')).toHaveTextContent(/Arrive/);
+  // Refresh keeps the chosen time (P2).
+  await fireEvent.press(screen.getByTestId('refresh_chip'));
+  await screen.findAllByTestId('route_card');
+  expect(screen.getByTestId('time_chip')).toHaveTextContent(new RegExp(`Arrive.*09:${minute}`));
 });

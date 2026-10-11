@@ -59,7 +59,7 @@ export function makeFakeRepo() {
     },
     worthLive: async () => false,
     legLive: async () => null,
-    shuttleOptions: async () => [],
+    shuttleOptions: async (): Promise<Itinerary[]> => [],
     boardCandidates: async () => [],
     searchLines: async (q: string) => (q.includes('480') ? [{ routes: [ROUTE_480] }] : []),
     currentRoute: async (r: LineRoute) => r,

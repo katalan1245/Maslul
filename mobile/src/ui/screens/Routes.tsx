@@ -22,13 +22,13 @@ import { ItineraryCard, WalkOnlyCard, rideLabel, timeLabel } from './routeCards'
 import { OptionsSheet, RideSheet, TimeSheet } from './routeSheets';
 import { RoutesModel } from './routesModel';
 
-type Item = { kind: 'saved'; at: number } | { kind: 'last'; ride: Leg } | { kind: 'earlier' } | { kind: 'wider' } | { kind: 'walk'; itin: Itinerary } | { kind: 'itin'; itin: Itinerary } | { kind: 'later' } | { kind: 'credit' };
+type Item = { kind: 'saved'; at: number } | { kind: 'failed'; text: string } | { kind: 'last'; ride: Leg } | { kind: 'earlier' } | { kind: 'wider' } | { kind: 'walk'; itin: Itinerary } | { kind: 'itin'; itin: Itinerary } | { kind: 'later' } | { kind: 'credit' };
 
-export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Routes'>) {
+export function RoutesScreen({ route, navigation }: NativeStackScreenProps<RootStack, 'Routes'>) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const data = useUserData();
-  const model = useModel(() => new RoutesModel(route.params.from, route.params.to));
+  const model = useModel(() => new RoutesModel(route.params.from, route.params.to, route.params.timeMode, route.params.time));
   const now = useNow(15_000);
   const [showTime, setShowTime] = useState(false);
   const [showRide, setShowRide] = useState(false);
@@ -61,6 +61,8 @@ export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Route
 
   const items: Item[] = [
     ...(model.savedAt != null ? [{ kind: 'saved', at: model.savedAt } as const] : []),
+    // The planner failed but the user's shuttles still gave routes: they aren't all there is.
+    ...(model.savedAt == null && model.errorKind === 'NETWORK' && model.error != null ? [{ kind: 'failed', text: model.error } as const] : []),
     // Said up top once it's close: a card further down could be missed.
     ...(model.last != null && model.last.ride.start - now < 3600 ? [{ kind: 'last', ride: model.last.ride } as const] : []),
     ...(model.canPage ? [{ kind: 'earlier' } as const] : []),
@@ -79,6 +81,16 @@ export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Route
             <Icon name="cloud-off" size={20} color={t.x.subtle} />
             <Txt v="bodySmall" color={t.x.subtle} style={{ flex: 1, marginHorizontal: 10 }}>
               {S.routes.savedShown(Fmt.when(item.at, now))}
+            </Txt>
+            <TextButton text={S.routes.tryAgain} onPress={() => model.search()} />
+          </View>
+        );
+      case 'failed':
+        return (
+          <View style={styles.saved} testID="search_failed_banner">
+            <Icon name="cloud-off" size={20} color={t.x.subtle} />
+            <Txt v="bodySmall" color={t.x.subtle} style={{ flex: 1, marginHorizontal: 10 }}>
+              {item.text}
             </Txt>
             <TextButton text={S.routes.tryAgain} onPress={() => model.search()} />
           </View>
@@ -187,7 +199,7 @@ export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Route
             <Chip label={S.routes.options} icon="tune" selected={custom} onPress={() => setOptionsBefore(data.settings)} testID="options_chip" />
             {s.wheelchair && <Chip label={S.routes.accessible} icon="accessible" selected onPress={() => setOptionsBefore(data.settings)} />}
           </ScrollView>
-          <IconButton icon="refresh" label={S.routes.refresh} onPress={model.refreshNow} disabled={model.loading} testID="refresh_chip" />
+          <IconButton icon="refresh" label={S.routes.refresh} onPress={() => model.search()} disabled={model.loading} testID="refresh_chip" />
         </View>
       </View>
       <ProgressBar active={model.refining && !model.loading} testID="refining" />
@@ -215,6 +227,7 @@ export function RoutesScreen({ route }: NativeStackScreenProps<RootStack, 'Route
           onApply={(mode, time) => {
             setShowTime(false);
             model.setTime(mode, time);
+            navigation.setParams({ timeMode: mode, time });
           }}
         />
       )}
