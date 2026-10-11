@@ -64,4 +64,5 @@ export function modeLine(mode: TransitMode, label: string | null | undefined): s
   return unnumbered ? m : `${m} ${n}`;
 }
 
-export const rideName = (l: Leg) => modeLine(l.mode, l.routeShortName);
+/** A shuttle goes by the name the user gave it ("Office shuttle", not "Bus Office shuttle"). */
+export const rideName = (l: Leg) => (l.shuttleId != null && l.routeShortName ? l.routeShortName : modeLine(l.mode, l.routeShortName));

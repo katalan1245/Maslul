@@ -24,6 +24,7 @@ test('rideName: the line number after the mode, or just the mode when there is n
   expect(rideName({ mode: 'BUS', routeShortName: '61' } as Leg)).toBe('Bus 61');
   expect(rideName({ mode: 'TRAIN', routeShortName: null } as Leg)).toBe('Train');
   expect(rideName({ mode: 'TRAIN', routeShortName: 'Train' } as Leg)).toBe('Train');
+  expect(rideName({ mode: 'BUS', routeShortName: 'Test Shuttle', shuttleId: 's1' } as Leg)).toBe('Test Shuttle');
 });
 
 it("a board row's later times show each minute once (F15)", () => {
