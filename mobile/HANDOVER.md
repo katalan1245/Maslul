@@ -25,7 +25,7 @@ Read this first. A fresh session should be able to start from this file alone. T
 
 | Branch | Fork (`origin`) | What |
 |---|---|---|
-| `feature/upstream-1.2.1` | pushed up to `3791f6f` (round 8's build, pushed 2026-10-11) | **The branch under test.** Everything: the rewrite, its fixes, the upstream 1.1.1–1.2.1 port, the iOS fixes, round-6 and round-7 fixes and the first feature requests. 293 tests |
+| `feature/upstream-1.2.1` | pushed up to `3791f6f` (round 8's build, pushed 2026-10-11). After it, local only: `fdd6e5c` and the handover commit (docs); push them with the next round, after asking | **The branch under test.** Everything: the rewrite, its fixes, the upstream 1.1.1–1.2.1 port, the iOS fixes, round-6 and round-7 fixes and the first feature requests. 293 tests |
 | `rewrite/react-native` | pushed, `19875c5` | The rewrite and the iOS round-1 fixes, without the upstream port. Fully contained in the branch above |
 | `master` | 3 commits behind the local one | Fast-forwarded to upstream's 1.2.1 (`076af78`), not pushed |
 
@@ -110,7 +110,18 @@ They should also check the wording of `FEATURES.md`.
 ## Testing state
 
 - **Checks here:** `npx tsc --noEmit` is clean; `npx jest --selectProjects app` passes 293 tests. The `live` project calls real services (Transitous, Stride); run it only on purpose, e.g. `npx jest --selectProjects live __tests__/live/rideShuttle.test.ts`.
-- **Round 8 (ready to run):** a short re-test of what failed. Android: `/share/maslul-test/TESTING.md` (section G and Maestro M1) on the APK just published, with an empty `report.md` and `evidence/`. iOS: `TESTING-ios.md` round 3 (J1–J9), from `3791f6f` (pushed). Same flow afterwards: read both reports, fix with tests, archive (Android `archive/round8/`; iOS `*-round3` names), rebuild, next checklists.
+- **Round 8 (started 2026-10-11 by the user, both on `3791f6f`):** a short re-test of what failed.
+  - **Android:** `/share/maslul-test/TESTING.md` (section G, G1–G12, and Maestro M1), APK published 2026-10-11 with clean `build-info.txt`. The report lands in `/share/maslul-test/report.md` with `evidence/` (both empty until then). The tester can't see `/workspace`, only `/share`.
+  - **iOS:** `TESTING-ios.md` round 3 (J1–J9). Results come back through the user: a Claude artifact link (read it with the Artifact tool's `read`; `path: maslul-ios-results.zip` for the zip, or `paths` for single files), or a zip the user attaches. Unzip into a fresh folder under `/share/maslul-ios-test/` (rounds 1–2 are archived there as `*-round1`, `*-round2`).
+- **Next session, when the user brings the results:**
+  1. Read both reports in full (and look at the evidence a finding cites) before fixing anything.
+  2. Fix on `feature/upstream-1.2.1`, a test for each (check it fails without the fix), `npx tsc --noEmit` and `npx jest --selectProjects app`, commit.
+  3. Archive: Android: move `report.md` and `evidence/` to `/share/maslul-test/archive/round8/`, leave an empty `report.md` and `evidence/`. iOS: rename to `ios-report-round3.md`, `evidence-round3/`, `logs-round3/`.
+  4. Update the checklists in the repo, `mobile/TESTING.md` (published to `/share` by the build; don't draft it in `/share`, the publish overwrites it, also any `TESTING.md.tmp`) and `mobile/TESTING-ios.md`, re-testing only what failed. Commit them **before** building, or `build-info.txt` says "with uncommitted changes".
+  5. Rebuild and publish: in `mobile/`, `JAVA_HOME=$HOME/jdk/jdk-17.0.20.1+1 ANDROID_HOME=$HOME/android-sdk npm run build:test-apk` (about 15 min; run it in the background; look for "BUILD SUCCESSFUL" in the log).
+  6. Update this file and `STATUS.md`; ask the user about pushing.
+- **Committing:** set the identity only through env vars, never `git config`: `GIT_AUTHOR_NAME`/`GIT_COMMITTER_NAME` = `Raz Katlan`, `GIT_AUTHOR_EMAIL`/`GIT_COMMITTER_EMAIL` = `61606539+katalan1245@users.noreply.github.com`; end the message with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. No personal info or session links in code, comments, docs or commit messages.
+- **Tests that fit this codebase:** screen flows render `<App />` with `jest.mock('../src/state/services', () => ({ repo: require('./support/fakeRepo').makeFakeRepo() }))` and override the fake's fields per test; repository logic can use `new TransitRepository(null as never)` when nothing reaches the network. A test that changes `expo-location` mocks or `location.report` leaks into later tests in the same file: give it its own file (as `stationsNearby.test.tsx`).
 - **Results before this round:** Android rounds 1–7 (`STATUS.md`); iOS rounds 1–2 (`STATUS.md`, "Verified on iOS").
 - **Never seen:** a real ride on a phone on a weekday (real GPS, live buses during a trip, battery savers stopping the trip service).
 
