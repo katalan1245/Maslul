@@ -151,6 +151,7 @@ Upstream released 1.1.1, 1.2.0 (Simple Maslul) and 1.2.1 (the whole app in Russi
 - **Simple Maslul** lives in `src/ui/simple/` and follows the app's language (upstream gives it its own).
 - **Not covered by automated tests:** the location-permission prompt on Simple's home (E5), real layout on phones, iOS.
 - Not in `FEATURES.md`: these come from upstream.
+- **After 1.2.1** (checked 2026-10-11): upstream master has one more change, finger-sized map taps (`cf51350`), ported (U1 in `UPSTREAM-PORT.md`). No new upstream version, so versionCode stays 8. Re-check `git fetch upstream; git log master..upstream/master` before the PR.
 
 ## Feature requests and ideas
 

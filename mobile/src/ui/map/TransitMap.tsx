@@ -131,6 +131,23 @@ function vehiclesFc(vs: MapVehicle[], focusId: string | null | undefined): GeoJS
   };
 }
 
+// Stops are drawn a few dp wide: a tap searches a finger-sized 48 dp square (as upstream) and takes the nearest one.
+const HITBOX = { top: 24, right: 24, bottom: 24, left: 24 };
+
+export function nearestId(features: GeoJSON.Feature[], [lon, lat]: [number, number]): string | null {
+  const k = Math.cos((lat * Math.PI) / 180);
+  let best: string | null = null;
+  let bestD = Infinity;
+  for (const f of features) {
+    const id = f.properties?.id;
+    if (id == null || f.geometry.type !== 'Point') continue;
+    const [x, y] = f.geometry.coordinates;
+    const d = ((x - lon) * k) ** 2 + (y - lat) ** 2;
+    if (d < bestD) (bestD = d), (best = String(id));
+  }
+  return best;
+}
+
 function userFc(user: GeoPoint | null, heading: number | null): GeoJSON.FeatureCollection {
   return {
     type: 'FeatureCollection',
@@ -319,9 +336,9 @@ export function TransitMap({
   const lineData = useMemo(() => linesFc(lines), [lines]);
   const markerData = useMemo(() => markersFc(markers), [markers]);
   const halo = t.dark ? '#171A20' : '#FFFFFF';
-  const featureId = (e: { nativeEvent: { features?: GeoJSON.Feature[] } }) => {
-    const id = e.nativeEvent.features?.find((f) => f.properties?.id != null)?.properties?.id;
-    if (id != null) onMarkerPress?.(String(id));
+  const featureId = (e: { nativeEvent: { features?: GeoJSON.Feature[]; lngLat: [number, number] } }) => {
+    const id = nearestId(e.nativeEvent.features ?? [], e.nativeEvent.lngLat);
+    if (id != null) onMarkerPress?.(id);
   };
 
   return (
@@ -369,7 +386,7 @@ export function TransitMap({
             layout={{ 'line-cap': 'round' }}
           />
         </GeoJSONSource>
-        <GeoJSONSource id="m-markers" data={markerData} onPress={onMarkerPress ? featureId : undefined}>
+        <GeoJSONSource id="m-markers" data={markerData} onPress={onMarkerPress ? featureId : undefined} hitbox={HITBOX}>
           <Layer
             id="m-markers"
             type="circle"
@@ -402,7 +419,7 @@ export function TransitMap({
             paint={{ 'circle-radius': 7, 'circle-color': '#1F6FEB', 'circle-stroke-color': '#FFFFFF', 'circle-stroke-width': 2.5 }}
           />
         </GeoJSONSource>
-        <GeoJSONSource id="m-vehicles" data={vehiclesFc(shown, focusVehicleId)} onPress={onMarkerPress ? featureId : undefined}>
+        <GeoJSONSource id="m-vehicles" data={vehiclesFc(shown, focusVehicleId)} onPress={onMarkerPress ? featureId : undefined} hitbox={HITBOX}>
           {/* Soft halo marking the vehicle the camera is following. */}
           <Layer
             id="m-vehicles-focus"

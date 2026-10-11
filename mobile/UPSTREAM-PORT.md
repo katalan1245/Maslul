@@ -85,6 +85,12 @@ Status: **Done**, **To do**, **Different** (deliberately not the same; the reaso
 | E13 | Hebrew right to left in Simple Maslul | `SimpleFrame` | The whole app is right to left in Hebrew (one reload), so Simple Maslul is too | Done |
 | E14 | iOS: Simple Maslul must work there too | — | `TESTING-ios.md` I13; `TESTING.md` X1–X7 | Done (untested on a device) |
 
+## After 1.2.1 (unreleased upstream master)
+
+| # | Upstream change | Where upstream | Where here | Status |
+|---|---|---|---|---|
+| U1 | Map stops and vehicles answer a finger-sized tap: a 48 dp square around the tap, the nearest stop or vehicle opens (`cf51350`, PR #7) | `TransitMap.kt` | `TransitMap.tsx` `HITBOX`, `nearestId`; `mapTap.test.ts`. MapLibre RN already had a 44 dp box but took the first feature; when both a stop and a vehicle are in the box, the vehicle wins (the library picks the top source) | Done |
+
 ## Found while mapping (not new upstream)
 
 | # | What | Status |
