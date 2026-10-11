@@ -22,4 +22,5 @@ test('relative: minutes within the hour, then a time with its day', () => {
 test('rideName: the line number after the mode, or just the mode when there is none', () => {
   expect(rideName({ mode: 'BUS', routeShortName: '61' } as Leg)).toBe('Bus 61');
   expect(rideName({ mode: 'TRAIN', routeShortName: null } as Leg)).toBe('Train');
+  expect(rideName({ mode: 'TRAIN', routeShortName: 'Train' } as Leg)).toBe('Train');
 });

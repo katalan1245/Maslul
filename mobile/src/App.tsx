@@ -6,7 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import { Fragment, useEffect, useState } from 'react';
-import { AppState, Linking, LogBox, Pressable, StyleSheet, View, useColorScheme, useWindowDimensions } from 'react-native';
+import { AppState, Linking, LogBox, Platform, Pressable, StyleSheet, View, useColorScheme, useWindowDimensions } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Place } from './data/models';
@@ -189,7 +189,9 @@ export default function App() {
     })();
   }, []);
   // Reminders set before "Alarms & reminders" was allowed stay inexact: set them again once it is.
+  // Taking it away cancels the alarms (and stops the app) while the reminders stay listed: set them again on launch.
   useEffect(() => {
+    if (Platform.OS === 'android') void rescheduleReminders();
     let exact = MaslulNative?.canScheduleExactAlarms?.() ?? true;
     const sub = AppState.addEventListener('change', (state) => {
       if (state !== 'active') return;

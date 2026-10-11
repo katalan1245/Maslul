@@ -176,3 +176,20 @@ test('the last walk counts down by the straight line when you take another stree
   const s = g.update({ lat: pt(4).lat, lon: east(0.145).lon }, t0 + 900, none);
   expect(s.text).toBe('250 m to go');
 });
+
+test("near the bus's path before the bus has come is still the walk, with no get-off alert (I6.2)", () => {
+  // 20 min early, standing by the route at stop C: the bus to E hasn't left A yet.
+  const g = new TripGuide(itin, 'Home');
+  const s = g.update(pt(2), t0 - 1200, none);
+  expect(s.legIndex).toBe(0);
+  expect(s.title).toBe('Walk to A');
+  expect(s.alert).toBeNull();
+  // Once the bus has left, the same place is on board.
+  expect(g.update(pt(2), t0 + 400, none).legIndex).toBe(1);
+});
+
+test('a train with no line number is "Train", not "Train Train"', () => {
+  const train = makeLeg({ ...bus, mode: 'TRAIN', routeShortName: null });
+  const s = new TripGuide({ ...itin, legs: [walk, train] }, 'Home').update(pt(-0.3), t0, none);
+  expect(s.text).toBe('Train in 5 min');
+});

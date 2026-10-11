@@ -25,7 +25,7 @@ import { isWalking } from '../../data/ranking';
 import { RidePlanner, type RideOffer } from '../../data/rides';
 import { type Instant, type LocalDate, localDate, today } from '../../data/time';
 import { S } from '../../i18n';
-import { Fmt, modeName } from '../fmt';
+import { Fmt, modeName, rideName } from '../fmt';
 import { LineBadge, Pill, Txt } from '../components/common';
 import { Icon, type IconName, modeIcon } from '../components/icons';
 import { LiveSignal, freshnessColor } from '../components/live';
@@ -37,11 +37,6 @@ export const lineColor = (l: Leg) => lineColorOf(l.mode, l.routeColor, l.agencyI
 /** Departures listed per ride before the rest fold into "N more". */
 export const SHOWN_RIDES = 3;
 
-/** "Bus 480", or just "Train" for a ride whose line is named after its mode. */
-export function rideName(l: Leg): string {
-  const m = modeName(l.mode);
-  return lineLabel(l).toLowerCase() === m.toLowerCase() ? m : `${m} ${lineLabel(l)}`;
-}
 
 export function rideLabel(r: RideOffer | null): string {
   if (r == null) return S.cards.ride;

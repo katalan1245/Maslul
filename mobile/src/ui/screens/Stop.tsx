@@ -13,7 +13,7 @@ import { canNotify } from '../../live/notifications';
 import { location, useLastLocation } from '../../state/location';
 import { repo } from '../../state/services';
 import { store, useUserData } from '../../state/store';
-import { Fmt, modeName } from '../fmt';
+import { Fmt, modeLine } from '../fmt';
 import { Hairline, IconButton, LineBadge, LoadingBox, MessageBox, ProgressBar, Txt } from '../components/common';
 import { FAVORITE_GOLD } from '../components/favorites';
 import { Icon } from '../components/icons';
@@ -89,7 +89,7 @@ export async function remindToLeave(e: BoardEntry, stop: Place): Promise<boolean
   const departs = entryTime(e);
   const { leaveAt, at } = stopReminderAt(departs, placePoint(stop), location.last, WALK_SPEEDS[settings.walkSpeed].mps, settings.reminderMinutes);
   const d = e.departure;
-  const text = S.detail.reminder(Fmt.time(leaveAt), `${modeName(d.mode)} ${d.lineLabel}`, stop.name, Fmt.time(departs));
+  const text = S.detail.reminder(Fmt.time(leaveAt), modeLine(d.mode, d.lineLabel), stop.name, Fmt.time(departs));
   return setReminder(at, S.detail.reminderTitle(stop.name), text);
 }
 

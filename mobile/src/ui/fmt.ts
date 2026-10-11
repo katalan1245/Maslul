@@ -56,8 +56,12 @@ export function modeName(mode: TransitMode): string {
   return mode in S.modes ? S.modes[mode as keyof typeof S.modes] : S.modes.OTHER;
 }
 
-/** "Bus 61"; just "Train" for a ride with no line number. */
-export function rideName(l: Leg): string {
-  const n = l.routeShortName?.trim();
-  return n && n !== 'NaN' ? `${modeName(l.mode)} ${n}` : modeName(l.mode);
+/** "Bus 61"; just "Train" for a ride with no line number of its own (its label is then a stand-in such as "Train"). */
+export function modeLine(mode: TransitMode, label: string | null | undefined): string {
+  const m = modeName(mode);
+  const n = label?.trim();
+  const unnumbered = !n || n === 'NaN' || n === '—' || n === S.stop.trainLine || n === S.stop.cableLine || n.toLowerCase() === m.toLowerCase();
+  return unnumbered ? m : `${m} ${n}`;
 }
+
+export const rideName = (l: Leg) => modeLine(l.mode, l.routeShortName);

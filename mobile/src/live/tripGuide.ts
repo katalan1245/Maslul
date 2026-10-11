@@ -1,9 +1,9 @@
 import type { LiveCall } from '../data/eta';
 import { GeoMath } from '../data/geo';
-import { type GeoPoint, type Itinerary, callPoint, isTransit, lineLabel, samePoint, scheduledTime, vehicleKind } from '../data/models';
+import { type GeoPoint, type Itinerary, callPoint, isTransit, samePoint, scheduledTime, vehicleKind } from '../data/models';
 import { S } from '../i18n';
 import type { Instant } from '../data/time';
-import { Fmt, modeName } from '../ui/fmt';
+import { Fmt, rideName } from '../ui/fmt';
 
 export type GuideAlert = 'BOARD_SOON' | 'GET_OFF_NEXT' | 'GET_OFF_NOW' | 'ARRIVED';
 
@@ -75,7 +75,7 @@ export class TripGuide {
     if (pos != null) {
       const proj = GeoMath.project(this.path, this.cum, pos, this.lastAlong, 0, 120);
       // Ignore big backwards jumps (GPS noise) and positions far from the route.
-      if (proj != null && proj.offsetM < 400 && proj.alongM > this.lastAlong - 150) along = proj.alongM;
+      if (proj != null && proj.offsetM < 400 && proj.alongM > this.lastAlong - 150) along = this.notAheadOfRides(proj.alongM, now, live);
     }
     if (along != null) this.lastAlong = Math.max(this.lastAlong, along);
     let legIndex = pos != null ? this.legAt(this.lastAlong) : this.legByTime(now);
@@ -123,7 +123,7 @@ export class TripGuide {
       const isLive = call?.status === 'LIVE';
       const eta = isLive ? call!.expected : next.start;
       const mins = eta != null ? Math.trunc((eta - now + 30) / 60) : null;
-      const ride = `${modeName(next.mode)} ${lineLabel(next)}`;
+      const ride = rideName(next);
       const away = isLive && call!.stopsAway != null && call!.stopsAway >= 1 && call!.stopsAway <= 40 ? call!.stopsAway : null;
       const text =
         (mins == null || mins > 60
@@ -155,7 +155,7 @@ export class TripGuide {
         : // Without location, estimate by schedule.
           all.slice(1).filter((s) => (scheduledTime(s) ?? leg.end) > now).length;
     const arriveAt = live.get(legIndex)?.alightExpected ?? leg.end;
-    const title = S.guide.rideTitle(`${modeName(leg.mode)} ${lineLabel(leg)}`, leg.to.name);
+    const title = S.guide.rideTitle(rideName(leg), leg.to.name);
     // Past the last stop and away from it, but off the walking path (so the walk leg never matched): off the bus.
     if (remaining <= 0 && pos != null && legIndex + 1 < legs.length && GeoMath.distance(pos, callPoint(leg.to)) > 100) {
       this.lastAlong = Math.max(this.lastAlong, this.legStart[legIndex + 1]);
@@ -185,6 +185,19 @@ export class TripGuide {
       progress,
       finished: false,
     };
+  }
+
+  /**
+   * No further than the boarding stop of a ride that hasn't left it yet: a walk often runs beside the
+   * bus's path (or a later one's), and being near it doesn't put you on board.
+   */
+  private notAheadOfRides(along: number, now: Instant, live: ReadonlyMap<number, LiveCall>): number {
+    const legs = this.itinerary.legs;
+    for (let k = 0; k < legs.length && this.legStart[k] < along; k++) {
+      // Two minutes' slack: a bus may leave a little early, or the clock run a little late.
+      if (isTransit(legs[k].mode) && now < (live.get(k)?.expected ?? legs[k].start) - 120) return Math.min(along, this.legStart[k] - 2);
+    }
+    return along;
   }
 
   private legAt(along: number): number {

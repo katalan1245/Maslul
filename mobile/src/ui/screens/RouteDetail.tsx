@@ -195,10 +195,12 @@ class RouteDetailModel extends Model {
     const first = firstTransit(itin);
     const call = first ? this.live(itin.legs.indexOf(first)) : null;
     const walkBefore = first ? itin.legs.slice(0, itin.legs.indexOf(first)).reduce((s, l) => s + legDurationSec(l), 0) : 0;
-    const leaveAt = (call?.status === 'LIVE' && call.expected != null ? call.expected : (first?.start ?? itin.start)) - walkBefore;
+    // The ride's time as the leave time counts it: live when there is one, so the two never disagree.
+    const departs = call?.status === 'LIVE' && call.expected != null ? call.expected : (first?.start ?? itin.start);
+    const leaveAt = departs - walkBefore;
     const at = leaveAt - minutes * 60;
     const text = first
-      ? S.detail.reminder(Fmt.time(leaveAt), first.shuttleId != null ? lineLabel(first) : rideName(first), first.from.name, Fmt.time(first.start))
+      ? S.detail.reminder(Fmt.time(leaveAt), first.shuttleId != null ? lineLabel(first) : rideName(first), first.from.name, Fmt.time(departs))
       : S.detail.leaveAt(Fmt.time(leaveAt));
     if (await setReminder(at, S.detail.reminderTitle(this.to.name), text)) {
       this.askExactAlarm = true;
