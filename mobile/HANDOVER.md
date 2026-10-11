@@ -25,7 +25,7 @@ Read this first. A fresh session should be able to start from this file alone. T
 
 | Branch | Fork (`origin`) | What |
 |---|---|---|
-| `feature/upstream-1.2.1` | pushed up to `fc049e4` (round 7's build). After it, local only: 3 doc commits (iOS hand-back), the round-7 fixes and this handover; not pushed, the user hasn't said yes. **The Mac needs these pushed before iOS round 3** | **The branch under test.** Everything: the rewrite, its fixes, the upstream 1.1.1–1.2.1 port, the iOS fixes, round-6 and round-7 fixes and the first feature requests. 293 tests |
+| `feature/upstream-1.2.1` | pushed up to `3791f6f` (round 8's build, pushed 2026-10-11) | **The branch under test.** Everything: the rewrite, its fixes, the upstream 1.1.1–1.2.1 port, the iOS fixes, round-6 and round-7 fixes and the first feature requests. 293 tests |
 | `rewrite/react-native` | pushed, `19875c5` | The rewrite and the iOS round-1 fixes, without the upstream port. Fully contained in the branch above |
 | `master` | 3 commits behind the local one | Fast-forwarded to upstream's 1.2.1 (`076af78`), not pushed |
 
@@ -104,13 +104,13 @@ They should also check the wording of `FEATURES.md`.
   - "Last today": not when another bus follows within 60 min, nor on another calendar day.
   - Smaller: "N variants" translated; Photon train stations get the train icon; duplicate nearby stops; Stations re-looks-up after moving 500 m and drops its list when location is revoked; Simple's Clear on Home/Work; no Current location for both ends; board row "then" times deduped; the ride card's drop-off time; Home's sheet scrolls back when it shrinks; the wheels are one TalkBack control; Maestro flows set the Advanced switches (both on after a fresh install, as in Kotlin).
 - **Not fixed, listed as known in the checklists:** T1's re-timed trip after the bus passes (only the guide part fixed; needs a real ride to see), Home with only the map (no trigger found), English station names in Stations search (Transitous has Hebrew only), and the minors: Simple's quote marks, P6's 2 h 31 route, P5 offline drops, Stations' slow spinner, the long-press menu position, share bidi, largest-font overlaps; iOS: XL time wrap, Hebrew phone + English app mirroring, no foreground banner, "Start" on a restored trip, Russian Options button, small cuts.
-- **New Hebrew string for the user to check:** "חלופות" (line variants).
+- "חלופות" (line variants): approved by the user.
 - **Unverified on devices:** everything above, especially the H4 settle wait, TalkBack on the wheels, re-armed reminders and the Maestro `checked` selector.
 
 ## Testing state
 
 - **Checks here:** `npx tsc --noEmit` is clean; `npx jest --selectProjects app` passes 293 tests. The `live` project calls real services (Transitous, Stride); run it only on purpose, e.g. `npx jest --selectProjects live __tests__/live/rideShuttle.test.ts`.
-- **Round 8 (ready to run):** a short re-test of what failed. Android: `/share/maslul-test/TESTING.md` (section G and Maestro M1) on the APK just published, with an empty `report.md` and `evidence/`. iOS: `TESTING-ios.md` round 3 (J1–J9), which needs this branch pushed first. Same flow afterwards: read both reports, fix with tests, archive (Android `archive/round8/`; iOS `*-round3` names), rebuild, next checklists.
+- **Round 8 (ready to run):** a short re-test of what failed. Android: `/share/maslul-test/TESTING.md` (section G and Maestro M1) on the APK just published, with an empty `report.md` and `evidence/`. iOS: `TESTING-ios.md` round 3 (J1–J9), from `3791f6f` (pushed). Same flow afterwards: read both reports, fix with tests, archive (Android `archive/round8/`; iOS `*-round3` names), rebuild, next checklists.
 - **Results before this round:** Android rounds 1–7 (`STATUS.md`); iOS rounds 1–2 (`STATUS.md`, "Verified on iOS").
 - **Never seen:** a real ride on a phone on a weekday (real GPS, live buses during a trip, battery savers stopping the trip service).
 
@@ -120,8 +120,6 @@ They should also check the wording of `FEATURES.md`.
 - Feature 6 (lift times with traffic): no free source; TomTom/HERE need an account and key. Keep or drop?
 - Whether the working Markdown files stay in git (see "Known open items").
 - A Russian speaker to read `src/i18n/ru.ts` (all written here, unreviewed).
-- Pushing the local commits (doc commits, round-7 fixes, this handover): needed before the Mac can run iOS round 3.
-- The Hebrew "חלופות" for line variants.
 
 ## The plan, in order
 
