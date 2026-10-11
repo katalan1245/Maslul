@@ -453,9 +453,10 @@ export class TransitRepository {
     const earliest = minBy(out, (i) => i.start)?.start ?? t;
     const later = ShuttleSchedule.departures(s, earliest, t + 5 * 3600).map((d) => ShuttleSchedule.leg(s, d, path));
     // Two shuttles making the same connection: the later one, with less waiting at the other end.
+    // Without a connection (the shuttle all the way) there's no waiting to save: the first one found, the others are its alternatives.
     const groups = groupBy(out, (itin) => transitLegs(itin).filter((l) => l.shuttleId == null).map(rideKey).join('\u0000'));
-    return [...groups.values()]
-      .map((g) => maxBy(g, (i) => i.legs[0].start)!)
+    return [...groups.entries()]
+      .map(([key, g]) => (key === '' ? g[0] : maxBy(g, (i) => i.legs[0].start)!))
       .map((itin) => {
         const i = itin.legs.findIndex((l) => l.shuttleId === s.id);
         const drawn = path.length === 0 ? itin : { ...itin, legs: itin.legs.map((l, k) => (k === i ? { ...l, geometry: path } : l)) };

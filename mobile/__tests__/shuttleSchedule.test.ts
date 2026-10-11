@@ -1,6 +1,7 @@
 import { type Place, placePoint } from '../src/data/models';
 import { ShuttleSchedule } from '../src/data/shuttles';
 import { zoned } from '../src/data/time';
+import { TransitRepository } from '../src/data/transitRepository';
 import { type Shuttle, WORK_WEEK } from '../src/data/userStore';
 
 const place = (name: string, km: number, eastKm = 0): Place => ({ name, lat: 32.0 + km / 111.195, lon: 34.8 + eastKm / 94.3, kind: 'POI' });
@@ -113,4 +114,13 @@ test('no times and the same stop twice are missing', () => {
   // Both ends at the same stop (within a few dozen metres) isn't a shuttle.
   expect(missing({ to: place('Office gate', 0.05) })).toEqual(['two different stops']);
   expect(missing({ to: place('Down the road', 0.3) })).toEqual([]);
+});
+
+test('a shuttle all the way offers its first departure, not a later one (R2)', async () => {
+  const repo = new TransitRepository(null as never);
+  const night: Shuttle = { ...shuttle, times: [4 * 60 + 14, 7 * 60 + 30], days: [1, 2, 3, 4, 5, 6, 7] };
+  const at = local('2026-10-05T03:33');
+  const [itin, ...rest] = await repo.shuttleOptions({ from: placePoint(office), to: placePoint(station), time: at } as never, [night], at);
+  expect(rest).toEqual([]);
+  expect(itin.start).toBe(local('2026-10-05T04:14'));
 });
