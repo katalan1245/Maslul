@@ -493,8 +493,10 @@ export function SimpleSettingsScreen() {
     void changeLanguage(l);
     store.updateSettings((s) => ({ ...s, language: l }));
   };
+  // Home and Work fall back to the full app's: clearing goes back to it, and keeping it keeps following it.
+  const fallbackOf = (b: SimpleButton) => simpleSlots({ ...data, simpleButtons: [{ ...b, place: null }] })[0].place;
   const save = () => {
-    if (editing) store.setSimpleButton(editing.index, editing.draft);
+    if (editing) store.setSimpleButton(editing.index, { ...editing.draft, place: editing.draft.place === fallbackOf(editing.draft) ? null : editing.draft.place });
     setEditing(null);
   };
   const pickAddress = () => {
@@ -508,6 +510,7 @@ export function SimpleSettingsScreen() {
     });
   };
   const draft = editing?.draft;
+  const fallback = draft && fallbackOf(draft);
 
   return (
     <View style={{ flex: 1, backgroundColor: t.c.background }}>
@@ -630,7 +633,7 @@ export function SimpleSettingsScreen() {
             <Text style={{ fontSize: 18, color: t.c.onSurface }}>{draft.place ? withCity(draft.place) : S.simple.notSet}</Text>
             <View style={{ flexDirection: 'row' }}>
               <TextButton text={S.simple.changeAddress} onPress={pickAddress} testID="simple_edit_address" />
-              {draft.place != null && <TextButton text={S.simple.clear} onPress={() => setEditing((e) => e && { ...e, draft: { ...e.draft, place: null } })} />}
+              {draft.place != null && draft.place !== fallback && <TextButton text={S.simple.clear} onPress={() => setEditing((e) => e && { ...e, draft: { ...e.draft, place: fallback ?? null } })} />}
             </View>
           </ScrollView>
         )}

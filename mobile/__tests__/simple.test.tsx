@@ -3,7 +3,7 @@
  * switching to it, setting a button's address, the routes, the steps, and back to the full app.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import App from '../src/App';
 import { type Itinerary, makeLeg } from '../src/data/models';
 import { zoned } from '../src/data/time';
@@ -155,6 +155,26 @@ describe('the app in Simple Maslul', () => {
     expect(store.value.simpleButtons[3]).toMatchObject({ icon: 'CAFE', label: ' Mom ', place: { name: 'Azrieli Center' } });
     await fireEvent.press(screen.getByTestId('simple_back'));
     expect(await screen.findByText('Mom')).toBeTruthy();
+  });
+
+  it("clearing Work's address goes back to the full app's Work (X2)", async () => {
+    await AsyncStorage.setItem(MIGRATED_KEY, '1');
+    const work = { name: 'Office Tower', lat: 32.07, lon: 34.79, kind: 'POI' };
+    await AsyncStorage.setItem(STORE_KEY, JSON.stringify({ settings: { simpleMode: true }, work }));
+    await render(<App />);
+    await fireEvent.press(await screen.findByTestId('simple_settings'));
+    await fireEvent.press(await screen.findByTestId('simple_edit_2'));
+    // It's the full app's already: nothing to clear.
+    expect(within(screen.getByTestId('simple_edit_dialog')).getByText(/Office Tower/)).toBeTruthy();
+    expect(screen.queryByText('Clear')).toBeNull();
+    await fireEvent.press(screen.getByTestId('simple_edit_address'));
+    await fireEvent.changeText(await screen.findByTestId('simple_search_field'), 'azrieli');
+    await fireEvent.press(await screen.findByText('Azrieli Center', {}, { timeout: 2000 }));
+    await fireEvent.press(await screen.findByText('Clear'));
+    expect(within(screen.getByTestId('simple_edit_dialog')).getByText(/Office Tower/)).toBeTruthy();
+    await fireEvent.press(screen.getByTestId('simple_edit_save'));
+    // Stored as "follow the full app's", not a copy of it.
+    expect(store.value.simpleButtons[2].place).toBeNull();
   });
 
   it('says when the next bus is another day', () => {
