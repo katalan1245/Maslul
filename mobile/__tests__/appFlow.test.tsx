@@ -223,6 +223,32 @@ it("doesn't put first a route whose bus has already passed (W1)", async () => {
   }
 });
 
+it("doesn't put first a route whose bus comes before you'd walk to the stop, even by a minute (G5)", async () => {
+  const { liveCall } = require('../src/data/eta') as typeof import('../src/data/eta');
+  const { nowSec } = require('../src/data/time') as typeof import('../src/data/time');
+  const { worthLive, legLive, plan } = fake;
+  fake.plan = async (req: unknown) => {
+    const r = await plan(req);
+    const [a, b] = r.itineraries;
+    const other = (c: (typeof b.legs)[0]['from']) => ({ ...c, stopId: `${c.stopId}-x`, name: `${c.name} North`, lat: c.lat + 0.004 });
+    const legs = b.legs.map((l, i) => (i === 1 ? { ...l, from: other(l.from), to: other(l.to) } : l));
+    return { ...r, itineraries: [a, { ...b, legs }] };
+  };
+  fake.worthLive = async () => true;
+  // The 5 is running early: in 3 min, a 4 min walk away. Catchable only within the slack, by running.
+  fake.legLive = (async (l: { routeShortName: string | null; start: number }) =>
+    l.routeShortName === '5' ? liveCall('LIVE', l.start, nowSec() + 180) : null) as never;
+  try {
+    await planToDizengoff();
+    await waitFor(() => expect(screen.getAllByTestId('route_card')).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByTestId('route_card')[0]).toHaveTextContent(/61/));
+  } finally {
+    fake.worthLive = worthLive;
+    fake.legLive = legLive;
+    fake.plan = plan;
+  }
+});
+
 it("says the planner failed when only the user's shuttles gave routes (429)", async () => {
   const { HttpException } = require('../src/data/http') as typeof import('../src/data/http');
   const plan = fake.plan;

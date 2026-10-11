@@ -560,13 +560,15 @@ export class RoutesModel extends Model {
         }),
       );
       const score = (i: Itinerary) => Ranking.score(Combine.expected(i, liveOf), false, this.walkMps, this.rail, this.sort);
-      // A route whose first ride is gone, or can be caught only by running, doesn't go first.
+      // A route whose first ride is gone, or can be caught only by running (also within the
+      // catch slack: the bus comes before you'd walk there), doesn't go first.
       const reach = (i: Itinerary) => {
         const f = i.legs.findIndex((l) => isTransit(l.mode));
         if (f < 0) return 0;
         const l = i.legs[f];
-        if (Combine.catchable(l, liveOf(l), Combine.reachBy(i, f, now, false, liveOf))) return 0;
-        return Combine.onlyByHurrying(i, f, l, now, liveOf(l), liveOf) ? 1 : 2;
+        const by = Combine.reachBy(i, f, now, false, liveOf);
+        if (Combine.catchable(l, liveOf(l), by, 0)) return 0;
+        return Combine.catchable(l, liveOf(l), by) || Combine.onlyByHurrying(i, f, l, now, liveOf(l), liveOf) ? 1 : 2;
       };
       const sorted = picked.map((i) => [i, reach(i), score(i)] as const).sort((a, b) => a[1] - b[1] || a[2] - b[2]);
       this.itineraries = pagesInOrder(sorted.map((x) => x[0]), this.paged);

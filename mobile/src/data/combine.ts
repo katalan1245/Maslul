@@ -252,11 +252,11 @@ function expected(itin: Itinerary, liveOf: LiveOf): Itinerary {
  * passed, and it gets there after them. An earlier-scheduled bus only counts when it's
  * tracked live (so it's known to be running late).
  */
-function catchable(option: Leg, call: LiveCall | null | undefined, reachByAt: Instant): boolean {
+function catchable(option: Leg, call: LiveCall | null | undefined, reachByAt: Instant, slack = CATCH_SLACK_SEC): boolean {
   if (call?.status === 'PASSED') return false;
   const live = call?.status === 'LIVE';
-  if (!live && option.start < reachByAt - CATCH_SLACK_SEC) return false;
-  return !(boards(option, call) < reachByAt - CATCH_SLACK_SEC);
+  if (!live && option.start < reachByAt - slack) return false;
+  return !(boards(option, call) < reachByAt - slack);
 }
 
 /**
