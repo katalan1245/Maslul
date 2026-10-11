@@ -1,4 +1,4 @@
-import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { FlatList, I18nManager, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { S } from '../../i18n';
 import { type Line, type LineRoute, type TransitMode, routeDestination, routeLabel, routeOrigin } from '../../data/models';
@@ -122,6 +122,9 @@ type Row =
   | { kind: 'line'; key: string; route: LineRoute; variants: number; favorite: boolean }
   | { kind: 'nearby'; key: string; line: NearbyLine };
 
+// A Hebrew agency name first would lay the whole line out right-to-left ("variants 3") in English and Russian.
+const DIR_MARK = I18nManager.isRTL ? '\u200F' : '\u200E';
+
 export function LinesHomeScreen() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
@@ -237,7 +240,7 @@ export function LineRow({ route, variants = 1, favorite = false, onPress }: { ro
           </Txt>
         )}
         <Txt v="labelMedium" color={t.x.subtle}>
-          {route.agency + (variants > 2 ? `  ·  ${S.lines.variants(variants)}` : '')}
+          {DIR_MARK + route.agency + (variants > 2 ? `  ·  ${S.lines.variants(variants)}` : '')}
         </Txt>
       </View>
       {favorite && <Icon name="star" size={18} color={FAVORITE_GOLD} />}

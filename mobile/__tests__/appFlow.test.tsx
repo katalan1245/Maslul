@@ -7,7 +7,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import App from '../src/App';
 import { store } from '../src/state/store';
 import { S } from '../src/i18n';
-import { DIZENGOFF, STOP, makeFakeRepo } from './support/fakeRepo';
+import { DIZENGOFF, ROUTE_480, STOP, makeFakeRepo } from './support/fakeRepo';
 
 jest.mock('../src/state/services', () => ({ repo: require('./support/fakeRepo').makeFakeRepo() }));
 
@@ -38,6 +38,21 @@ it('searches a line and opens it', async () => {
   await fireEvent.press((await screen.findAllByTestId('line_row'))[0]);
   await screen.findByTestId('line_stops');
   await fireEvent.press(screen.getByText('Timetable'));
+});
+
+it('a Hebrew agency name keeps "3 variants" in English order (G2)', async () => {
+  const { searchLines } = fake;
+  const r = { ...ROUTE_480, agency: 'אגד' };
+  fake.searchLines = (async () => [{ routes: [r, r, r] }]) as never;
+  try {
+    await start();
+    await fireEvent.press(screen.getByTestId('tab_lines'));
+    await fireEvent.changeText(await screen.findByTestId('line_search'), '480');
+    // The left-to-right mark first, so the Hebrew name doesn't set the line's direction.
+    await screen.findByText('\u200Eאגד  ·  3 variants');
+  } finally {
+    fake.searchLines = searchLines;
+  }
 });
 
 it('plans a trip to a place and counts down to leaving', async () => {
