@@ -197,6 +197,11 @@ export function StopScreen({ route }: NativeStackScreenProps<RootStack, 'Stop'>)
   );
 }
 
+
+/** The next two times after the first, each minute once (two trips can share one, F15). */
+export const laterTimes = (entries: BoardEntry[]): string =>
+  [...new Set(entries.map((e) => Fmt.time(entryTime(e))))].slice(1, 3).join('  ');
+
 export function BoardRow({
   group,
   now,
@@ -213,10 +218,7 @@ export function BoardRow({
   const t = useTheme();
   const first = group.entries[0];
   const d = first.departure;
-  const later = group.entries
-    .slice(1, 3)
-    .map((e) => Fmt.time(entryTime(e)))
-    .join('  ');
+  const later = laterTimes(group.entries);
   const live = first.live;
   const time = entryTime(first);
   const freshness = callFreshness(live, now);

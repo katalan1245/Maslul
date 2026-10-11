@@ -1,3 +1,4 @@
+import { zoned } from '../src/data/time';
 import { Fmt, rideName } from '../src/ui/fmt';
 import type { Leg } from '../src/data/models';
 import { instant } from './helpers';
@@ -23,4 +24,11 @@ test('rideName: the line number after the mode, or just the mode when there is n
   expect(rideName({ mode: 'BUS', routeShortName: '61' } as Leg)).toBe('Bus 61');
   expect(rideName({ mode: 'TRAIN', routeShortName: null } as Leg)).toBe('Train');
   expect(rideName({ mode: 'TRAIN', routeShortName: 'Train' } as Leg)).toBe('Train');
+});
+
+it("a board row's later times show each minute once (F15)", () => {
+  const { laterTimes } = require('../src/ui/screens/Stop') as typeof import('../src/ui/screens/Stop');
+  const at = (h: number, m: number) => ({ departure: { scheduled: zoned('2026-10-08', h, m) }, live: null }) as never;
+  expect(laterTimes([at(8, 1), at(8, 11), at(8, 11), at(8, 20)])).toBe('08:11  08:20');
+  expect(laterTimes([at(8, 1), at(8, 1), at(8, 11)])).toBe('08:11');
 });
