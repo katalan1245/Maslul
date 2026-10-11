@@ -35,6 +35,10 @@ export interface BoardCandidate {
   /** That stop and when it's due there, for rides known from the timetable. */
   stopName?: string | null;
   stopTime?: Instant | null;
+  /** Which way it's going near you (degrees from north): its live vehicle's heading, or from that stop to the next. */
+  bearing?: number | null;
+  /** The stop it calls at after [stopName], which tells its direction apart at a stop both ways share. */
+  nextStopName?: string | null;
 }
 
 export const isLiveCandidate = (c: BoardCandidate) => c.vehicle != null;
@@ -77,10 +81,26 @@ function nearVehicles(here: GeoPoint, byLine: Map<string, Vehicle[]>, now: Insta
 /** [name], unless it's a code rather than a place (trains are signed with their number: "785"). */
 const placeName = (name: string) => (/\p{L}/u.test(name) ? name : '');
 
-/** Lower is likelier: live vehicles by distance first, then timetable rides by distance and time. */
-function score(c: BoardCandidate, now: Instant): number {
-  if (isLiveCandidate(c)) return c.distanceM;
-  return 100_000 + c.distanceM + (M_PER_MIN * Math.abs((c.stopTime ?? now) - now)) / 60;
+/** Farther off than this from the way you're moving, a ride is going the other way. */
+const AGAINST_DEG = 110;
+
+/**
+ * Whether [c] goes the other way from where you're [heading] (degrees from north, null when
+ * not known): both directions of a line stop at the same station, often minutes apart.
+ */
+function against(c: BoardCandidate, heading: number | null | undefined): boolean {
+  if (c.bearing == null || heading == null) return false;
+  return Math.abs(GeoMath.angleDiff(heading, c.bearing)) > AGAINST_DEG;
+}
+
+/**
+ * Lower is likelier: live vehicles by distance first, then timetable rides by distance and
+ * time; rides going the other way from your [heading] after all of them.
+ */
+function score(c: BoardCandidate, now: Instant, heading: number | null = null): number {
+  const other = against(c, heading) ? 1_000_000 : 0;
+  if (isLiveCandidate(c)) return other + c.distanceM;
+  return other + 100_000 + c.distanceM + (M_PER_MIN * Math.abs((c.stopTime ?? now) - now)) / 60;
 }
 
 /**
@@ -117,6 +137,8 @@ function fromDepartures(
       distanceM: vd ?? stopDistance,
       stopName: d.stop.name,
       stopTime: d.scheduled,
+      bearing: v?.bearing ?? (d.next != null ? GeoMath.bearing(callPoint(d.stop), callPoint(d.next)) : null),
+      nextStopName: d.next?.name ?? null,
     };
     const s = score(c, now);
     const prev = out.get(d.tripId);
@@ -125,8 +147,8 @@ function fromDepartures(
   return [...out.values()].map((x) => x[1]);
 }
 
-function rank(list: BoardCandidate[], now: Instant): BoardCandidate[] {
-  return sortedBy(distinctBy(list, candidateKey), (c) => score(c, now));
+function rank(list: BoardCandidate[], now: Instant, heading: number | null = null): BoardCandidate[] {
+  return sortedBy(distinctBy(list, candidateKey), (c) => score(c, now, heading));
 }
 
 /**
@@ -212,6 +234,7 @@ export const OnBoard = {
   nearVehicles,
   fromDepartures,
   placeName,
+  against,
   score,
   rank,
   alightStops,

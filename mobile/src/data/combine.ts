@@ -214,8 +214,10 @@ function reachBy(itin: Itinerary, legIndex: number, now: Instant, hurry = false,
  * and arrive, with the walks moving along (also after a ride was switched to another bus, which
  * leaves the walk between rides on the old one's times). The legs keep the timetable; this is
  * what to show (times, duration, transfer slack) once a late bus is in the plan.
+ * The trip being [riding] has passed where it was boarded, but still runs as early or late as it
+ * is: from there, and in when it's expected to.
  */
-function expected(itin: Itinerary, liveOf: LiveOf): Itinerary {
+function expected(itin: Itinerary, liveOf: LiveOf, riding: string | null = null): Itinerary {
   const legs = [...itin.legs];
   const transit = legs.map((l, i) => (isTransit(l.mode) ? i : -1)).filter((i) => i >= 0);
   if (transit.length === 0) return itin;
@@ -227,6 +229,11 @@ function expected(itin: Itinerary, liveOf: LiveOf): Itinerary {
   for (const i of transit) {
     const l = legs[i];
     const c = liveOf(l);
+    if (c?.status === 'PASSED' && riding != null && l.tripId === riding) {
+      const end = c.alightExpected ?? l.end + c.delaySec;
+      set(i, { ...l, start: Math.min(l.start + c.delaySec, end), end });
+      continue;
+    }
     if (c == null || c.status !== 'LIVE') continue;
     const s = boards(l, c);
     set(i, { ...l, start: s, end: Math.max(arrives(l, c), s) });

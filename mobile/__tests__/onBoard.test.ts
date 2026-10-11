@@ -1,6 +1,8 @@
 import { type Progress, TripTimeline } from '../src/data/eta';
 import { type Departure, type GeoPoint, type StopCall, type Vehicle, callPoint, makeLeg } from '../src/data/models';
 import { OnBoard, isLiveCandidate } from '../src/data/onBoard';
+import { GeoMath } from '../src/data/geo';
+import { type Fix, Motion } from '../src/state/location';
 import { instant } from './helpers';
 
 const now = instant('2026-10-05T07:30:00Z');
@@ -127,4 +129,78 @@ test('the bus is at least as far as its last report', () => {
 test('a train signed with its number has no destination', () => {
   expect(OnBoard.placeName('785')).toBe('');
   expect(OnBoard.placeName('Haifa')).toBe('Haifa');
+});
+
+// ---- Which way you're going (upstream 1.2.2) ----------------------------------------
+
+/** A light rail stopping here, due at [due], whose next stop is [nextKm] along (north is +, south is −). */
+const tram = (trip: string, headsign: string, due: number, nextKm: number): Departure => ({
+  ...departure(trip, '1', due),
+  mode: 'LIGHT_RAIL',
+  headsign,
+  next: { stopId: 'n', name: 'Next', code: null, lat: p(0.2 + nextKm).lat, lon: 34.8, scheduledArrival: due + 120, scheduledDeparture: due + 120 },
+});
+
+test('rides going the other way come last', () => {
+  // Both directions stop here minutes apart; the one going south is due sooner.
+  const south = '20261005_10:00_il-Israel-MOT_11_051026';
+  const north = '20261005_10:00_il-Israel-MOT_12_051026';
+  const found = OnBoard.fromDepartures(p(0), [[200, tram(south, 'Bat Yam', at(-1), -1)], [200, tram(north, 'Petah Tikva', at(-3), 1)]], new Map(), now);
+  expect(Math.abs(found.find((c) => c.tripId === north)!.bearing!)).toBeLessThan(1);
+  expect(found[0].nextStopName).toBe('Next');
+  // Not knowing which way you're going: the nearest in time first, as before.
+  expect(OnBoard.rank(found, now)[0].tripId).toBe(south);
+  // Heading north: the northbound one, and the other is marked as going the other way.
+  const ranked = OnBoard.rank(found, now, 10);
+  expect(ranked.map((c) => c.tripId)).toEqual([north, south]);
+  expect(OnBoard.against(ranked[1], 10)).toBe(true);
+  expect(OnBoard.against(ranked[0], 10)).toBe(false);
+  // Heading south it's the other way round; a ride whose direction isn't known is never "the other way".
+  expect(OnBoard.rank(found, now, 185).map((c) => c.tripId)).toEqual([south, north]);
+  expect(OnBoard.against({ ...found[0], bearing: null }, 185)).toBe(false);
+});
+
+test("a live vehicle goes the way it's heading", () => {
+  const trip = '20261005_10:00_il-Israel-MOT_1001_051026';
+  const v = { ...vehicle(0.3), bearing: 180 };
+  const [c] = OnBoard.fromDepartures(p(0), [[200, departure(trip, '100', at(-2))]], new Map([['100', [v]]]), now);
+  expect(c.bearing).toBe(180);
+  expect(OnBoard.against(c, 0)).toBe(true);
+  // A live vehicle going the other way still comes after a timetable ride going yours.
+  const mine = { ...c, tripId: 'mine', vehicle: null, bearing: 0 };
+  expect(OnBoard.rank([c, mine], now, 0).map((x) => x.tripId)).toEqual(['mine', trip]);
+});
+
+const fix = (km: number, sec: number, bearing: number | null = null, speed: number | null = null, accuracy: number | null = 10): Fix => ({
+  point: p(km), atMs: sec * 1000, bearing, speedMps: speed, accuracyM: accuracy,
+});
+
+test("heading from the fix's bearing when moving", () => {
+  expect(Motion.heading([fix(0, 100, 90, 12)], 105_000)).toBe(90);
+  // Standing still, a fix's bearing is noise.
+  expect(Motion.heading([fix(0, 100, 90, 0.5)], 105_000)).toBeNull();
+  // An old fix says nothing about now.
+  expect(Motion.heading([fix(0, 100, 90, 12)], 200_000)).toBeNull();
+  expect(Motion.heading([], 0)).toBeNull();
+});
+
+test('heading from where you were when the fix has none', () => {
+  // 600 m north over a minute, now stopped at a station: still heading north.
+  const north = Motion.heading([fix(0, 0), fix(0.3, 30), fix(0.6, 60), fix(0.6, 90, null, 0)], 95_000)!;
+  expect(Math.abs(GeoMath.angleDiff(north, 0))).toBeLessThan(1);
+  // Southward the same way.
+  expect(Math.abs(GeoMath.angleDiff(Motion.heading([fix(0.6, 0), fix(0, 60)], 65_000)!, 180))).toBeLessThan(1);
+  // Fixes jumping about within their own uncertainty (underground) aren't movement.
+  expect(Motion.heading([fix(0, 0, null, null, 80), fix(0.15, 20, null, null, 80)], 25_000)).toBeNull();
+  // Nor is a fix that jumped 2 km in 10 s (a cell tower's position, underground).
+  expect(Motion.heading([fix(0, 20), fix(2, 30)], 32_000)).toBeNull();
+  // Nor is drifting slower than walking pace.
+  expect(Motion.heading([fix(0, 0), fix(0.1, 110)], 115_000)).toBeNull();
+});
+
+test('angle differences wrap both ways', () => {
+  expect(GeoMath.angleDiff(10, 350)).toBe(20);
+  expect(GeoMath.angleDiff(350, 10)).toBe(-20);
+  // The old formula gave −360 for this (a − b below −540).
+  expect(GeoMath.angleDiff(0, 720)).toBe(0);
 });

@@ -279,6 +279,8 @@ export interface Departure {
   scheduled: Instant;
   stop: StopCall;
   agencyId?: string | null;
+  /** The trip's next stop after [stop], when it was asked for. */
+  next?: StopCall | null;
 }
 
 /** One gtfs route (a direction/alternative of a line) from Stride. */

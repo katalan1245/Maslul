@@ -191,3 +191,13 @@ test('query time has whole seconds', () => {
   // MOTIS ignores fractional-second times and answers from the start of the day.
   expect(queryTime(instant('2026-09-28T16:00:00Z') + 0.123456)).toBe('2026-09-28T16:00:00Z');
 });
+
+test('a board keeps the next few of each line (upstream 1.2.2)', () => {
+  const now = origin;
+  const dep = (line: string, min: number): Departure => ({ ...departure(`t${line}-${min}`, now + min * 60), routeId: `il-Israel-MOT_${line}` });
+  const deps = [dep('1', -5), ...[1, 2, 3, 4, 5, 6].map((i) => dep('1', i * 5)), dep('2', 4), dep('2', 50)];
+  const kept = TransitRepository.perLine(deps, now);
+  // Line 1: the one whose time passed (it may be late) and the next three; line 2 both.
+  expect(new Set(kept.map((d) => d.tripId))).toEqual(new Set(['t1--5', 't1-5', 't1-10', 't1-15', 't2-4', 't2-50']));
+  expect(kept).toHaveLength(6);
+});

@@ -113,6 +113,11 @@ export const GeoMath = {
     const x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl);
     return (((Math.atan2(y, x) * 180) / Math.PI + 360) % 360);
   },
+
+  /** Smallest signed difference a − b between two compass angles, in −180..180. */
+  angleDiff(a: number, b: number): number {
+    return ((((a - b) % 360) + 540) % 360) - 180;
+  },
 };
 
 const PREFIX = 'il-Israel-MOT_';

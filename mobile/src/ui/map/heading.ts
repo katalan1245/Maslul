@@ -1,8 +1,9 @@
 import * as Location from 'expo-location';
 import { useEffect, useState } from 'react';
+import { GeoMath } from '../../data/geo';
 
 /** Smallest signed difference a − b between two compass angles, in −180..180. */
-export const angleDiff = (a: number, b: number) => ((a - b + 540) % 360) - 180;
+export const angleDiff = GeoMath.angleDiff;
 
 /**
  * Which way the phone points, in degrees clockwise from true north, while [enabled]; null

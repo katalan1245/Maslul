@@ -359,6 +359,8 @@ interface StopTimeDto {
   routeColor?: string | null;
   cancelled?: boolean;
   tripCancelled?: boolean;
+  /** The trip's stops after this one, when asked for. */
+  nextStops?: PlaceDto[] | null;
 }
 
 export function stopTimeToDomain(d: StopTimeDto): Departure | null {
@@ -380,6 +382,7 @@ export function stopTimeToDomain(d: StopTimeDto): Departure | null {
     scheduled: time,
     stop: call,
     agencyId: d.agencyId ?? null,
+    next: d.nextStops?.[0] != null ? toStopCall(d.nextStops[0]) : null,
   };
 }
 
@@ -482,10 +485,13 @@ export class TransitousApi {
     return distinctBy(sortedBy(stops, (s) => GeoMath.distance(center, s)), (s) => `${s.name}|${s.subtitle ?? ''}`);
   }
 
-  /** Departures from [stopId]: at least [count], and all of those within [windowSec] of [time] when given. */
+  /**
+   * Departures from [stopId]: at least [count], and all of those within [windowSec] of [time] when given.
+   * With [fetchStops], each knows its trip's next stop (a bigger answer).
+   */
   async stopTimes(
     stopId: string,
-    opts: { time?: Instant | null; count?: number; language?: string | null; windowSec?: number | null } = {},
+    opts: { time?: Instant | null; count?: number; language?: string | null; windowSec?: number | null; fetchStops?: boolean } = {},
   ): Promise<Departure[]> {
     const url = buildUrl(this.base, 'api/v6/stoptimes', [
       ['stopId', stopId],
@@ -495,6 +501,7 @@ export class TransitousApi {
       ['time', opts.time != null ? queryTime(opts.time) : null],
       ['window', opts.windowSec],
       ['language', opts.language],
+      ['fetchStops', opts.fetchStops ? 'true' : null],
     ]);
     const dto = await Http.getJson<{ stopTimes?: StopTimeDto[] }>(url);
     return (dto.stopTimes ?? []).map(stopTimeToDomain).filter((d): d is Departure => d != null);

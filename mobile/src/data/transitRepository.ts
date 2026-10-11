@@ -521,6 +521,8 @@ export class TransitRepository {
               count: 40,
               language: this.language,
               windowSec: OnBoard.BEFORE_SEC + OnBoard.AFTER_SEC,
+              // With each ride's next stop: its direction, at a stop both directions share.
+              fetchStops: true,
             }),
             [] as Departure[],
           );
@@ -563,6 +565,7 @@ export class TransitRepository {
           routeColor: null,
           vehicle: v,
           distanceM: GeoMath.distance(here, vehiclePoint(v)),
+          bearing: v.bearing,
         },
       ];
     });
@@ -753,13 +756,14 @@ export class TransitRepository {
   async stopBoard(stopId: string, now: Instant = nowSec()): Promise<BoardEntry[]> {
     // Stop times start at the requested time, so a late bus whose timetable slot here has
     // already passed would be missing entirely; fetch the recent past too.
-    const upcoming = this.transitous.stopTimes(stopId, { count: 40, language: this.language });
+    // The next hour, at least 40: a count alone gives a busy station's lines one time each.
+    const upcoming = this.transitous.stopTimes(stopId, { count: 40, language: this.language, windowSec: 3600 });
     // The whole window, however busy the stop: a count alone can end well short of now.
     const recent = orDefault(
       this.transitous.stopTimes(stopId, { time: now - LATE_WINDOW_SEC, count: 10, language: this.language, windowSec: LATE_WINDOW_SEC }),
       [] as Departure[],
     );
-    const deps = TransitRepository.mergeDepartures(await upcoming, await recent, now);
+    const deps = TransitRepository.perLine(TransitRepository.mergeDepartures(await upcoming, await recent, now), now);
     const snapshot = await this.live.snapshot();
     return this.boardEntries(deps, snapshot, now);
   }
@@ -1015,6 +1019,18 @@ export class TransitRepository {
   }
 
   // ---- Pure helpers (companion object in Kotlin) -------------------------------------
+
+  /** Rides of each line and direction a board shows: any whose time here has passed (maybe late), and the next [next]. */
+  static perLine(deps: Departure[], now: Instant, next = 3): Departure[] {
+    const upcoming = new Map<string, number>();
+    return deps.filter((d) => {
+      if (d.scheduled <= now) return true;
+      const k = `${d.routeId}|${d.headsign}`;
+      const n = (upcoming.get(k) ?? 0) + 1;
+      upcoming.set(k, n);
+      return n <= next;
+    });
+  }
 
   /** Upcoming stop times plus recently-scheduled ones (possibly running late), without duplicates. */
   static mergeDepartures(upcoming: Departure[], recent: Departure[], now: Instant): Departure[] {

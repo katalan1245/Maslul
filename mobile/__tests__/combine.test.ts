@@ -403,3 +403,19 @@ test('an earlier bus that gets in no sooner is not taken instead (R1: the card o
   expect(trips(Combine.catchableOptions(itin, 1, at(2), false, of(m)))).toEqual(['trip-92-6', 'trip-16-12']);
   expect(Combine.pickBest(itin, at(2), of(m))).toBe(itin);
 });
+
+test("the ride you're on arrives when it's expected to (upstream 1.2.2)", () => {
+  // On board a tram running 5 min early: it passed where you're planning from, and gets in at 25, not 30.
+  const ride = bus('1', 'A', 0, 'B', 5, 10, 30);
+  const itin = itinOf('board', ride);
+  const passed = live('PASSED', ride.start, null, { delaySec: -300, alightExpected: at(25) });
+  const e = Combine.expected(itin, () => passed, ride.tripId);
+  expect(e.start).toBe(at(5));
+  expect(e.end).toBe(at(25));
+  expect(e.legs[0].end).toBe(e.end);
+  // Without a predicted arrival, it's as early or late as it's running.
+  expect(Combine.expected(itin, () => ({ ...passed, alightExpected: null }), ride.tripId).end).toBe(at(25));
+  // A bus that passed which you're not on says nothing about the trip.
+  expect(Combine.expected(itin, () => passed)).toBe(itin);
+  expect(Combine.expected(itin, () => passed, 'another')).toBe(itin);
+});
