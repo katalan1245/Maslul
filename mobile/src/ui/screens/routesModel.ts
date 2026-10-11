@@ -143,7 +143,37 @@ export class RoutesModel extends Model {
 
   /** Folds options that differ only by line into one, then ranks and adds more lines found per ride. */
   private ranked(list: Itinerary[]): Itinerary[] {
-    return pagesInOrder(this.rankedAll(list), this.paged);
+    // The live order too: re-ranking by the timetable alone (as more lines come in) would put a gone bus back on top until the next live refresh.
+    return pagesInOrder(this.liveOrder(this.rankedAll(list), nowSec()), this.paged);
+  }
+
+  /**
+   * Leaving now: ride the bus that gets there first rather than the timetable's pick, and rank
+   * by when the options are expected to get there (a late bus can turn the best into the worst).
+   */
+  private liveOrder(list: Itinerary[], now: Instant): Itinerary[] {
+    if (this.timeMode !== 'NOW') return list;
+    const liveOf = (l: Leg) => this.rideLive.get(rideKey(l));
+    const board = this.onBoardTripId;
+    const picked = Combine.distinctRides(
+      list.map((itin) => {
+        // The bus you're on is the one you're on, whatever else comes.
+        const keep = new Set(itin.legs.map((l, i) => (board != null && l.tripId === board ? i : -1)).filter((i) => i >= 0));
+        return Combine.pickBest(itin, now, liveOf, keep);
+      }),
+    );
+    const score = (i: Itinerary) => Ranking.score(Combine.expected(i, liveOf), false, this.walkMps, this.rail, this.sort);
+    // A route whose first ride is gone, or can be caught only by running (also within the
+    // catch slack: the bus comes before you'd walk there), doesn't go first.
+    const reach = (i: Itinerary) => {
+      const f = i.legs.findIndex((l) => isTransit(l.mode));
+      if (f < 0) return 0;
+      const l = i.legs[f];
+      const by = Combine.reachBy(i, f, now, false, liveOf);
+      if (Combine.catchable(l, liveOf(l), by, 0)) return 0;
+      return Combine.catchable(l, liveOf(l), by) || Combine.onlyByHurrying(i, f, l, now, liveOf(l), liveOf) ? 1 : 2;
+    };
+    return picked.map((i) => [i, reach(i), score(i)] as const).sort((a, b) => a[1] - b[1] || a[2] - b[2]).map((x) => x[0]);
   }
 
   private rankedAll(list: Itinerary[]): Itinerary[] {
@@ -547,32 +577,7 @@ export class RoutesModel extends Model {
       const c = calls[i];
       if (c) this.rideLive.set(rideKey(l), c);
     });
-    // Leaving now: ride the bus that gets there first rather than the timetable's pick, and rank
-    // by when the options are expected to get there (a late bus can turn the best into the worst).
-    if (this.timeMode === 'NOW') {
-      const liveOf = (l: Leg) => this.rideLive.get(rideKey(l));
-      const board = this.onBoardTripId;
-      const picked = Combine.distinctRides(
-        this.itineraries.map((itin) => {
-          // The bus you're on is the one you're on, whatever else comes.
-          const keep = new Set(itin.legs.map((l, i) => (board != null && l.tripId === board ? i : -1)).filter((i) => i >= 0));
-          return Combine.pickBest(itin, now, liveOf, keep);
-        }),
-      );
-      const score = (i: Itinerary) => Ranking.score(Combine.expected(i, liveOf), false, this.walkMps, this.rail, this.sort);
-      // A route whose first ride is gone, or can be caught only by running (also within the
-      // catch slack: the bus comes before you'd walk there), doesn't go first.
-      const reach = (i: Itinerary) => {
-        const f = i.legs.findIndex((l) => isTransit(l.mode));
-        if (f < 0) return 0;
-        const l = i.legs[f];
-        const by = Combine.reachBy(i, f, now, false, liveOf);
-        if (Combine.catchable(l, liveOf(l), by, 0)) return 0;
-        return Combine.catchable(l, liveOf(l), by) || Combine.onlyByHurrying(i, f, l, now, liveOf(l), liveOf) ? 1 : 2;
-      };
-      const sorted = picked.map((i) => [i, reach(i), score(i)] as const).sort((a, b) => a[1] - b[1] || a[2] - b[2]);
-      this.itineraries = pagesInOrder(sorted.map((x) => x[0]), this.paged);
-    }
+    this.itineraries = pagesInOrder(this.liveOrder(this.itineraries, now), this.paged);
     for (const itin of this.itineraries) {
       const f = firstTransit(itin);
       const c = f ? this.rideLive.get(rideKey(f)) : undefined;
