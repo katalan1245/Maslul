@@ -122,7 +122,7 @@ type Row =
   | { kind: 'line'; key: string; route: LineRoute; variants: number; favorite: boolean }
   | { kind: 'nearby'; key: string; line: NearbyLine };
 
-// A Hebrew agency name first would lay the whole line out right-to-left ("variants 3") in English and Russian.
+// A Hebrew agency name would lay the line out right-to-left ("variants 3") and pull the count to its far side: mark both ends of the name.
 const DIR_MARK = I18nManager.isRTL ? '\u200F' : '\u200E';
 
 export function LinesHomeScreen() {
@@ -240,7 +240,7 @@ export function LineRow({ route, variants = 1, favorite = false, onPress }: { ro
           </Txt>
         )}
         <Txt v="labelMedium" color={t.x.subtle}>
-          {DIR_MARK + route.agency + (variants > 2 ? `  ·  ${S.lines.variants(variants)}` : '')}
+          {DIR_MARK + route.agency + DIR_MARK + (variants > 2 ? `  ·  ${S.lines.variants(variants)}` : '')}
         </Txt>
       </View>
       {favorite && <Icon name="star" size={18} color={FAVORITE_GOLD} />}

@@ -48,8 +48,8 @@ it('a Hebrew agency name keeps "3 variants" in English order (G2)', async () => 
     await start();
     await fireEvent.press(screen.getByTestId('tab_lines'));
     await fireEvent.changeText(await screen.findByTestId('line_search'), '480');
-    // The left-to-right mark first, so the Hebrew name doesn't set the line's direction.
-    await screen.findByText('\u200Eאגד  ·  3 variants');
+    // Left-to-right marks on both sides, so the Hebrew name neither sets the direction nor takes the count.
+    await screen.findByText('\u200Eאגד\u200E  ·  3 variants');
   } finally {
     fake.searchLines = searchLines;
   }
