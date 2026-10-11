@@ -25,7 +25,7 @@ Read this first. A fresh session should be able to start from this file alone. T
 
 | Branch | Fork (`origin`) | What |
 |---|---|---|
-| `feature/upstream-1.2.1` | pushed up to `3791f6f` (round 8's build, pushed 2026-10-11). After it, local only: docs, upstream's map taps and the round-8 fixes (to `e331129` and the docs after it); push after asking | **The branch under test.** Everything: the rewrite, its fixes, the upstream 1.1.1–1.2.1 port, the iOS fixes, round-6 and round-7 fixes and the first feature requests. 293 tests |
+| `feature/upstream-1.2.1` | pushed up to `c796b7c` (2026-10-11): round 9 (Android, APK from `0fd27de`, same code) and iOS round 4 test it | **The branch under test.** Everything: the rewrite, its fixes, the upstream 1.1.1–1.2.1 port, the iOS fixes, round-6 and round-7 fixes and the first feature requests. 293 tests |
 | `rewrite/react-native` | pushed, `19875c5` | The rewrite and the iOS round-1 fixes, without the upstream port. Fully contained in the branch above |
 | `master` | 3 commits behind the local one | Fast-forwarded to upstream's 1.2.1 (`076af78`), not pushed |
 
