@@ -177,6 +177,15 @@ class RouteDetailModel extends Model {
     });
   }
 
+  /** The live trip switched a ride (its bus went by without you): show what it follows now. */
+  adopt = (itinerary: Itinerary) => {
+    if (itinerary === this.itinerary) return;
+    this.itinerary = itinerary;
+    this.approach.clear();
+    this.changed();
+    void this.refreshLive();
+  };
+
   /** Follows leg [i]'s live vehicle on the map (null stops). */
   follow = (i: number | null) => {
     if (this.following === i) return;
@@ -233,6 +242,9 @@ export function RouteDetailScreen({ route }: NativeStackScreenProps<RootStack, '
   const model = useModel(() => new RouteDetailModel(route.params.itinerary, route.params.from, route.params.to, route.params.keepRides));
   const active = useActiveTrip();
   const isActive = active?.itinerary.id === model.itinerary.id;
+  useEffect(() => {
+    if (isActive) model.adopt(active.itinerary);
+  }, [isActive, active?.itinerary, model]);
   const now = useNow(10_000);
   const controller = useMapController();
 

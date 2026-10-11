@@ -2,9 +2,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { useSyncExternalStore } from 'react';
+import { Combine } from '../data/combine';
 import type { LiveCall } from '../data/eta';
 import { type GeoPoint, type Itinerary, isTransit } from '../data/models';
-import { nowSec } from '../data/time';
+import { type Instant, nowSec } from '../data/time';
 import { type Lang, S, lang, languageSet, setLanguage } from '../i18n';
 import MaslulNative from '../../modules/maslul-native/src/MaslulNativeModule';
 import { location } from '../state/location';
@@ -163,8 +164,9 @@ class ActiveTrip {
         );
       }
       if (this.current !== s) return;
-      const state = guide.update(pos ?? this.pos, now, this.live);
-      this.set({ ...s, state });
+      const next = this.nextIfPassed(s, now);
+      const state = (this.guide ?? guide).update(pos ?? this.pos, now, this.live);
+      this.set({ ...next, state });
       await MaslulNative?.updateTripNotification(TRIP_TASK, state.title, state.text, state.progress, END_TRIP_URL, S.notify.endTrip).catch(() => false);
       if (state.alert != null && state.alertKey != null && !this.fired.has(state.alertKey)) {
         this.fired.add(state.alertKey);
@@ -180,6 +182,30 @@ class ActiveTrip {
     } finally {
       this.ticking = false;
     }
+  }
+
+  /**
+   * A ride you were still on your way to went by without you: the trip takes the next one of
+   * that step that can still be caught, rather than saying it's arriving.
+   */
+  private nextIfPassed(s: TripSession, now: Instant): TripSession {
+    // While on board, the bus has passed the boarding stop with you on it.
+    const at = s.state?.legIndex ?? 0;
+    let itinerary = s.itinerary;
+    for (const [i, c] of [...this.live]) {
+      if (c.status !== 'PASSED' || i <= at) continue;
+      const option = Combine.catchableOptions(itinerary, i, now, false, () => null)[0];
+      if (option == null) continue;
+      itinerary = Combine.choose(itinerary, i, option);
+      this.live.delete(i);
+      this.fired.delete(`board-${i}`);
+    }
+    if (itinerary === s.itinerary) return s;
+    this.guide = new TripGuide(itinerary, s.destination);
+    // The new bus's live times on the next tick.
+    this.lastLive = 0;
+    void AsyncStorage.setItem(SESSION_KEY, JSON.stringify({ itinerary, destination: s.destination, lang: lang() })).catch(() => {});
+    return { ...s, itinerary };
   }
 }
 
