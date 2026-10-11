@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { FlatList, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { S } from '../../i18n';
@@ -56,6 +57,8 @@ class StationsHomeModel extends Model {
   };
 
   noPermission = false;
+  /** Where [nearby] was looked up. */
+  nearbyAt: GeoPoint | null = null;
 
   override start() {
     // Location allowed again in the phone's settings: show what's near without waiting for Refresh.
@@ -70,7 +73,10 @@ class StationsHomeModel extends Model {
     // Without a fix the permission may still be granted (the position just didn't come).
     this.noPermission = here == null && !(await location.hasPermission().catch(() => false));
     const r = here ? await repo.nearbyStops(here).catch(() => null) : null;
-    if (r) this.nearby = r.slice(0, 15);
+    if (r) {
+      this.nearby = r.slice(0, 15);
+      this.nearbyAt = here;
+    }
     this.nearbyLoading = false;
     this.changed();
   };
@@ -93,6 +99,10 @@ export function StationsHomeScreen() {
     void m.loadNearby();
     return m;
   });
+  // Moved on (W4): what's near is somewhere else now.
+  useEffect(() => {
+    if (here && model.nearbyAt && GeoMath.distance(here, model.nearbyAt) > 500) void model.loadNearby();
+  }, [here, model]);
   const rows: Row[] = [];
   if (model.query.trim() !== '') {
     if (model.error != null) rows.push({ kind: 'message', key: 'err', title: S.common.somethingWrong, body: model.error });
