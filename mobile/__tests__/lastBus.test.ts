@@ -32,31 +32,40 @@ it("ends the night at 04:00, the next morning or this one after midnight", () =>
 });
 
 const end = at('2026-10-09', 4);
+const night = at('2026-10-08', 22, 30);
 const r2300 = route('a', at('2026-10-08', 23));
 const r2340 = route('b', at('2026-10-08', 23, 40));
 const morning = route('c', at('2026-10-09', 5, 30));
 
 it('finds the last route when a later one is past the night', () => {
-  expect(lastTonight([r2300, r2340, morning], [], end)?.itin).toBe(r2340);
+  expect(lastTonight([r2300, r2340, morning], [], end, night)?.itin).toBe(r2340);
   // The proof can come from the next page.
-  expect(lastTonight([r2300, r2340], [morning], end)?.ride.start).toBe(at('2026-10-08', 23, 40));
+  expect(lastTonight([r2300, r2340], [morning], end, night)?.ride.start).toBe(at('2026-10-08', 23, 40));
   // A walk-only route neither counts nor proves anything.
-  expect(lastTonight([r2340, walk('w', at('2026-10-09', 1))], [morning], end)?.itin).toBe(r2340);
+  expect(lastTonight([r2340, walk('w', at('2026-10-09', 1))], [morning], end, night)?.itin).toBe(r2340);
 });
 
 it("doesn't claim a last route without proof", () => {
   // Nothing seen past the night: the next page might have more.
-  expect(lastTonight([r2300, r2340], [], end)).toBeNull();
+  expect(lastTonight([r2300, r2340], [], end, night)).toBeNull();
   // The next page has another bus tonight.
-  expect(lastTonight([r2300], [r2340, morning], end)).toBeNull();
+  expect(lastTonight([r2300], [r2340, morning], end, night)).toBeNull();
   // Only morning routes: nothing leaves tonight.
-  expect(lastTonight([morning], [], end)).toBeNull();
+  expect(lastTonight([morning], [], end, night)).toBeNull();
 });
 
 it('takes the latest bus a route lists, not only its planned one', () => {
   const merged = route('m', at('2026-10-08', 23));
   merged.legs[1] = { ...merged.legs[1], alternatives: [makeLeg({ ...merged.legs[1], start: at('2026-10-08', 23, 50), end: at('2026-10-09', 0) })] };
-  const last = lastTonight([merged, r2340, morning], [], end);
+  const last = lastTonight([merged, r2340, morning], [], end, night);
   expect(last?.itin).toBe(merged);
   expect(last?.ride.start).toBe(at('2026-10-08', 23, 50));
+});
+
+it('no last bus while night buses keep coming, nor on the next day (I11.4)', () => {
+  // 03:07: a 03:36, then 04:25 and 05:41: night lines, not the last bus.
+  const early = at('2026-10-09', 3, 7);
+  expect(lastTonight([route('x', at('2026-10-09', 3, 36)), route('y', at('2026-10-09', 4, 25)), route('z', at('2026-10-09', 5, 41))], [], end, early)).toBeNull();
+  // 23:30: the night's last leaves 02:22 tomorrow, then 05:41: not "Last today".
+  expect(lastTonight([route('x', at('2026-10-09', 2, 22)), route('z', at('2026-10-09', 5, 41))], [], end, at('2026-10-08', 23, 30))).toBeNull();
 });

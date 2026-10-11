@@ -236,11 +236,11 @@ export class RoutesModel extends Model {
     const at = this.timeMode === 'NOW' || this.time == null ? nowSec() : this.time;
     if (this.timeMode === 'ARRIVE' || this.ride != null || this.onBoardTripId != null || !lateSearch(at)) return;
     const end = nightEnd(at);
-    let last = lastTonight(this.itineraries, [], end);
+    let last = lastTonight(this.itineraries, [], end, at);
     if (last == null && this.nextCursor != null) {
       const page = await repo.plan(this.request(this.nextCursor)!).catch(() => null);
       if (gen !== this.gen || this.disposed || page == null) return;
-      last = lastTonight(this.itineraries, page.itineraries, end);
+      last = lastTonight(this.itineraries, page.itineraries, end, at);
     }
     this.last = last && { itinId: last.itin.id, ride: last.ride };
     this.changed();
