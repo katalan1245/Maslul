@@ -522,3 +522,12 @@ it('sets the trip time on wheels, without a keyboard (#1, F11)', async () => {
   await screen.findAllByTestId('route_card');
   expect(screen.getByTestId('time_chip')).toHaveTextContent(new RegExp(`Arrive.*09:${minute}`));
 });
+
+it("doesn't offer Current location as the destination when the trip starts there (N4)", async () => {
+  await fireEvent.press(await start());
+  await screen.findByTestId('field_to');
+  expect(screen.queryByText(S.common.currentLocation)).toBeNull();
+  // The start can still be set to it.
+  await fireEvent(screen.getByTestId('field_from'), 'focus');
+  expect(await screen.findByText(S.common.currentLocation)).toBeTruthy();
+});

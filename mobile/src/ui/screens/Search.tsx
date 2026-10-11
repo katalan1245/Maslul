@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useRef, useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { FlatList, Keyboard, KeyboardAvoidingView, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type Place, type PlaceKind, type TransitMode, placeKey } from '../../data/models';
 import { S } from '../../i18n';
@@ -121,7 +121,10 @@ export function SearchScreen({ route }: NativeStackScreenProps<RootStack, 'Searc
       (f == null ? fromInput : toInput).current?.focus();
     }
   };
-  const pick = (p: Place) => choose.current(p);
+  const pick = (p: Place) => {
+    Keyboard.dismiss();
+    choose.current(p);
+  };
 
   const swap = () => {
     setFrom(to);
@@ -149,7 +152,9 @@ export function SearchScreen({ route }: NativeStackScreenProps<RootStack, 'Searc
     else if (!loading && rows.length === 0) rows.push({ kind: 'message', key: 'none', title: S.search.noResults, body: S.search.noResultsHint, icon: 'place' });
   } else {
     if (!single) {
-      rows.push({ kind: 'action', key: 'here', title: S.common.currentLocation, icon: 'my-location', tint: true, onPress: () => pick(CURRENT_LOCATION) });
+      // Not when the other end is there already: a trip from here to here (N4).
+      if ((editing === 'FROM' ? to : from)?.kind !== 'CURRENT_LOCATION')
+        rows.push({ kind: 'action', key: 'here', title: S.common.currentLocation, icon: 'my-location', tint: true, onPress: () => pick(CURRENT_LOCATION) });
       if (editing === 'FROM' && data.settings.onBoard) {
         rows.push({
           kind: 'action',
