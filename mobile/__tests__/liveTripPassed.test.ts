@@ -43,3 +43,15 @@ test('on board, the bus passing the boarding stop changes nothing', async () => 
   await activeTrip.start({ id: 'b', start: t, end: t + 600, transfers: 0, legs: [ride] }, 'Azrieli');
   expect(activeTrip.session?.itinerary.legs[0].routeShortName).toBe('36');
 });
+
+test("a bus due long ago, with no later one, isn't 'arriving': the guide says it has passed (iOS round 3)", async () => {
+  const now = nowSec();
+  // As on iOS: the trip goes on after the bus (a train later), so it hasn't timed out.
+  const ride = bus('61', now - 80 * 60);
+  const walk = makeLeg({ mode: 'WALK', from: call(null, 'Start', 32.0853, 34.7818, now - 85 * 60, now - 85 * 60), to: ride.from, start: now - 85 * 60, end: ride.start, distanceM: 300 });
+  await activeTrip.start({ id: 's', start: walk.start, end: now + 600, transfers: 0, legs: [walk, ride] }, 'Azrieli');
+  // Standing where the walk starts, as the iPhone was.
+  await activeTrip.onLocation({ lat: 32.0853, lon: 34.7818 });
+  expect(activeTrip.session?.state?.text).toBe('Bus 61 has already passed Ibn Gabirol');
+  expect(activeTrip.session?.state?.alert).toBeNull();
+});

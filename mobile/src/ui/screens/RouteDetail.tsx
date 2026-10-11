@@ -28,7 +28,7 @@ import { type Instant, nowSec } from '../../data/time';
 import { WALK_SPEEDS } from '../../data/userStore';
 import { S } from '../../i18n';
 import { activeTrip, useActiveTrip } from '../../live/liveTrip';
-import { canNotify } from '../../live/notifications';
+import { canNotify, cancelReminder } from '../../live/notifications';
 import { location, useLastLocation } from '../../state/location';
 import { repo } from '../../state/services';
 import { store } from '../../state/store';
@@ -198,6 +198,9 @@ class RouteDetailModel extends Model {
     nav.push('Trip', { tripId: leg.tripId, boardStopId: leg.from.stopId, alightStopId: leg.to.stopId });
   };
 
+  /** When this route's reminder was set for. */
+  private reminded: Instant | null = null;
+
   async remind() {
     const minutes = store.value.settings.reminderMinutes;
     const itin = this.itinerary;
@@ -211,6 +214,9 @@ class RouteDetailModel extends Model {
     const text = first
       ? S.detail.reminder(Fmt.time(leaveAt), first.shuttleId != null ? lineLabel(first) : rideName(first), first.from.name, Fmt.time(departs))
       : S.detail.leaveAt(Fmt.time(leaveAt));
+    // Remind me again on this route moves its reminder (live times shift it), not adds one.
+    if (this.reminded != null) await cancelReminder(this.reminded);
+    this.reminded = at;
     if (await setReminder(at, S.detail.reminderTitle(this.to.name), text)) {
       this.askExactAlarm = true;
       this.changed();
@@ -755,7 +761,10 @@ function LineOptions({
       : // The user's own shuttle: "Next 2 shuttles", not "buses of Office shuttle".
         options.every(([o]) => o.shuttleId != null)
         ? S.detail.nextShuttles(options.length)
-        : S.detail.nextOfLine(options.length, kind, lineLabel(leg));
+        : // A train has no line number: "Next 3 trains of Train" says nothing.
+          !leg.routeShortName?.trim()
+          ? S.detail.goThisWay(options.length, kind)
+          : S.detail.nextOfLine(options.length, kind, lineLabel(leg));
   // The first few (and the chosen one); the rest behind "N more".
   const shown = expanded ? options : options.filter(([o], i) => i < SHOWN_RIDES || rideKey(o) === rideKey(leg));
   const hidden = options.length - shown.length;

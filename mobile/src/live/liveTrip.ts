@@ -12,7 +12,7 @@ import { location } from '../state/location';
 import { repo } from '../state/services';
 import { BRAND } from '../ui/theme';
 import { alert, canNotify, dismissAlert, ensureChannels } from './notifications';
-import { type GuideState, TripGuide } from './tripGuide';
+import { type GuideState, TripGuide, rideGone } from './tripGuide';
 
 export const TRIP_TASK = 'maslul-live-trip';
 /** Opened by the notification's "End trip" action. */
@@ -192,8 +192,8 @@ class ActiveTrip {
     // While on board, the bus has passed the boarding stop with you on it.
     const at = s.state?.legIndex ?? 0;
     let itinerary = s.itinerary;
-    for (const [i, c] of [...this.live]) {
-      if (c.status !== 'PASSED' || i <= at) continue;
+    for (const [i, leg] of s.itinerary.legs.entries()) {
+      if (i <= at || !isTransit(leg.mode) || !rideGone(leg, this.live.get(i), now)) continue;
       const option = Combine.catchableOptions(itinerary, i, now, false, () => null)[0];
       if (option == null) continue;
       itinerary = Combine.choose(itinerary, i, option);

@@ -90,6 +90,11 @@ export async function scheduleReminder(at: Instant, title: string, text: string)
   return true;
 }
 
+/** Takes back the reminder set for [at]. */
+export async function cancelReminder(at: Instant) {
+  await Notifications.cancelScheduledNotificationAsync(`reminder-${at}`).catch(() => {});
+}
+
 /**
  * Sets every pending reminder again: once "Alarms & reminders" is allowed that makes them exact.
  * Set before it was, Android kept them inexact (up to an hour late).

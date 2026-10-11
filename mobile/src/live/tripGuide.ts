@@ -1,9 +1,16 @@
 import type { LiveCall } from '../data/eta';
 import { GeoMath } from '../data/geo';
-import { type GeoPoint, type Itinerary, callPoint, isTransit, samePoint, scheduledTime, vehicleKind } from '../data/models';
+import { type GeoPoint, type Itinerary, type Leg, callPoint, isTransit, samePoint, scheduledTime, vehicleKind } from '../data/models';
 import { S } from '../i18n';
 import type { Instant } from '../data/time';
 import { Fmt, rideName } from '../ui/fmt';
+
+/** A ride that has gone without you: passed the stop, or due (live or timetable) over 5 minutes ago with nothing newer. */
+export function rideGone(leg: Leg, call: LiveCall | null | undefined, now: Instant): boolean {
+  if (call?.status === 'PASSED') return true;
+  const due = call?.status === 'LIVE' && call.expected != null ? call.expected : leg.start;
+  return due < now - 300;
+}
 
 export type GuideAlert = 'BOARD_SOON' | 'GET_OFF_NEXT' | 'GET_OFF_NOW' | 'ARRIVED';
 
@@ -120,10 +127,13 @@ export class TripGuide {
       }
       const next = legs[nextIdx];
       const call = live.get(nextIdx);
+      const ride = rideName(next);
+      if (rideGone(next, call, now)) {
+        return { legIndex, title: S.guide.walkTo(next.from.name), text: S.cards.alreadyPassed(ride, next.from.name), alert: null, alertKey: null, progress, finished: false };
+      }
       const isLive = call?.status === 'LIVE';
       const eta = isLive ? call!.expected : next.start;
       const mins = eta != null ? Math.trunc((eta - now + 30) / 60) : null;
-      const ride = rideName(next);
       const away = isLive && call!.stopsAway != null && call!.stopsAway >= 1 && call!.stopsAway <= 40 ? call!.stopsAway : null;
       const text =
         (mins == null || mins > 60

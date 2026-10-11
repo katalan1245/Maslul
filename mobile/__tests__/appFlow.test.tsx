@@ -55,6 +55,41 @@ it('a Hebrew agency name keeps "3 variants" in English order (G2)', async () => 
   }
 });
 
+it('Remind me twice on one route leaves one reminder (iOS round 3)', async () => {
+  const Notifications = require('expo-notifications') as typeof import('expo-notifications');
+  const schedule = jest.mocked(Notifications.scheduleNotificationAsync);
+  const cancel = jest.mocked(Notifications.cancelScheduledNotificationAsync);
+  await planToDizengoff();
+  // Leave in 8 min: time for a reminder 5 min before.
+  await fireEvent.press(screen.getAllByTestId('route_card')[0]);
+  schedule.mockClear();
+  cancel.mockClear();
+  await fireEvent.press(await screen.findByTestId('remind_button'));
+  await waitFor(() => expect(schedule).toHaveBeenCalledTimes(1));
+  await fireEvent.press(screen.getByTestId('remind_button'));
+  await waitFor(() => expect(schedule).toHaveBeenCalledTimes(2));
+  expect(cancel).toHaveBeenCalledWith(schedule.mock.calls[0][0].identifier);
+});
+
+it('a train leg\'s choices say "trains go this way", not "trains of Train" (iOS round 3)', async () => {
+  const { plan } = fake;
+  fake.plan = async (req: unknown) => {
+    const r = await plan(req);
+    const a = r.itineraries[0];
+    const train = { ...a.legs[1], mode: 'TRAIN' as const, routeShortName: '', tripId: 'tr1' };
+    const later = { ...train, tripId: 'tr2', start: train.start + 1200, end: train.end + 1200 };
+    return { ...r, itineraries: [{ ...a, legs: a.legs.map((l, i) => (i === 1 ? { ...train, alternatives: [later] } : l)) }] };
+  };
+  try {
+    await planToDizengoff();
+    await fireEvent.press(screen.getAllByTestId('route_card')[0]);
+    await screen.findByText(/2 trains go this way/);
+    expect(screen.queryByText(/of Train/)).toBeNull();
+  } finally {
+    fake.plan = plan;
+  }
+});
+
 it('plans a trip to a place and counts down to leaving', async () => {
   await planToDizengoff();
   // A route card: "06:10 – 06:42"; the first ride is 12 minutes away, so it says when to leave.
